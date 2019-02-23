@@ -1,0 +1,21 @@
+apiVersion: k8s.iofog.org/v1alpha1
+kind: IOFog
+metadata:
+  name: example-iofog
+  namespace: default
+spec:
+  microservices:
+    - name: "Test Microservice 1"
+      config: ""
+      volume-mappings:
+        - "/etc/iofog-agent:/test-mapping"
+      host-access: false
+      strace: false
+      ports:
+        - internal: 80
+          external: 5000
+          public: false
+      routes:
+        - ABCDeFGHy
+        - "@1"
+  size: 2
