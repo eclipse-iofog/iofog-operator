@@ -1,21 +1,26 @@
 apiVersion: k8s.iofog.org/v1alpha1
 kind: IOFog
 metadata:
-  name: example-iofog
+  name: weather-demo
   namespace: default
 spec:
   microservices:
-    - name: "Test Microservice 1"
-      config: ""
-      volume-mappings:
-        - "/etc/iofog-agent:/test-mapping"
+    - name: "weather"
+      catalog-item-id: 6
+      config: "{\"citycode\":\"5391997\",\"apikey\":\"6141811a6136148a00133488eadff0fb\",\"frequency\":1000}"
       host-access: false
-      strace: false
+      routes:
+        - "@1"
+    - name: "json-rest-api"
+      catalog-item-id: 7
+      config: "{\"buffersize\":3,\"contentdataencoding\":\"utf8\",\"contextdataencoding\":\"utf8\",\"outputfields\":{\"publisher\":\"source\",\"contentdata\":\"temperature\",\"timestamp\":\"time\"}}"
+#      volume-mappings:
+#        - hostDestination: "/etc/iofog-agent"
+#          containerDestination: "test-mapping"
+#          accessMode: "rw"
+      host-access: false
       ports:
         - internal: 80
-          external: 5000
-          public: false
-      routes:
-        - ABCDeFGHy
-        - "@1"
-  size: 2
+          external: 5555
+#          public: false
+  replicas: 1

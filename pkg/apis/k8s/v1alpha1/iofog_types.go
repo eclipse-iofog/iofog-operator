@@ -6,30 +6,36 @@ import (
 
 // IOFogSpec defines the desired state of IOFog
 type IOFogSpec struct {
+	Replicas      int32           `json:"replicas"`
 	Microservices []Microservices `json:"microservices"`
 }
 
 type Microservices struct {
-	Name           string   `json:"name"`
-	Description    string   `json:"description"`
-	Config         string   `json:"config"`
-	VolumeMappings []string `json:"volume-mappings"`
-	HostAccess     bool     `json:"host-access"`
-	STrace         bool     `json:"strace"`
-	Ports          []Ports  `json:"ports"`
-	Routes         []string `json:"routes"`
+	Name           string           `json:"name"`
+	Config         string           `json:"config"`
+	CatalogItemId  int              `json:"catalog-item-id"`
+	VolumeMappings []VolumeMappings `json:"volume-mappings"`
+	HostAccess     bool             `json:"host-access"`
+	Ports          []Ports          `json:"ports"`
+	Routes         []string         `json:"routes"`
 }
 
 type Ports struct {
-	Internal int
-	External int
-	public   bool
+	Internal int `json:"internal"`
+	External int `json:"external"`
+}
+
+type VolumeMappings struct {
+	HostDestination      string `json:"hostDestination"`
+	ContainerDestination string `json:"containerDestination"`
+	AccessMode           string `json:"accessMode"`
 }
 
 // IOFogStatus defines the observed state of IOFog
 type IOFogStatus struct {
-	Replicas      int32  `json:"replicas"`
-	LabelSelector string `json:"labelSelector"`
+	Replicas      int32    `json:"replicas"`
+	LabelSelector string   `json:"labelSelector"`
+	PodNames      []string `json:"podNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
