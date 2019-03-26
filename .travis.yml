@@ -1,0 +1,15 @@
+sudo: true
+
+language: go
+go:
+ - 1.11.x
+
+services:
+ - docker
+
+script:
+ - make vendor
+ - make build
+ - make test
+ - TAG=dev make docker-build
+ - TAG=dev make docker-push
