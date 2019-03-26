@@ -4,4 +4,4 @@ RUN apk upgrade --update --no-cache
 
 USER nobody
 
-ADD build/_output/bin/iofog-operator /usr/local/bin/iofog-operator
+ADD bin/iofog-operator /usr/local/bin/iofog-operator
