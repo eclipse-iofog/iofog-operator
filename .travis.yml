@@ -1,15 +1,11 @@
 sudo: true
 
-language: go
-go:
- - 1.11.x
+language: generic # We build in Docker
 
 services:
  - docker
 
 script:
- - make vendor
- - make build
- - make test
- - TAG=dev make docker-build
- - TAG=dev make docker-push
+ - set -e # Fail fast
+ - TAG=dev make docker-build # Build binary and run unit tests
+ - TAG=dev make docker-push # Push :dev image to registry

@@ -1,7 +1,15 @@
-FROM alpine:3.8
+FROM golang:1.12-alpine as backend
+RUN apk add --update --no-cache bash curl git make
 
-RUN apk upgrade --update --no-cache
+RUN mkdir -p /go/src/github.com/iofog/iofog-operator
+ADD Gopkg.* Makefile /go/src/github.com/iofog/iofog-operator/
+WORKDIR /go/src/github.com/iofog/iofog-operator
+RUN make vendor
+ADD . /go/src/github.com/iofog/iofog-operator
 
-USER nobody
+RUN make build
 
-ADD bin/iofog-operator /usr/local/bin/iofog-operator
+FROM alpine:3.7
+COPY --from=backend /go/src/github.com/iofog/iofog-operator/build /bin
+
+ENTRYPOINT ["/bin/iofog-operator"]
