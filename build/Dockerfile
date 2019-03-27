@@ -10,6 +10,6 @@ ADD . /go/src/github.com/iofog/iofog-operator
 RUN make build
 
 FROM alpine:3.7
-COPY --from=backend /go/src/github.com/iofog/iofog-operator/build /bin
+COPY --from=backend /go/src/github.com/iofog/iofog-operator/bin /bin
 
 ENTRYPOINT ["/bin/iofog-operator"]
