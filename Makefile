@@ -19,12 +19,12 @@ ifeq ($(VERBOSE), 1)
 	GOARGS += -v
 endif
 
+# Golang variables
 DEP_VERSION = 0.5.0
 GOLANG_VERSION = 1.11
-
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
-
+# Golang build targets
 .PHONY: clean
 clean: ## Clean the working area and the project
 	rm -rf $(BUILD_DIR)/ vendor/
@@ -48,15 +48,6 @@ ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 endif
 	go build $(GOARGS) $(BUILD_PACKAGE)
 
-.PHONY: docker-build
-docker-build: ## Builds docker image for the operator
-	docker build --rm -t $(IMAGE):$(TAG) -f build/Dockerfile .
-
-.PHONY: docker-push
-docker-push: ## Pushes the docker image to docker hub
-	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-	docker push $(IMAGE):$(TAG)
-
 .PHONY: fmt
 fmt:
 	@gofmt -s -w $(GOFILES_NOVENDOR)
@@ -65,6 +56,17 @@ fmt:
 test:
 	set -o pipefail; go list ./... | xargs -n1 go test $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
 
+# Docker image targets
+.PHONY: build-img
+build-img: ## Builds docker image for the operator
+	docker build --rm -t $(IMAGE):$(TAG) -f build/Dockerfile .
+
+.PHONY: push-img
+push-img: ## Pushes the docker image to docker hub
+	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
+	docker push $(IMAGE):$(TAG)
+
+# Util targets
 .PHONY: list
 list: ## List all make targets
 	@$(MAKE) -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
