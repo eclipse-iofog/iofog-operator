@@ -1,11 +1,24 @@
 sudo: true
 
+notifications:
+  email: false
+  slack:
+    rooms:
+      - secure: u/jR29mk4jya2Va1KfyFtjB3IWlSMl5IPr/5uWAhgmzN1jK/gqjArYGRFc6CY1p+P0SuPrZ0UzcU/av3RZBpzQjQEAzODR1/+lZESunMOw12TpqcUTZlTMCENWBHrWS5C4sfTBnRNwOt5qezYnzeRcvEApXPzBLFmtVLK1ZnaCRqoOLE2PlbPF/Ou0lJIsQaHt2MrO9zG/pN5fUDbdzDyOqNQ5SXvzEsay5MMJvxf0kN2dmYiQj3z/uy2kWc8HPHqJR78rLEWWKvMJgk3d3F/2Z/9rukvXCsSfPs9c+YNFNamwD/pOOdRczDw8oIc01V9sdtVgERy3wsovY1DVHIE4Z5wDcAmS2B0NDxT1moa2Xb67Ltx4QFncEDCwm2umxX/1X8lXZKOqnQHVn82UiMl5C6pfi/RxyJc592LVZx+NqD3SPHGmPy6HfdMu5fTvgxeGsnIz3aR3ZGbCjhWgUiG39tTEjFXY9Gc2J5WquYdn0TrwIDS9l1AOmdBSW/09PglT+Q9QgSf4SdsZBEx4VzVx4qNPBZrzdRxlFWeLVzFeD7RkRa6Z6sewe1DBZsz+t4QhjePx71Visj9vrpD9GSG6fu1IWgmyPL6X25+/7WVhbhbpxi0o0NkkwXw3A6gVJKll2Uw+UuFvvqZ+7WTdxMMyLwBFbncajYfLSmwd/9JFk=
+    on_success: always
+    on_failure: always
+    template:
+      - Repo `%{repository_slug}` *%{result}* build (<%{build_url}|#%{build_number}>)
+        for commit (<%{compare_url}|%{commit}>) on branch `%{branch}`.
+      - 'Execution time: *%{duration}*'
+      - 'Message: %{message}'
+
 language: generic # We build in Docker
 
 services:
  - docker
 
 script:
- - set -e # Fail fast
- - TAG=dev make docker-build # Build binary and run unit tests
- - TAG=dev make docker-push # Push :dev image to registry
+ - set -e                     # Fail fast
+ - TAG=dev make docker-build  # Build binary and run unit tests
+ - TAG=dev make docker-push   # Push :dev image to registry
