@@ -19,6 +19,6 @@ services:
  - docker
 
 script:
- - set -e                     # Fail fast
- - TAG=dev make docker-build  # Build binary and run unit tests
- - TAG=dev make docker-push   # Push :dev image to registry
+ - set -e                  # Fail fast
+ - TAG=dev make build-img  # Build binary and Docker image
+ - TAG=dev make push-img   # Push :dev Docker image to registry
