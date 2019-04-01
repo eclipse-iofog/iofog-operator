@@ -3,6 +3,7 @@ package iofog
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
@@ -154,7 +155,7 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 	for _, microservice := range iofog.Spec.Microservices {
 		container := corev1.Container{
 			Name:  microservice.Name,
-			Image: "nil",
+			Image: fmt.Sprintf("catalog-item-id-%d", microservice.CatalogItemId),
 		}
 		containers = append(containers, container)
 	}
@@ -179,8 +180,40 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					SchedulerName: "iofog-custom-scheduler",
-					Containers:    containers,
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "type",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"iofog-kubelet"},
+											},
+										},
+									},
+								},
+							},
+						},
+						PodAntiAffinity: &corev1.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+								{
+									LabelSelector: &metav1.LabelSelector{
+										MatchExpressions: []metav1.LabelSelectorRequirement{
+											{
+												Key:      "app",
+												Operator: metav1.LabelSelectorOpIn,
+												Values:   []string{iofog.Name},
+											},
+										},
+									},
+									TopologyKey: "kubernetes.io/hostname",
+								},
+							},
+						},
+					},
+					Containers: containers,
 				},
 			},
 		},
