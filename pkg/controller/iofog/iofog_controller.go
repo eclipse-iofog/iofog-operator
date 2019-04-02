@@ -180,6 +180,14 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
+					Tolerations: []corev1.Toleration{
+						{
+							Key:      "resource-type",
+							Operator: corev1.TolerationOpEqual,
+							Value:    "iofog-custom-resource",
+							Effect:   corev1.TaintEffectNoSchedule,
+						},
+					},
 					Affinity: &corev1.Affinity{
 						NodeAffinity: &corev1.NodeAffinity{
 							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
