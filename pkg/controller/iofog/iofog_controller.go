@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
-	k8sv1alpha1 "github.com/iofog/iofog-operator/pkg/apis/k8s/v1alpha1"
+	k8sv1alpha1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

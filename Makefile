@@ -2,7 +2,7 @@ SHELL = /bin/bash
 OS = $(shell uname -s)
 
 # Project variables
-PACKAGE = github.com/iofog/iofog-operator
+PACKAGE = github.com/eclipse-iofog/iofog-operator
 BINARY_NAME = iofog-operator
 IMAGE = iofog/iofog-operator
 TAG ?= dev
