@@ -11,5 +11,5 @@ script:
  - make vendor
  - make build
  - make test
- - TAG=dev make docker-build
- - TAG=dev make docker-push
+ - make build-img
+ - make push-img

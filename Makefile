@@ -5,7 +5,6 @@ OS = $(shell uname -s)
 PACKAGE = github.com/eclipse-iofog/iofog-operator
 BINARY_NAME = iofog-operator
 IMAGE = iofog/iofog-operator
-TAG ?= dev
 
 # Build variables
 BUILD_DIR ?= bin
@@ -23,6 +22,8 @@ DEP_VERSION = 0.5.0
 GOLANG_VERSION = 1.11
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
+
+BRANCH ?= $(TRAVIS_BRANCH)
 
 
 .PHONY: clean
@@ -42,20 +43,33 @@ vendor: bin/dep ## Install dependencies
 
 .PHONY: build
 build: GOARGS += -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
-build: ## Build a binary
+build:
 ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 	@printf "$(GOLANG_VERSION)\n$$(go version | awk '{sub(/^go/, "", $$3);print $$3}')" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -g | head -1 | grep -q -E "^$(GOLANG_VERSION)$$" || (printf "Required Go version is $(GOLANG_VERSION)\nInstalled: `go version`" && exit 1)
 endif
 	go build $(GOARGS) $(BUILD_PACKAGE)
 
-.PHONY: docker-build
-docker-build: ## Builds docker image for the operator
-	docker build --rm -t $(IMAGE):$(TAG) -f build/Dockerfile .
+.PHONY: build-img
+build-img:
+	docker build --rm -t $(IMAGE):latest -f build/Dockerfile .
 
-.PHONY: docker-push
-docker-push: ## Pushes the docker image to docker hub
+.PHONY: push-img
+push-img:
 	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-	docker push $(IMAGE):$(TAG)
+ifeq ($(BRANCH), master)
+	# Master branch
+	docker tag $(IMAGE):latest $(IMAGE):$(RELEASE_TAG)
+	docker push $(IMAGE):$(RELEASE_TAG)
+endif
+ifneq (,$(findstring release,$(BRANCH)))
+	# Release branch
+	docker tag $(IMAGE):latest $(IMAGE):rc-$(RELEASE_TAG)
+	docker push $(IMAGE):rc-$(RELEASE_TAG)
+else
+	# Develop and feature branches
+	docker tag $(IMAGE):latest $(IMAGE):$(BRANCH)
+	docker push $(IMAGE):$(BRANCH)
+endif
 
 .PHONY: fmt
 fmt:
