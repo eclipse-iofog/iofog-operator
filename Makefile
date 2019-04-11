@@ -24,6 +24,7 @@ GOLANG_VERSION = 1.11
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
 BRANCH ?= $(TRAVIS_BRANCH)
+RELEASE_TAG ?= 0.0.0
 
 
 .PHONY: clean
