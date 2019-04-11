@@ -7,9 +7,13 @@ go:
 services:
  - docker
 
-script:
- - make vendor
- - make build
- - make test
- - make build-img
- - make push-img
+jobs:
+  include:
+    - stage: bootstrap-build-test
+      script:
+        - make vendor
+        - make build
+        - make test
+      after_success:
+        - make build-img
+        - make push-img
