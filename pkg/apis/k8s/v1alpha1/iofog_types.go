@@ -18,6 +18,8 @@ type Microservices struct {
 	HostAccess     bool             `json:"host-access"`
 	Ports          []Ports          `json:"ports"`
 	Routes         []string         `json:"routes"`
+	Env            []Env            `json:"env"`
+	Cmd            []string         `json:"cmd"`
 }
 
 type Ports struct {
@@ -36,6 +38,11 @@ type IOFogStatus struct {
 	Replicas      int32    `json:"replicas"`
 	LabelSelector string   `json:"labelSelector"`
 	PodNames      []string `json:"podNames"`
+}
+
+type Env struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
