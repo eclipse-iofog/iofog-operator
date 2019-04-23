@@ -59,6 +59,7 @@ push-img:
 	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
 ifeq ($(BRANCH), master)
 	# Master branch
+	docker push $(IMAGE):latest
 	docker tag $(IMAGE):latest $(IMAGE):$(RELEASE_TAG)
 	docker push $(IMAGE):$(RELEASE_TAG)
 endif
@@ -68,8 +69,10 @@ ifneq (,$(findstring release,$(BRANCH)))
 	docker push $(IMAGE):rc-$(RELEASE_TAG)
 else
 	# Develop and feature branches
-	docker tag $(IMAGE):latest $(IMAGE):$(BRANCH)
-	docker push $(IMAGE):$(BRANCH)
+	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):latest
+	docker push $(IMAGE)-$(BRANCH):latest
+	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
+	docker push $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
 endif
 
 .PHONY: fmt
