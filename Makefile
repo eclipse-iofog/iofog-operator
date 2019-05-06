@@ -52,7 +52,7 @@ endif
 
 .PHONY: build-img
 build-img:
-	docker build --rm -t $(IMAGE):latest -f build/Dockerfile .
+	docker build --rm -t $(IMAGE):latest -f Dockerfile .
 
 .PHONY: push-img
 push-img:
