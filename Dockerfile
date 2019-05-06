@@ -9,7 +9,10 @@ ADD . /go/src/github.com/eclipse-iofog/iofog-operator
 
 RUN make build
 
-FROM alpine:3.7
+FROM alpine:3.8
+
+RUN apk upgrade --update --no-cache
+
 COPY --from=backend /go/src/github.com/eclipse-iofog/iofog-operator/bin /usr/local/bin
 
 USER nobody
