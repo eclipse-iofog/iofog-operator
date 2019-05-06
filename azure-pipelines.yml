@@ -1,0 +1,70 @@
+trigger:
+  tags:
+    include:
+      - v.*
+  branches:
+    include:
+      - develop
+      - master
+  paths:
+    exclude:
+      - README.md
+
+pr:
+  - master
+
+variables:
+  repository: 'focal-freedom-236620/operator'
+  type: $(Build.SourceBranchName)
+  commit: $(Build.SourceVersion)
+
+jobs:
+  - job: Platform
+    dependsOn: Operator
+    pool: server
+
+    steps:
+      - task: InvokeRESTAPI@1
+        displayName: 'trigger platform job'
+        inputs:
+          connectionType: 'connectedServiceName'
+          serviceConnection: 'Pipelines'
+          method: 'POST'
+          urlSuffix: '/edgeworx/_apis/build/builds?api-version=5.0'
+          body: "{\"Parameters\":\"{\\\"images.operator\\\": \\\"gcr.io/$(repository):dev-$(commit)\\\"}\", \"Definition\":{\"id\":\"5\"}}"
+          waitForCompletion: 'false'
+
+  - job: Operator
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    
+    steps:
+      - task: GoTool@0
+        displayName: 'install golang'
+        inputs:
+          version: '1.11' 
+
+      - task: Docker@2
+        displayName: 'build dev docker'
+        inputs:
+          containerRegistry: 'Edgeworx GCP'
+          repository: $(repository)
+          command: 'build'
+          Dockerfile: 'build/Dockerfile'
+          arguments: --build-arg FILENAME=$(controller_tar)
+          tags: |
+            dev-$(commit)
+            dev-$(type)
+            dev-latest
+    
+      - task: Docker@2
+        displayName: 'push dev docker'
+        inputs:
+          containerRegistry: 'Edgeworx GCP'
+          repository: $(repository)
+          command: 'push'
+          Dockerfile: 'build/Dockerfile'
+          tags: |
+            dev-$(commit)
+            dev-$(type)
+            dev-latest
