@@ -37,12 +37,6 @@ jobs:
     pool:
       vmImage: 'Ubuntu-16.04'
     
-    steps:
-      - task: GoTool@0
-        displayName: 'install golang'
-        inputs:
-          version: '1.11' 
-
       - task: Docker@2
         displayName: 'build docker'
         inputs:
