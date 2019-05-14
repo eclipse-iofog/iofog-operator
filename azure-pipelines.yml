@@ -47,7 +47,7 @@ jobs:
           echo "##vso[task.setvariable variable=tag;isOutput=true]$COMMIT"
           if [[ $(branch) == 'develop' ]]; then
             echo "##vso[task.setvariable variable=latestTag]dev-latest"
-          elif [[ $(branch) == refs/heads/release* ]]; then
+          elif [[ $(ref) == refs/heads/release* ]]; then
             echo "##vso[task.setvariable variable=latestTag]rc-latest"
           elif [[ $(ref) == refs/tags* ]]; then
             TAG=$(echo $(ref) | sed "s|refs/tags/||g")
