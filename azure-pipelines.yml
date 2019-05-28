@@ -1,0 +1,81 @@
+trigger:
+  tags:
+    include:
+      - 0.*
+      - 1.*
+      - 2.*
+  branches:
+    include:
+      - develop
+  paths:
+    exclude:
+      - README.md
+
+variables:
+  repository: 'focal-freedom-236620/operator'
+  commit: $(Build.SourceVersion)
+  branch: $(Build.SourceBranchName)
+  ref: $(Build.SourceBranch)
+
+jobs:
+  - job: Platform
+    dependsOn: Kubelet
+    pool: server
+    variables:
+      tag: $[dependencies.Kubelet.outputs['setvarStep.tag']]
+
+    steps:
+      - task: InvokeRESTAPI@1
+        displayName: 'trigger platform job'
+        inputs:
+          connectionType: 'connectedServiceName'
+          serviceConnection: 'Pipelines'
+          method: 'POST'
+          urlSuffix: '/edgeworx/_apis/build/builds?api-version=5.0'
+          body: "{\"Parameters\":\"{\\\"images.operator\\\": \\\"gcr.io/$(repository):$(tag)\\\"}\", \"Definition\":{\"id\":\"5\"}}"
+          waitForCompletion: 'false'
+
+  - job: Kubelet
+    pool:
+      vmImage: 'Ubuntu-16.04'
+
+    steps:
+
+      - script: |
+          COMMIT=$(git rev-parse --short=5 HEAD)
+          echo "##vso[task.setvariable variable=tag]$COMMIT"
+          echo "##vso[task.setvariable variable=tag;isOutput=true]$COMMIT"
+          if [[ $(branch) == 'develop' ]]; then
+            echo "##vso[task.setvariable variable=latestTag]dev-latest"
+          elif [[ $(ref) == refs/heads/release* ]]; then
+            echo "##vso[task.setvariable variable=latestTag]rc-latest"
+          elif [[ $(ref) == refs/tags* ]]; then
+            TAG=$(echo $(ref) | sed "s|refs/tags/||g")
+            echo "##vso[task.setvariable variable=tag]$TAG"
+            echo "##vso[task.setvariable variable=tag;isOutput=true]$TAG"
+            echo "##vso[task.setvariable variable=latestTag]latest"
+          fi
+        displayName: 'Set Tag variable'
+        name: setvarStep
+    
+      - task: Docker@2
+        displayName: 'build docker'
+        inputs:
+          containerRegistry: 'Edgeworx GCP'
+          repository: $(repository)
+          command: 'build'
+          Dockerfile: 'Dockerfile'
+          tags: |
+            $(tag)
+            $(latestTag)
+    
+      - task: Docker@2
+        displayName: 'push docker'
+        inputs:
+          containerRegistry: 'Edgeworx GCP'
+          repository: $(repository)
+          command: 'push'
+          Dockerfile: 'Dockerfile'
+          tags: |
+            $(tag)
+            $(latestTag)
