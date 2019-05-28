@@ -11,20 +11,22 @@ type IOFogSpec struct {
 }
 
 type Microservices struct {
-	Name           string           `json:"name"`
-	Config         string           `json:"config"`
 	CatalogItemId  int              `json:"catalog-item-id"`
-	VolumeMappings []VolumeMappings `json:"volume-mappings"`
+	Cmd            []string         `json:"cmd"`
+	Config         string           `json:"config"`
+	Env            []Env            `json:"env"`
 	HostAccess     bool             `json:"host-access"`
+	LogSize        int              `json:"logSize"`
+	Name           string           `json:"name"`
 	Ports          []Ports          `json:"ports"`
 	Routes         []string         `json:"routes"`
-	Env            []Env            `json:"env"`
-	Cmd            []string         `json:"cmd"`
+	VolumeMappings []VolumeMappings `json:"volume-mappings"`
 }
 
 type Ports struct {
-	Internal int `json:"internal"`
-	External int `json:"external"`
+	Internal   int  `json:"internal"`
+	External   int  `json:"external"`
+	PublicMode bool `json:"publicMode"`
 }
 
 type VolumeMappings struct {
