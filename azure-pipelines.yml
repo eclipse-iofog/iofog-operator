@@ -20,10 +20,10 @@ variables:
 
 jobs:
   - job: Platform
-    dependsOn: Kubelet
+    dependsOn: Operator
     pool: server
     variables:
-      tag: $[dependencies.Kubelet.outputs['setvarStep.tag']]
+      tag: $[dependencies.Operator.outputs['setvarStep.tag']]
 
     steps:
       - task: InvokeRESTAPI@1
@@ -36,7 +36,7 @@ jobs:
           body: "{\"Parameters\":\"{\\\"images.operator\\\": \\\"gcr.io/$(repository):$(tag)\\\"}\", \"Definition\":{\"id\":\"5\"}}"
           waitForCompletion: 'false'
 
-  - job: Kubelet
+  - job: Operator
     pool:
       vmImage: 'Ubuntu-16.04'
 
