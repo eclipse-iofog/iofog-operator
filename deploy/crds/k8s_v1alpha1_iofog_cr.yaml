@@ -11,6 +11,9 @@ spec:
       host-access: false
       routes:
         - "@1"
+      env:
+        - key: "ENV_VAR1"
+          value: "value1"
     - name: "json-rest-api"
       catalog-item-id: 7
       config: "{\"buffersize\":3,\"contentdataencoding\":\"utf8\",\"contextdataencoding\":\"utf8\",\"outputfields\":{\"publisher\":\"source\",\"contentdata\":\"temperature\",\"timestamp\":\"time\"}}"
@@ -22,5 +25,4 @@ spec:
       ports:
         - internal: 80
           external: 5555
-#          public: false
   replicas: 1

@@ -1,0 +1,48 @@
+trigger:
+  tags:
+    include:
+      - v.*
+  branches:
+    include:
+      - develop
+      - release*
+  paths:
+    exclude:
+      - README.md
+
+variables:
+  repository: 'focal-freedom-236620/operator'
+  primaryTag: $(Build.SourceBranchName)
+
+jobs:
+  - job: Operator
+    pool:
+      vmImage: 'Ubuntu-16.04'
+
+    steps:
+      - script: |
+          echo 'setting secondary tag'
+          echo "##vso[task.setvariable variable=secondaryTag]b-$(Build.BuildId)"
+
+          if [[ $(Build.SourceBranch) == refs/heads/release* ]]; then
+            echo "##vso[task.setvariable variable=primaryTag]rc-$(Build.SourceBranchName)"
+          #If branch starts with ref/tags, apply latest and version tag
+          elif [[ $(Build.SourceBranch) == refs/tags* ]]; then
+            primaryTag= echo $(primaryTag) | awk '{print substr($1,2);}'
+            echo $primaryTag
+            echo "##vso[task.setvariable variable=primaryTag]$primaryTag"
+            echo "##vso[task.setvariable variable=secondaryTag]latest"
+          fi
+        displayName: 'Set Tag variable'
+        name: setvarStep
+
+      - task: Docker@2
+        displayName: 'build docker'
+        inputs:
+          containerRegistry: 'Edgeworx GCP'
+          repository: $(repository)
+          command: 'buildAndPush'
+          Dockerfile: 'Dockerfile'
+          tags: |
+            $(primaryTag)
+            $(secondaryTag)

@@ -3,10 +3,11 @@ package iofog
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
-	k8sv1alpha1 "github.com/iofog/iofog-operator/pkg/apis/k8s/v1alpha1"
+	k8sv1alpha1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -154,7 +155,7 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 	for _, microservice := range iofog.Spec.Microservices {
 		container := corev1.Container{
 			Name:  microservice.Name,
-			Image: "nil",
+			Image: fmt.Sprintf("catalog-item-id-%d", microservice.CatalogItemId),
 		}
 		containers = append(containers, container)
 	}
@@ -179,8 +180,48 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					SchedulerName: "iofog-custom-scheduler",
-					Containers:    containers,
+					Tolerations: []corev1.Toleration{
+						{
+							Key:      "resource-type",
+							Operator: corev1.TolerationOpEqual,
+							Value:    "iofog-custom-resource",
+							Effect:   corev1.TaintEffectNoSchedule,
+						},
+					},
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "type",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"iofog-kubelet"},
+											},
+										},
+									},
+								},
+							},
+						},
+						PodAntiAffinity: &corev1.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+								{
+									LabelSelector: &metav1.LabelSelector{
+										MatchExpressions: []metav1.LabelSelectorRequirement{
+											{
+												Key:      "app",
+												Operator: metav1.LabelSelectorOpIn,
+												Values:   []string{iofog.Name},
+											},
+										},
+									},
+									TopologyKey: "kubernetes.io/hostname",
+								},
+							},
+						},
+					},
+					Containers: containers,
 				},
 			},
 		},

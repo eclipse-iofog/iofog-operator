@@ -1,0 +1,6 @@
+?   	github.com/eclipse-iofog/iofog-operator/cmd/manager	[no test files]
+?   	github.com/eclipse-iofog/iofog-operator/pkg/apis	[no test files]
+?   	github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha1	[no test files]
+?   	github.com/eclipse-iofog/iofog-operator/pkg/controller	[no test files]
+?   	github.com/eclipse-iofog/iofog-operator/pkg/controller/iofog	[no test files]
+?   	github.com/eclipse-iofog/iofog-operator/version	[no test files]

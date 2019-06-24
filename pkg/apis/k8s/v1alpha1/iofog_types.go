@@ -11,18 +11,22 @@ type IOFogSpec struct {
 }
 
 type Microservices struct {
-	Name           string           `json:"name"`
-	Config         string           `json:"config"`
 	CatalogItemId  int              `json:"catalog-item-id"`
-	VolumeMappings []VolumeMappings `json:"volume-mappings"`
+	Cmd            []string         `json:"cmd"`
+	Config         string           `json:"config"`
+	Env            []Env            `json:"env"`
 	HostAccess     bool             `json:"host-access"`
+	LogSize        int              `json:"logSize"`
+	Name           string           `json:"name"`
 	Ports          []Ports          `json:"ports"`
 	Routes         []string         `json:"routes"`
+	VolumeMappings []VolumeMappings `json:"volume-mappings"`
 }
 
 type Ports struct {
-	Internal int `json:"internal"`
-	External int `json:"external"`
+	Internal   int  `json:"internal"`
+	External   int  `json:"external"`
+	PublicMode bool `json:"publicMode"`
 }
 
 type VolumeMappings struct {
@@ -36,6 +40,11 @@ type IOFogStatus struct {
 	Replicas      int32    `json:"replicas"`
 	LabelSelector string   `json:"labelSelector"`
 	PodNames      []string `json:"podNames"`
+}
+
+type Env struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
