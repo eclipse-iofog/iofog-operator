@@ -1,7 +1,7 @@
 trigger:
   tags:
     include:
-      - v.*
+      - v*
   branches:
     include:
       - develop
@@ -9,6 +9,8 @@ trigger:
   paths:
     exclude:
       - README.md
+
+pr: none
 
 variables:
   repository: 'focal-freedom-236620/operator'
