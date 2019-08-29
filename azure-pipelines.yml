@@ -61,7 +61,7 @@ jobs:
           containerRegistry: 'Edgeworx GCP'
           repository: $(repository)
           command: 'buildAndPush'
-          Dockerfile: 'Dockerfile'
+          Dockerfile: 'build/Dockerfile'
           tags: |
             $(primaryTag)
             $(secondaryTag)

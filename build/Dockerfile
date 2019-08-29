@@ -2,6 +2,9 @@ FROM golang:1.12-alpine as backend
 
 COPY . /go/src/github.com/eclipse-iofog/iofog-operator
 WORKDIR /go/src/github.com/eclipse-iofog/iofog-operator
+
+RUN script/bootstrap.sh
+
 RUN apk add --update --no-cache bash curl git make && \
     make vendor && \
     make build
