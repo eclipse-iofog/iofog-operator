@@ -11,6 +11,10 @@ required = [
 ]
 
 [[override]]
+ name = "github.com/eclipse-iofog/iofogctl"
+ revision = "7d7b3a008b903c28bfeabfeb3aa0f85da079fddd"
+
+[[override]]
   name = "k8s.io/code-generator"
   # revision for tag "kubernetes-1.12.3"
   revision = "3dcf91f64f638563e5106f21f50c31fa361c918d"

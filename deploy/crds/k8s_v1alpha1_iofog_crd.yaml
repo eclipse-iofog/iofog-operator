@@ -10,10 +10,105 @@ spec:
     plural: iofogs
     singular: iofog
   scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            microservices:
+              items:
+                properties:
+                  cmd:
+                    items:
+                      type: string
+                    type: array
+                  config:
+                    type: string
+                  env:
+                    items:
+                      properties:
+                        key:
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    type: array
+                  logSize:
+                    format: int64
+                    type: integer
+                  name:
+                    type: string
+                  ports:
+                    items:
+                      properties:
+                        external:
+                          format: int64
+                          type: integer
+                        internal:
+                          format: int64
+                          type: integer
+                        publicMode:
+                          type: boolean
+                      required:
+                      - internal
+                      - external
+                      - publicMode
+                      type: object
+                    type: array
+                  routes:
+                    items:
+                      type: string
+                    type: array
+                required:
+                - cmd
+                - config
+                - env
+                - logSize
+                - name
+                - ports
+                - routes
+                type: object
+              type: array
+            replicas:
+              format: int32
+              type: integer
+          required:
+          - replicas
+          - microservices
+          type: object
+        status:
+          properties:
+            labelSelector:
+              type: string
+            podNames:
+              items:
+                type: string
+              type: array
+            replicas:
+              format: int32
+              type: integer
+          required:
+          - replicas
+          - labelSelector
+          - podNames
+          type: object
   version: v1alpha1
-  subresources:
-    status: {}
-    scale:
-      specReplicasPath: .spec.replicas
-      statusReplicasPath: .status.replicas
-      labelSelectorPath: .status.labelSelector
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
