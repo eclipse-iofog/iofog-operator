@@ -44,3 +44,9 @@ rules:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - iokog.iofog.org
+  resources:
+  - '*'
+  verbs:
+  - '*'

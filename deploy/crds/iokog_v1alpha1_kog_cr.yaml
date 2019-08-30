@@ -1,0 +1,7 @@
+apiVersion: iokog.iofog.org/v1alpha1
+kind: Kog
+metadata:
+  name: example-kog
+spec:
+  # Add fields here
+  size: 3

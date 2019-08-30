@@ -11,22 +11,21 @@
  *
  */
 
- package install
+package install
 
- import (
-	 "fmt"
- )
- 
- // Toggle HTTP output
- var isVerbose bool
- 
- func SetVerbosity(verbose bool) {
-	 isVerbose = verbose
- }
- 
- func verbose(msg string) {
-	 if isVerbose {
-		 fmt.Println(msg)
-	 }
- }
- 
+import (
+	"fmt"
+)
+
+// Toggle HTTP output
+var isVerbose bool
+
+func SetVerbosity(verbose bool) {
+	isVerbose = verbose
+}
+
+func verbose(msg string) {
+	if isVerbose {
+		fmt.Println(msg)
+	}
+}

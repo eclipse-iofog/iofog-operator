@@ -11,12 +11,11 @@
  *
  */
 
- package install
+package install
 
- type IofogUser struct {
-	 Name     string
-	 Surname  string
-	 Email    string
-	 Password string
- }
- 
+type IofogUser struct {
+	Name     string
+	Surname  string
+	Email    string
+	Password string
+}

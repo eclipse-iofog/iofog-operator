@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"strconv"
 	"strings"
 	"time"
@@ -30,18 +30,17 @@ import (
 
 // Kubernetes struct to manage state of deployment on Kubernetes cluster
 type Kubernetes struct {
-	configFilename string
-	clientset      *kubernetes.Clientset
-	extsClientset  *extsclientset.Clientset
-	crdName        string
-	ns             string
-	ms             map[string]*microservice
+	clientset     *kubernetes.Clientset
+	extsClientset *extsclientset.Clientset
+	crdName       string
+	ns            string
+	ms            map[string]*microservice
 }
 
 // NewKubernetes constructs an object to manage cluster
-func NewKubernetes(configFilename, namespace string) (*Kubernetes, error) {
-	// Get the kubernetes config from the filepath.
-	config, err := clientcmd.BuildConfigFromFlags("", configFilename)
+func NewKubernetes(namespace string) (*Kubernetes, error) {
+	// Create the in-cluster config
+	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +63,11 @@ func NewKubernetes(configFilename, namespace string) (*Kubernetes, error) {
 	microservices["kubelet"] = &kubeletMicroservice
 
 	return &Kubernetes{
-		configFilename: configFilename,
-		clientset:      clientset,
-		extsClientset:  extsClientset,
-		crdName:        "iofogs.k8s.iofog.org",
-		ns:             namespace,
-		ms:             microservices,
+		clientset:     clientset,
+		extsClientset: extsClientset,
+		crdName:       "iofogs.k8s.iofog.org",
+		ns:            namespace,
+		ms:            microservices,
 	}, nil
 }
 
