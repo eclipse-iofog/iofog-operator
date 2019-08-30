@@ -76,12 +76,10 @@ spec:
       labels:
         name: iofog-operator
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
       serviceAccountName: iofog-operator
       containers:
         - name: iofog-operator
-          image: iofog/iofog-operator:0.1.0
+          image: gcr.io/focal-freedom-236620/operator:serge
           ports:
             - containerPort: 60000
               name: metrics

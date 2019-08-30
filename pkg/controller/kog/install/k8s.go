@@ -487,40 +487,40 @@ func (k8s *Kubernetes) CreateExtensionServices(user IofogUser) (err error) {
 	}
 
 	// Create Operator resources
-	opSvcAcc := newServiceAccount(k8s.ns, k8s.ms["operator"])
-	if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(opSvcAcc); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-	}
-	opRole := newRole(k8s.ns, k8s.ms["operator"])
-	if _, err = k8s.clientset.RbacV1().Roles(k8s.ns).Create(opRole); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-	}
-	opRoleBind := newRoleBinding(k8s.ns, k8s.ms["operator"])
-	if _, err = k8s.clientset.RbacV1().RoleBindings(k8s.ns).Create(opRoleBind); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-	}
-	crd := newCustomResourceDefinition(k8s.crdName)
-	if _, err = k8s.extsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-	}
-	opDep := newDeployment(k8s.ns, k8s.ms["operator"])
-	if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Create(opDep); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-		// Update it if it exists
-		if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Update(opDep); err != nil {
-			return
-		}
-	}
+	//opSvcAcc := newServiceAccount(k8s.ns, k8s.ms["operator"])
+	//if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(opSvcAcc); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//}
+	//opRole := newRole(k8s.ns, k8s.ms["operator"])
+	//if _, err = k8s.clientset.RbacV1().Roles(k8s.ns).Create(opRole); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//}
+	//opRoleBind := newRoleBinding(k8s.ns, k8s.ms["operator"])
+	//if _, err = k8s.clientset.RbacV1().RoleBindings(k8s.ns).Create(opRoleBind); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//}
+	//crd := newCustomResourceDefinition(k8s.crdName)
+	//if _, err = k8s.extsClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//}
+	//opDep := newDeployment(k8s.ns, k8s.ms["operator"])
+	//if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Create(opDep); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//	// Update it if it exists
+	//	if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Update(opDep); err != nil {
+	//		return
+	//	}
+	//}
 
 	err = nil
 	return
