@@ -95,12 +95,6 @@ func schema_pkg_apis_iokog_v1alpha1_KogSpec(ref common.ReferenceCallback) common
 							Format: "",
 						},
 					},
-					"operatorImage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 					"kubeletImage": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -113,7 +107,7 @@ func schema_pkg_apis_iokog_v1alpha1_KogSpec(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"iofogUser", "controllerCount", "connectorCount", "controllerImage", "connectorImage", "operatorImage", "kubeletImage", "database"},
+				Required: []string{"iofogUser", "controllerCount", "connectorCount"},
 			},
 		},
 		Dependencies: []string{

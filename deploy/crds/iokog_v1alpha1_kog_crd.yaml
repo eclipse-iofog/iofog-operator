@@ -80,17 +80,10 @@ spec:
               type: object
             kubeletImage:
               type: string
-            operatorImage:
-              type: string
           required:
           - iofogUser
           - controllerCount
           - connectorCount
-          - controllerImage
-          - connectorImage
-          - operatorImage
-          - kubeletImage
-          - database
           type: object
         status:
           properties:

@@ -6,7 +6,20 @@ spec:
   iofogUser:
     name: Serge
     surname: Radinovich
-    Email: serge@edgeworx.io
-    Password: Operator456EW123
+    email: serge@edgeworx.io
+    password: Operator456EW123
   controllerCount: 1
   connectorCount: 1
+  controllerImage: ""
+  operatorImage: ""
+  connectorImage: ""
+  kubeletImage: ""
+  database:
+   provider: "" 
+   host: ""
+   port: 0
+   user: ""
+   password: ""
+   databaseName: ""
+
+

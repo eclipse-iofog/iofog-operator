@@ -13,11 +13,10 @@ type KogSpec struct {
 	IofogUser       IofogUser `json:"iofogUser"`
 	ControllerCount int       `json:"controllerCount"`
 	ConnectorCount  int       `json:"connectorCount"`
-	ControllerImage string    `json:"controllerImage"`
-	ConnectorImage  string    `json:"connectorImage"`
-	OperatorImage   string    `json:"operatorImage"`
-	KubeletImage    string    `json:"kubeletImage"`
-	Database        Database  `json:"database"`
+	ControllerImage string    `json:"controllerImage,omitempty"`
+	ConnectorImage  string    `json:"connectorImage,omitempty"`
+	KubeletImage    string    `json:"kubeletImage,omitempty"`
+	Database        Database  `json:"database,omitempty"`
 }
 
 type IofogUser struct {
