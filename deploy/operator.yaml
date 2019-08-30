@@ -49,6 +49,12 @@ rules:
       - '*'
     verbs:
       - '*'
+  - apiGroups:
+    - iokog.iofog.org
+    resources:
+    - '*'
+    verbs:
+    - '*'
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
