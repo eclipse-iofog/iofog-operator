@@ -62,11 +62,28 @@ spec:
               - password
               - databaseName
               type: object
+            iofogUser:
+              properties:
+                email:
+                  type: string
+                name:
+                  type: string
+                password:
+                  type: string
+                surname:
+                  type: string
+              required:
+              - name
+              - surname
+              - email
+              - password
+              type: object
             kubeletImage:
               type: string
             operatorImage:
               type: string
           required:
+          - iofogUser
           - controllerCount
           - connectorCount
           - controllerImage

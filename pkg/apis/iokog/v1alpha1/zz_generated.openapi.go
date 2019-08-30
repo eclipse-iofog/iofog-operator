@@ -66,6 +66,11 @@ func schema_pkg_apis_iokog_v1alpha1_KogSpec(ref common.ReferenceCallback) common
 			SchemaProps: spec.SchemaProps{
 				Description: "KogSpec defines the desired state of Kog",
 				Properties: map[string]spec.Schema{
+					"iofogUser": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/iokog/v1alpha1.IofogUser"),
+						},
+					},
 					"controllerCount": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
@@ -108,11 +113,11 @@ func schema_pkg_apis_iokog_v1alpha1_KogSpec(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"controllerCount", "connectorCount", "controllerImage", "connectorImage", "operatorImage", "kubeletImage", "database"},
+				Required: []string{"iofogUser", "controllerCount", "connectorCount", "controllerImage", "connectorImage", "operatorImage", "kubeletImage", "database"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/eclipse-iofog/iofog-operator/pkg/apis/iokog/v1alpha1.Database"},
+			"github.com/eclipse-iofog/iofog-operator/pkg/apis/iokog/v1alpha1.Database", "github.com/eclipse-iofog/iofog-operator/pkg/apis/iokog/v1alpha1.IofogUser"},
 	}
 }
 

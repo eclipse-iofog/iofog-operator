@@ -3,5 +3,10 @@ kind: Kog
 metadata:
   name: example-kog
 spec:
-  # Add fields here
-  size: 3
+  iofogUser:
+    name: Serge
+    surname: Radinovich
+    Email: serge@edgeworx.io
+    Password: Operator456EW123
+  controllerCount: 1
+  connectorCount: 1
