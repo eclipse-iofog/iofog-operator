@@ -477,13 +477,13 @@ func (k8s *Kubernetes) CreateExtensionServices(user IofogUser) (dep *appsv1.Depl
 		"--iofog-url",
 		fmt.Sprintf("http://%s:%d", "controller", k8s.ms["controller"].ports[0]),
 	}
-	vkDep := newDeployment(k8s.ns, k8s.ms["kubelet"])
-	if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Create(vkDep); err != nil {
+	dep = newDeployment(k8s.ns, k8s.ms["kubelet"])
+	if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Create(dep); err != nil {
 		if !isAlreadyExists(err) {
 			return
 		}
 		// Update it if it exists
-		if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Update(vkDep); err != nil {
+		if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Update(dep); err != nil {
 			return
 		}
 	}

@@ -4,7 +4,7 @@ metadata:
   name: iofog-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: iofog-operator
@@ -19,6 +19,9 @@ rules:
       - events
       - configmaps
       - secrets
+      - namespaces
+      - clusterrolebindings
+      - serviceaccounts
     verbs:
       - '*'
   - apiGroups:
@@ -39,6 +42,12 @@ rules:
       - get
       - create
   - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - apiGroups:
       - k8s.iofog.org
     resources:
       - '*'
@@ -51,15 +60,16 @@ rules:
     verbs:
     - '*'
 ---
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: iofog-operator
 subjects:
   - kind: ServiceAccount
     name: iofog-operator
+    namespace: default
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: iofog-operator
   apiGroup: rbac.authorization.k8s.io
 ---
