@@ -1,0 +1,7 @@
+apiVersion: k8s.iofog.org/v1alpha2
+kind: ControlPlane
+metadata:
+  name: example-controlplane
+spec:
+  # Add fields here
+  size: 3
