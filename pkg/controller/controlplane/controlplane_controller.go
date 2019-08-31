@@ -8,7 +8,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -106,7 +105,11 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	if err = r.createDeployment(instance, reqLogger); err != nil {
 		return reconcile.Result{}, nil
 	}
+
 	// Service
+	if err = r.createService(instance, reqLogger); err != nil {
+		return reconcile.Result{}, nil
+	}
 
 	return reconcile.Result{}, nil
 }
@@ -138,29 +141,31 @@ func (r *ReconcileControlPlane) createDeployment(controlPlane *k8sv1alpha2.Contr
 	logger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 	return nil
 }
-func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlPlane) error {
-	return nil
-}
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *k8sv1alpha2.ControlPlane) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
+func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+	svc := newService(controlPlane.ObjectMeta.Namespace, &controllerMicroservice)
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(controlPlane, svc, r.scheme); err != nil {
+		return err
 	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
+
+	// Check if this resource already exists
+	found := &corev1.Service{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		err = r.client.Create(context.TODO(), svc)
+		if err != nil {
+			return err
+		}
+
+		// Resource created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
 	}
+
+	// Resource already exists - don't requeue
+	logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+	return nil
 }

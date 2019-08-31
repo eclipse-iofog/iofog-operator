@@ -3,5 +3,12 @@ kind: ControlPlane
 metadata:
   name: example-controlplane
 spec:
-  # Add fields here
-  size: 3
+  controllerReplicaCount: 1
+  controllerImage: ""
+  database:
+    provider: ""
+    host: ""
+    port: 0
+    user: ""
+    password: ""
+    databaseName: ""

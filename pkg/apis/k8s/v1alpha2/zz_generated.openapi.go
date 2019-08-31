@@ -65,10 +65,31 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback)
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ControlPlaneSpec defines the desired state of ControlPlane",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"controllerReplicaCount": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"controllerImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"),
+						},
+					},
+				},
+				Required: []string{"controllerReplicaCount", "database"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"},
 	}
 }
 
@@ -77,7 +98,23 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "ControlPlaneStatus defines the observed state of ControlPlane",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"controllerPods": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"controllerPods"},
 			},
 		},
 		Dependencies: []string{},

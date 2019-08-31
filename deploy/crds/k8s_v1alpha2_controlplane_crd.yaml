@@ -28,8 +28,55 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            controllerImage:
+              type: string
+            controllerReplicaCount:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              format: int64
+              type: integer
+            database:
+              properties:
+                databaseName:
+                  type: string
+                host:
+                  type: string
+                password:
+                  type: string
+                port:
+                  format: int64
+                  type: integer
+                provider:
+                  type: string
+                user:
+                  type: string
+              required:
+              - provider
+              - host
+              - port
+              - user
+              - password
+              - databaseName
+              type: object
+          required:
+          - controllerReplicaCount
+          - database
           type: object
         status:
+          properties:
+            controllerPods:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              items:
+                type: string
+              type: array
+          required:
+          - controllerPods
           type: object
   version: v1alpha2
   versions:
