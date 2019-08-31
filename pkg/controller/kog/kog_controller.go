@@ -3,9 +3,12 @@ package kog
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	iokogv1alpha1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iokog/v1alpha1"
 	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/install"
+
+	iofogclient "github.com/eclipse-iofog/iofogctl/pkg/iofog/client"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	//"k8s.io/apimachinery/pkg/types"
-	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -103,15 +106,57 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
+	install.SetVerbosity(true)
 	installer, err := install.NewKubernetes("default")
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	if instance.Spec.ControllerCount > 0 {
-		if err = installer.CreateController(instance.Spec.ControllerCount); err != nil {
+		dep, svc, err := installer.CreateController(instance.Spec.ControllerCount)
+		if err != nil {
 			return reconcile.Result{}, err
 		}
+		if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := controllerutil.SetControllerReference(instance, svc, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// Create new user
+	endpoint, err := installer.GetControllerEndpoint()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	ctrlClient := iofogclient.New(endpoint)
+	if err = ctrlClient.CreateUser(iofogclient.User(instance.Spec.IofogUser)); err != nil {
+		// If not error about account existing, fail
+		if !strings.Contains(err.Error(), "already an account associated") {
+			return reconcile.Result{}, err
+		}
+		// Try to log in
+		if err = ctrlClient.Login(iofogclient.LoginRequest{
+			Email:    instance.Spec.IofogUser.Email,
+			Password: instance.Spec.IofogUser.Password,
+		}); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	dep, svcAcc, roleBinding, err := installer.CreateExtensionServices(install.IofogUser(instance.Spec.IofogUser))
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := controllerutil.SetControllerReference(instance, svcAcc, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := controllerutil.SetControllerReference(instance, roleBinding, r.scheme); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	if instance.Spec.ConnectorCount > 0 {
@@ -120,7 +165,14 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 			return reconcile.Result{}, err
 		}
 		for i := 0; i < instance.Spec.ConnectorCount; i++ {
-			if err = installer.CreateConnector("connector-"+strconv.Itoa(i), controllerEndpoint, install.IofogUser(instance.Spec.IofogUser)); err != nil {
+			dep, svc, err := installer.CreateConnector("connector-"+strconv.Itoa(i), controllerEndpoint, install.IofogUser(instance.Spec.IofogUser))
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+			if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+			if err := controllerutil.SetControllerReference(instance, svc, r.scheme); err != nil {
 				return reconcile.Result{}, err
 			}
 		}

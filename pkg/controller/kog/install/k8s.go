@@ -17,7 +17,9 @@ import (
 	"fmt"
 	"github.com/eclipse-iofog/iofogctl/pkg/iofog/client"
 	"github.com/eclipse-iofog/iofogctl/pkg/util"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	extsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -122,9 +124,9 @@ func (k8s *Kubernetes) getEndpoint(ms *microservice) (endpoint string, err error
 }
 
 // CreateConnector on cluster
-func (k8s *Kubernetes) CreateConnector(name, controllerEndpoint string, user IofogUser) (err error) {
+func (k8s *Kubernetes) CreateConnector(name, controllerEndpoint string, user IofogUser) (dep *appsv1.Deployment, svc *v1.Service, err error) {
 	// Install Connector
-	if err = k8s.createDeploymentAndService(k8s.ms["connector"]); err != nil {
+	if dep, svc, err = k8s.createDeploymentAndService(k8s.ms["connector"]); err != nil {
 		return
 	}
 	// Get Connector endpoint
@@ -148,18 +150,18 @@ func (k8s *Kubernetes) CreateConnector(name, controllerEndpoint string, user Iof
 		Domain: connectorIP,
 		Name:   name,
 	}); err != nil {
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 // CreateController on cluster
-func (k8s *Kubernetes) CreateController(replicas int) (err error) {
+func (k8s *Kubernetes) CreateController(replicas int) (dep *appsv1.Deployment, svc *v1.Service, err error) {
 	// Configure replica count
 	k8s.ms["controller"].replicas = int32(replicas)
 	// Install Controller
-	if err = k8s.createDeploymentAndService(k8s.ms["controller"]); err != nil {
+	if dep, svc, err = k8s.createDeploymentAndService(k8s.ms["controller"]); err != nil {
 		return
 	}
 	// Wait for Controller API
@@ -322,7 +324,7 @@ func (k8s *Kubernetes) delete(all bool) error {
 	return nil
 }
 
-func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (err error) {
+func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (dep *appsv1.Deployment, svc *v1.Service, err error) {
 	// Create namespace
 	verbose("Creating namespace")
 	ns := &v1.Namespace{
@@ -338,7 +340,7 @@ func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (err error) 
 
 	// Create Controller and Connector Services and Pods
 	verbose("Creating " + ms.name + " Deployment and Service")
-	dep := newDeployment(k8s.ns, ms)
+	dep = newDeployment(k8s.ns, ms)
 	if _, err = k8s.clientset.AppsV1().Deployments(k8s.ns).Create(dep); err != nil {
 		if !isAlreadyExists(err) {
 			return
@@ -358,7 +360,7 @@ func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (err error) 
 			return
 		}
 	}
-	svc := newService(k8s.ns, ms)
+	svc = newService(k8s.ns, ms)
 	if _, err = k8s.clientset.CoreV1().Services(k8s.ns).Create(svc); err != nil {
 		if !isAlreadyExists(err) {
 			return
@@ -385,12 +387,12 @@ func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (err error) 
 			}
 		}
 	}
-	svcAcc := newServiceAccount(k8s.ns, ms)
-	if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(svcAcc); err != nil {
-		if !isAlreadyExists(err) {
-			return
-		}
-	}
+	//svcAcc := newServiceAccount(k8s.ns, ms)
+	//if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(svcAcc); err != nil {
+	//	if !isAlreadyExists(err) {
+	//		return
+	//	}
+	//}
 
 	// Wait for pods
 	verbose("Waiting for " + ms.name + " Pods")
@@ -408,7 +410,7 @@ func (k8s *Kubernetes) createDeploymentAndService(ms *microservice) (err error) 
 	return
 }
 
-func (k8s *Kubernetes) CreateExtensionServices(user IofogUser) (err error) {
+func (k8s *Kubernetes) CreateExtensionServices(user IofogUser) (dep *appsv1.Deployment, svcAcc *v1.ServiceAccount, roleBinding *rbacv1.ClusterRoleBinding, err error) {
 	// Login in and retrieve access token for Kubelet
 	verbose("Logging into Controller")
 	endpoint, err := k8s.GetControllerEndpoint()
@@ -454,15 +456,15 @@ func (k8s *Kubernetes) CreateExtensionServices(user IofogUser) (err error) {
 	//}
 
 	// Create Kubelet resources
-	vkSvcAcc := newServiceAccount(k8s.ns, k8s.ms["kubelet"])
-	if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(vkSvcAcc); err != nil {
+	svcAcc = newServiceAccount(k8s.ns, k8s.ms["kubelet"])
+	if _, err = k8s.clientset.CoreV1().ServiceAccounts(k8s.ns).Create(svcAcc); err != nil {
 		if !isAlreadyExists(err) {
 			return
 		}
 	}
 
-	vkRoleBind := newClusterRoleBinding(k8s.ns, k8s.ms["kubelet"])
-	if _, err = k8s.clientset.RbacV1().ClusterRoleBindings().Create(vkRoleBind); err != nil {
+	roleBinding = newClusterRoleBinding(k8s.ns, k8s.ms["kubelet"])
+	if _, err = k8s.clientset.RbacV1().ClusterRoleBindings().Create(roleBinding); err != nil {
 		if !isAlreadyExists(err) {
 			return
 		}
