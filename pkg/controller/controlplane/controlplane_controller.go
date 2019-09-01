@@ -14,6 +14,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -260,7 +261,7 @@ func (r *ReconcileControlPlane) createServiceAccount(controlPlane *k8sv1alpha2.C
 	}
 
 	// Check if this resource already exists
-	found := &corev1.Service{}
+	found := &corev1.ServiceAccount{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
@@ -289,7 +290,7 @@ func (r *ReconcileControlPlane) createClusterRoleBinding(controlPlane *k8sv1alph
 	}
 
 	// Check if this resource already exists
-	found := &corev1.Service{}
+	found := &rbacv1.ClusterRoleBinding{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating a new Cluste Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
