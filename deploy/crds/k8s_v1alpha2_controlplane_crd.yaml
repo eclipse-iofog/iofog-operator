@@ -29,6 +29,11 @@ spec:
           type: object
         spec:
           properties:
+            connectorCount:
+              format: int32
+              type: integer
+            connectorImage:
+              type: string
             controllerImage:
               type: string
             controllerReplicaCount:
@@ -77,8 +82,11 @@ spec:
               - email
               - password
               type: object
+            kubeletImage:
+              type: string
           required:
           - controllerReplicaCount
+          - connectorCount
           - database
           - iofogUser
           type: object

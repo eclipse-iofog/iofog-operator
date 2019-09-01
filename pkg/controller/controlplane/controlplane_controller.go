@@ -120,7 +120,62 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	// Create Connector
+	for idx := int32(0); idx < instance.Spec.ConnectorCount; idx++ {
+		if err = r.createIofogConnector(instance, reqLogger); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileControlPlane) createIofogConnector(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+	// Configure
+	ms := connectorMicroservice
+	// TODO: support multiple connectors with naming
+
+	// Deployment
+	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
+		return err
+	}
+	// Service
+	if err := r.createService(controlPlane, &ms, logger); err != nil {
+		return err
+	}
+
+	// Connect to cluster
+	k8sClient, err := k8sclient.NewClient()
+	if err != nil {
+		return err
+	}
+	// Wait for Pods
+	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name); err != nil {
+		return err
+	}
+	// Wait for Service
+	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name)
+	if err != nil {
+		return err
+	}
+	// Log into Controller
+	iofogClient := iofogclient.New(r.apiEndpoint)
+	if err = iofogClient.Login(iofogclient.LoginRequest{
+		Email:    controlPlane.Spec.IofogUser.Email,
+		Password: controlPlane.Spec.IofogUser.Password,
+	}); err != nil {
+		return err
+	}
+	// Provision the Connector
+	if err = iofogClient.AddConnector(iofogclient.ConnectorInfo{
+		IP:     ip,
+		Domain: ip,
+		Name:   ms.name,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
@@ -142,15 +197,15 @@ func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.
 		return err
 	}
 	// Wait for Pods
-	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, controllerMicroservice.name); err != nil {
+	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name); err != nil {
 		return err
 	}
 	// Wait for Service
-	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, controllerMicroservice.name)
+	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name)
 	if err != nil {
 		return err
 	}
-	r.apiEndpoint = fmt.Sprintf("%s:%d", ip, controllerMicroservice.ports[0])
+	r.apiEndpoint = fmt.Sprintf("%s:%d", ip, ms.ports[0])
 	if err = r.waitForControllerAPI(); err != nil {
 		return err
 	}

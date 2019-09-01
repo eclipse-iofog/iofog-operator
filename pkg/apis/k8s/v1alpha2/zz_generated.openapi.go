@@ -79,6 +79,24 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"connectorCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"connectorImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"kubeletImage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"database": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"),
@@ -90,7 +108,7 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"controllerReplicaCount", "database", "iofogUser"},
+				Required: []string{"controllerReplicaCount", "connectorCount", "database", "iofogUser"},
 			},
 		},
 		Dependencies: []string{

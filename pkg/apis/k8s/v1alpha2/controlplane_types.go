@@ -15,6 +15,9 @@ type ControlPlaneSpec struct {
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
 	ControllerImage        string    `json:"controllerImage,omitempty"`
+	ConnectorCount         int32     `json:"connectorCount"`
+	ConnectorImage         string    `json:"connectorImage,omitempty"`
+	KubeletImage           string    `json:"kubeletImage,omitempty"`
 	Database               Database  `json:"database"`
 	IofogUser              IofogUser `json:"iofogUser"`
 }
