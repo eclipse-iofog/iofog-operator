@@ -136,6 +136,10 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	if err = waitForControllerAPI(endpoint); err != nil {
 		return reconcile.Result{}, err
 	}
+	// Set up user
+	if err = createIofogUser(endpoint, &instance.Spec.IofogUser); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	return reconcile.Result{}, nil
 }
@@ -224,4 +228,24 @@ func waitForControllerAPI(endpoint string) (err error) {
 	}
 
 	return
+}
+
+func createIofogUser(endpoint string, user *k8sv1alpha2.IofogUser) (err error) {
+	iofogClient := iofogclient.New(endpoint)
+
+	if err = iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
+		// If not error about account existing, fail
+		if !strings.Contains(err.Error(), "already an account associated") {
+			return err
+		}
+		// Try to log in
+		if err = iofogClient.Login(iofogclient.LoginRequest{
+			Email:    user.Email,
+			Password: user.Password,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

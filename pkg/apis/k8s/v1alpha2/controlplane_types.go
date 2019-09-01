@@ -13,9 +13,10 @@ type ControlPlaneSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	ControllerReplicaCount int      `json:"controllerReplicaCount"`
-	ControllerImage        string   `json:"controllerImage,omitempty"`
-	Database               Database `json:"database"`
+	ControllerReplicaCount int       `json:"controllerReplicaCount"`
+	ControllerImage        string    `json:"controllerImage,omitempty"`
+	Database               Database  `json:"database"`
+	IofogUser              IofogUser `json:"iofogUser"`
 }
 
 type Database struct {
@@ -25,6 +26,13 @@ type Database struct {
 	User         string `json:"user"`
 	Password     string `json:"password"`
 	DatabaseName string `json:"databaseName"`
+}
+
+type IofogUser struct {
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane
