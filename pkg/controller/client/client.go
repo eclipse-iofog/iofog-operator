@@ -23,7 +23,7 @@ type Client struct {
 	*kubernetes.Clientset
 }
 
-func NewClient() (*kubernetes.Clientset, error) {
+func NewClient() (*Client, error) {
 	// Create the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -36,5 +36,5 @@ func NewClient() (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	return clientset, nil
+	return &Client{clientset}, nil
 }

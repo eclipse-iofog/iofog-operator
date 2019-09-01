@@ -2,8 +2,15 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
+	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
+
+	iofogclient "github.com/eclipse-iofog/iofogctl/pkg/iofog/client"
+
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -111,6 +118,25 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, nil
 	}
 
+	// Connect to cluster
+	k8sClient, err := k8sclient.NewClient()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	// Wait for Pods
+	if err = k8sClient.WaitForPod(request.Namespace, request.Name); err != nil {
+		return reconcile.Result{}, err
+	}
+	// Wait for Service
+	ip, err := k8sClient.WaitForService(request.Namespace, request.Name)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	endpoint := fmt.Sprintf("%s:%d", ip, controllerMicroservice.ports[0])
+	if err = waitForControllerAPI(endpoint); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, nil
 }
 
@@ -168,4 +194,34 @@ func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlP
 	// Resource already exists - don't requeue
 	logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
 	return nil
+}
+
+func waitForControllerAPI(endpoint string) (err error) {
+	iofogClient := iofogclient.New(endpoint)
+
+	connected := false
+	iter := 0
+	for !connected {
+		// Time out
+		if iter > 60 {
+			err = errors.NewTimeoutError("Timed out waiting for Controller API", iter)
+			return
+		}
+		// Check the status endpoint
+		if _, err = iofogClient.GetStatus(); err != nil {
+			// Retry if connection is refused, this is usually only necessary on K8s Controller
+			if strings.Contains(err.Error(), "connection refused") {
+				time.Sleep(time.Millisecond * 1000)
+				iter = iter + 1
+				continue
+			}
+			// Return the error otherwise
+			return
+		}
+		// No error, connected
+		connected = true
+		continue
+	}
+
+	return
 }
