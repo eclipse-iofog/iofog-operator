@@ -107,6 +107,26 @@ func newServiceAccount(namespace string, ms *microservice) *v1.ServiceAccount {
 	}
 }
 
+func newClusterRoleBinding(namespace string, ms *microservice) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ms.name,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      ms.name,
+				Namespace: namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+}
+
 func newRoleBinding(namespace string, ms *microservice) *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
