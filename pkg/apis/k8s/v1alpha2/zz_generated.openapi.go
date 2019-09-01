@@ -84,12 +84,17 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback)
 							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"),
 						},
 					},
+					"iofogUser": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.IofogUser"),
+						},
+					},
 				},
-				Required: []string{"controllerReplicaCount", "database"},
+				Required: []string{"controllerReplicaCount", "database", "iofogUser"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"},
+			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database", "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.IofogUser"},
 	}
 }
 
