@@ -93,8 +93,8 @@ type ReconcileControlPlane struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling ControlPlane")
+	logger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	logger.Info("Reconciling Control Plane")
 
 	// Fetch the ControlPlane instance
 	instance := &k8sv1alpha2.ControlPlane{}
@@ -111,21 +111,23 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Create Iofog Controller
-	if err = r.createIofogController(instance, reqLogger); err != nil {
+	if err = r.createIofogController(instance, logger); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Create Iofog Kubelet
-	if err = r.createIofogKubelet(instance, reqLogger); err != nil {
+	if err = r.createIofogKubelet(instance, logger); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Create Connector
 	for idx := int32(0); idx < instance.Spec.ConnectorCount; idx++ {
-		if err = r.createIofogConnector(instance, reqLogger); err != nil {
+		if err = r.createIofogConnector(instance, logger); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
+
+	logger.Info("Completed Reconciliation")
 
 	return reconcile.Result{}, nil
 }

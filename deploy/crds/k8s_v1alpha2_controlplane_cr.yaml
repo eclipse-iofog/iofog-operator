@@ -4,6 +4,7 @@ metadata:
   name: example-controlplane
 spec:
   controllerReplicaCount: 1
+  connectorCount: 1
   iofogUser:
     name: "Serge"
     surname: "Radinovich"
