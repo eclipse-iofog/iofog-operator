@@ -135,15 +135,15 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 
 func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
 	// Configure
-	ms := connectorMicroservice
+	ms := newConnectorMicroservice(controlPlane.Spec.ConnectorImage)
 	ms.name = ms.name + suffix
 
 	// Deployment
-	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
 		return err
 	}
 	// Service
-	if err := r.createService(controlPlane, &ms, logger); err != nil {
+	if err := r.createService(controlPlane, ms, logger); err != nil {
 		return err
 	}
 
@@ -183,15 +183,14 @@ func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane
 
 func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
 	// Configure
-	ms := controllerMicroservice
-	ms.replicas = controlPlane.Spec.ControllerReplicaCount
+	ms := newControllerMicroservice(controlPlane.Spec.ControllerReplicaCount, controlPlane.Spec.ControllerImage)
 
 	// Deployment
-	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
 		return err
 	}
 	// Service
-	if err := r.createService(controlPlane, &ms, logger); err != nil {
+	if err := r.createService(controlPlane, ms, logger); err != nil {
 		return err
 	}
 	// Connect to cluster
@@ -228,26 +227,18 @@ func (r *ReconcileControlPlane) createIofogKubelet(controlPlane *k8sv1alpha2.Con
 	}
 
 	// Configure
-	ms := kubeletMicroservice
-	ms.containers[0].args = []string{
-		"--namespace",
-		controlPlane.ObjectMeta.Namespace,
-		"--iofog-token",
-		token,
-		"--iofog-url",
-		fmt.Sprintf("http://%s", r.apiEndpoint),
-	}
+	ms := newKubeletMicroservice(controlPlane.Spec.KubeletImage, controlPlane.ObjectMeta.Namespace, token, r.apiEndpoint)
 
 	// Service Account
-	if err := r.createServiceAccount(controlPlane, &ms, logger); err != nil {
+	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
 		return err
 	}
 	// ClusterRoleBinding
-	if err := r.createClusterRoleBinding(controlPlane, &ms, logger); err != nil {
+	if err := r.createClusterRoleBinding(controlPlane, ms, logger); err != nil {
 		return err
 	}
 	// Deployment
-	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
 		return err
 	}
 
