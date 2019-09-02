@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: kogs.iokog.iofog.org
+  name: kogs.k8s.iofog.org
 spec:
-  group: iokog.iofog.org
+  group: k8s.iofog.org
   names:
     kind: Kog
     listKind: KogList
@@ -30,15 +30,19 @@ spec:
         spec:
           properties:
             connectorCount:
-              format: int64
+              format: int32
               type: integer
             connectorImage:
               type: string
-            controllerCount:
-              format: int64
-              type: integer
             controllerImage:
               type: string
+            controllerReplicaCount:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              format: int32
+              type: integer
             database:
               properties:
                 databaseName:
@@ -81,34 +85,26 @@ spec:
             kubeletImage:
               type: string
           required:
-          - iofogUser
-          - controllerCount
+          - controllerReplicaCount
           - connectorCount
+          - database
+          - iofogUser
           type: object
         status:
           properties:
-            connectorCount:
-              format: int64
-              type: integer
-            connectorPods:
-              items:
-                type: string
-              type: array
-            controllerCount:
-              format: int64
-              type: integer
             controllerPods:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               items:
                 type: string
               type: array
           required:
           - controllerPods
-          - connectorPods
-          - controllerCount
-          - connectorCount
           type: object
-  version: v1alpha1
+  version: v1alpha2
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     served: true
     storage: true

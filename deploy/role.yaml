@@ -42,7 +42,7 @@ rules:
   - k8s.iofog.org
   resources:
   - '*'
-  - controlplanes
+  - kogs
   verbs:
   - '*'
 - apiGroups:

@@ -1,7 +1,7 @@
 apiVersion: k8s.iofog.org/v1alpha2
-kind: ControlPlane
+kind: Kog
 metadata:
-  name: example-controlplane
+  name: example-kog
 spec:
   controllerReplicaCount: 1
   connectorCount: 1

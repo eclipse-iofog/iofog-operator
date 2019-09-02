@@ -11,7 +11,7 @@
  *
  */
 
-package controlplane
+package kog
 
 import (
 	"fmt"

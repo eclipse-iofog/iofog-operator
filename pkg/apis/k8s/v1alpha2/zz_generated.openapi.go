@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlane":       schema_pkg_apis_k8s_v1alpha2_ControlPlane(ref),
-		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneSpec":   schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref),
-		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneStatus": schema_pkg_apis_k8s_v1alpha2_ControlPlaneStatus(ref),
+		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Kog":       schema_pkg_apis_k8s_v1alpha2_Kog(ref),
+		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogSpec":   schema_pkg_apis_k8s_v1alpha2_KogSpec(ref),
+		"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogStatus": schema_pkg_apis_k8s_v1alpha2_KogStatus(ref),
 	}
 }
 
-func schema_pkg_apis_k8s_v1alpha2_ControlPlane(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_k8s_v1alpha2_Kog(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ControlPlane is the Schema for the controlplanes API",
+				Description: "Kog is the Schema for the kogs API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -44,27 +44,27 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlane(ref common.ReferenceCallback) com
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneSpec"),
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneStatus"),
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneSpec", "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlaneStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogSpec", "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.KogStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_k8s_v1alpha2_KogSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ControlPlaneSpec defines the desired state of ControlPlane",
+				Description: "KogSpec defines the desired state of Kog",
 				Properties: map[string]spec.Schema{
 					"controllerReplicaCount": {
 						SchemaProps: spec.SchemaProps{
@@ -116,11 +116,11 @@ func schema_pkg_apis_k8s_v1alpha2_ControlPlaneSpec(ref common.ReferenceCallback)
 	}
 }
 
-func schema_pkg_apis_k8s_v1alpha2_ControlPlaneStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_k8s_v1alpha2_KogStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ControlPlaneStatus defines the observed state of ControlPlane",
+				Description: "KogStatus defines the observed state of Kog",
 				Properties: map[string]spec.Schema{
 					"controllerPods": {
 						SchemaProps: spec.SchemaProps{
