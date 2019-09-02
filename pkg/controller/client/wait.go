@@ -16,21 +16,24 @@ package client
 import (
 	"errors"
 	"strings"
-	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cl *Client) WaitForService(namespace, name string) (ip string, err error) {
+func (cl *Client) WaitForService(namespace, name string, timeoutSeconds int64) (ip string, err error) {
 	// Get watch handler to observe changes to services
-	watch, err := cl.CoreV1().Services(namespace).Watch(metav1.ListOptions{})
+	watch, err := cl.CoreV1().Services(namespace).Watch(metav1.ListOptions{TimeoutSeconds: &timeoutSeconds})
 	if err != nil {
 		return
 	}
 
 	// Wait for Services to have IPs allocated
 	for event := range watch.ResultChan() {
+		if event.Type == "Error" || event.Type == "Deleted" {
+			err = errors.New("Could not wait for service " + namespace + "/" + name)
+			return
+		}
 		svc, ok := event.Object.(*v1.Service)
 		if !ok {
 			err = errors.New("Could not wait for service " + namespace + "/" + name)
@@ -53,15 +56,18 @@ func (cl *Client) WaitForService(namespace, name string) (ip string, err error) 
 	return
 }
 
-func (cl *Client) WaitForPod(namespace, name string) error {
+func (cl *Client) WaitForPod(namespace, name string, timeoutSeconds int64) error {
 	// Get watch handler to observe changes to pods
-	watch, err := cl.CoreV1().Pods(namespace).Watch(metav1.ListOptions{})
+	watch, err := cl.CoreV1().Pods(namespace).Watch(metav1.ListOptions{TimeoutSeconds: &timeoutSeconds})
 	if err != nil {
 		return err
 	}
 
 	// Wait for pod events
 	for event := range watch.ResultChan() {
+		if event.Type == "Error" || event.Type == "Deleted" {
+			return errors.New("Failed to wait for pod " + namespace + "/" + name)
+		}
 		// Get the pod
 		pod, ok := event.Object.(*v1.Pod)
 		if !ok {
@@ -86,23 +92,6 @@ func (cl *Client) WaitForPod(namespace, name string) error {
 			if ready {
 				watch.Stop()
 			}
-		}
-	}
-	return nil
-}
-
-func (cl *Client) WaitForPodTerminate(namespace, name string) error {
-	terminating := false
-	for !terminating {
-		_, err := cl.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
-		if err != nil {
-			terminating = strings.Contains(err.Error(), "not found")
-			if !terminating {
-				return err
-			}
-		}
-		if !terminating {
-			time.Sleep(time.Millisecond * 500)
 		}
 	}
 	return nil

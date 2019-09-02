@@ -153,11 +153,11 @@ func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane
 		return err
 	}
 	// Wait for Pods
-	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name); err != nil {
+	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name, 120); err != nil {
 		return err
 	}
 	// Wait for Service
-	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name)
+	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name, 240)
 	if err != nil {
 		return err
 	}
@@ -199,11 +199,11 @@ func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.
 		return err
 	}
 	// Wait for Pods
-	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name); err != nil {
+	if err = k8sClient.WaitForPod(controlPlane.ObjectMeta.Namespace, ms.name, 120); err != nil {
 		return err
 	}
 	// Wait for Service
-	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name)
+	ip, err := k8sClient.WaitForService(controlPlane.ObjectMeta.Namespace, ms.name, 240)
 	if err != nil {
 		return err
 	}
