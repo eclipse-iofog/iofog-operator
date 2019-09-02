@@ -82,6 +82,7 @@ type ReconcileControlPlane struct {
 	// that reads objects from the cache and writes to the apiserver
 	client      client.Client
 	scheme      *runtime.Scheme
+	logger      logr.Logger
 	apiEndpoint string
 }
 
@@ -93,8 +94,8 @@ type ReconcileControlPlane struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	logger.Info("Reconciling Control Plane")
+	r.logger = log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	r.logger.Info("Reconciling Control Plane")
 
 	// Fetch the ControlPlane instance
 	instance := &k8sv1alpha2.ControlPlane{}
@@ -111,43 +112,43 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Create Iofog Controller
-	if err = r.createIofogController(instance, logger); err != nil {
+	if err = r.createIofogController(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Create Iofog Kubelet
-	if err = r.createIofogKubelet(instance, logger); err != nil {
+	if err = r.createIofogKubelet(instance); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Create Connector
 	for idx := int32(0); idx < instance.Spec.ConnectorCount; idx++ {
 		suffix := fmt.Sprintf("-%d", idx)
-		if err = r.createIofogConnector(suffix, instance, logger); err != nil {
+		if err = r.createIofogConnector(suffix, instance); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	logger.Info("Completed Reconciliation")
+	r.logger.Info("Completed Reconciliation")
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane *k8sv1alpha2.ControlPlane) error {
 	// Configure
 	ms := newConnectorMicroservice(controlPlane.Spec.ConnectorImage)
 	ms.name = ms.name + suffix
 
 	// Service Account
-	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
-		return err	
+	if err := r.createServiceAccount(controlPlane, ms); err != nil {
+		return err
 	}
 	// Deployment
-	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms); err != nil {
 		return err
 	}
 	// Service
-	if err := r.createService(controlPlane, ms, logger); err != nil {
+	if err := r.createService(controlPlane, ms); err != nil {
 		return err
 	}
 
@@ -185,21 +186,21 @@ func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane
 	return nil
 }
 
-func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.ControlPlane) error {
 	// Configure
 	ms := newControllerMicroservice(controlPlane.Spec.ControllerReplicaCount, controlPlane.Spec.ControllerImage)
 
 	// Service Account
-	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
-		return err	
+	if err := r.createServiceAccount(controlPlane, ms); err != nil {
+		return err
 	}
 
 	// Deployment
-	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms); err != nil {
 		return err
 	}
 	// Service
-	if err := r.createService(controlPlane, ms, logger); err != nil {
+	if err := r.createService(controlPlane, ms); err != nil {
 		return err
 	}
 	// Connect to cluster
@@ -228,7 +229,7 @@ func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.
 	return nil
 }
 
-func (r *ReconcileControlPlane) createIofogKubelet(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createIofogKubelet(controlPlane *k8sv1alpha2.ControlPlane) error {
 	// Get Kubelet token
 	token, err := r.getKubeletToken(&controlPlane.Spec.IofogUser)
 	if err != nil {
@@ -239,22 +240,22 @@ func (r *ReconcileControlPlane) createIofogKubelet(controlPlane *k8sv1alpha2.Con
 	ms := newKubeletMicroservice(controlPlane.Spec.KubeletImage, controlPlane.ObjectMeta.Namespace, token, r.apiEndpoint)
 
 	// Service Account
-	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
+	if err := r.createServiceAccount(controlPlane, ms); err != nil {
 		return err
 	}
 	// ClusterRoleBinding
-	if err := r.createClusterRoleBinding(controlPlane, ms, logger); err != nil {
+	if err := r.createClusterRoleBinding(controlPlane, ms); err != nil {
 		return err
 	}
 	// Deployment
-	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
+	if err := r.createDeployment(controlPlane, ms); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *ReconcileControlPlane) createDeployment(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createDeployment(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice) error {
 	dep := newDeployment(controlPlane.ObjectMeta.Namespace, ms)
 	// Set ControlPlane instance as the owner and controller
 	if err := controllerutil.SetControllerReference(controlPlane, dep, r.scheme); err != nil {
@@ -265,7 +266,7 @@ func (r *ReconcileControlPlane) createDeployment(controlPlane *k8sv1alpha2.Contr
 	found := &appsv1.Deployment{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		r.logger.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
 			return err
@@ -278,11 +279,11 @@ func (r *ReconcileControlPlane) createDeployment(controlPlane *k8sv1alpha2.Contr
 	}
 
 	// Resource already exists - don't requeue
-	logger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	r.logger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 	return nil
 }
 
-func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice) error {
 	svc := newService(controlPlane.ObjectMeta.Namespace, ms)
 	// Set ControlPlane instance as the owner and controller
 	if err := controllerutil.SetControllerReference(controlPlane, svc, r.scheme); err != nil {
@@ -293,7 +294,7 @@ func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlP
 	found := &corev1.Service{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		r.logger.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
 		err = r.client.Create(context.TODO(), svc)
 		if err != nil {
 			return err
@@ -306,11 +307,11 @@ func (r *ReconcileControlPlane) createService(controlPlane *k8sv1alpha2.ControlP
 	}
 
 	// Resource already exists - don't requeue
-	logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+	r.logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
 	return nil
 }
 
-func (r *ReconcileControlPlane) createServiceAccount(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createServiceAccount(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice) error {
 	svcAcc := newServiceAccount(controlPlane.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
@@ -322,7 +323,7 @@ func (r *ReconcileControlPlane) createServiceAccount(controlPlane *k8sv1alpha2.C
 	found := &corev1.ServiceAccount{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
+		r.logger.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
 		err = r.client.Create(context.TODO(), svcAcc)
 		if err != nil {
 			return err
@@ -335,11 +336,11 @@ func (r *ReconcileControlPlane) createServiceAccount(controlPlane *k8sv1alpha2.C
 	}
 
 	// Resource already exists - don't requeue
-	logger.Info("Skip reconcile: Service Account already exists", "ServiceAccount.Namespace", found.Namespace, "ServiceAccount.Name", found.Name)
+	r.logger.Info("Skip reconcile: Service Account already exists", "ServiceAccount.Namespace", found.Namespace, "ServiceAccount.Name", found.Name)
 	return nil
 }
 
-func (r *ReconcileControlPlane) createClusterRoleBinding(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createClusterRoleBinding(controlPlane *k8sv1alpha2.ControlPlane, ms *microservice) error {
 	crb := newClusterRoleBinding(controlPlane.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
@@ -351,7 +352,7 @@ func (r *ReconcileControlPlane) createClusterRoleBinding(controlPlane *k8sv1alph
 	found := &rbacv1.ClusterRoleBinding{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Cluste Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
+		r.logger.Info("Creating a new Cluste Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
 		err = r.client.Create(context.TODO(), crb)
 		if err != nil {
 			return err
@@ -364,7 +365,7 @@ func (r *ReconcileControlPlane) createClusterRoleBinding(controlPlane *k8sv1alph
 	}
 
 	// Resource already exists - don't requeue
-	logger.Info("Skip reconcile: Cluster Role Binding already exists", "ClusterRoleBinding.Namespace", found.Namespace, "ClusterRoleBinding.Name", found.Name)
+	r.logger.Info("Skip reconcile: Cluster Role Binding already exists", "ClusterRoleBinding.Namespace", found.Namespace, "ClusterRoleBinding.Name", found.Name)
 	return nil
 }
 
