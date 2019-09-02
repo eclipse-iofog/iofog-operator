@@ -18,7 +18,7 @@ type KogSpec struct {
 	ConnectorCount         int32     `json:"connectorCount"`
 	ConnectorImage         string    `json:"connectorImage,omitempty"`
 	KubeletImage           string    `json:"kubeletImage,omitempty"`
-	Database               Database  `json:"database"`
+	Database               Database  `json:"database,omitempty"`
 	IofogUser              IofogUser `json:"iofogUser"`
 }
 
