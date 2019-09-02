@@ -138,6 +138,10 @@ func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane
 	ms := newConnectorMicroservice(controlPlane.Spec.ConnectorImage)
 	ms.name = ms.name + suffix
 
+	// Service Account
+	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
+		return err	
+	}
 	// Deployment
 	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
 		return err
@@ -184,6 +188,11 @@ func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane
 func (r *ReconcileControlPlane) createIofogController(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
 	// Configure
 	ms := newControllerMicroservice(controlPlane.Spec.ControllerReplicaCount, controlPlane.Spec.ControllerImage)
+
+	// Service Account
+	if err := r.createServiceAccount(controlPlane, ms, logger); err != nil {
+		return err	
+	}
 
 	// Deployment
 	if err := r.createDeployment(controlPlane, ms, logger); err != nil {
