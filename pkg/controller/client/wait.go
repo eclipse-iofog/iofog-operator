@@ -68,7 +68,10 @@ func (cl *Client) WaitForPod(namespace, name string) error {
 			return errors.New("Failed to wait for pod " + namespace + "/" + name)
 		}
 		// Check pod is in running state
-		if before(pod.Name, "-") != name {
+		splitName := strings.Split(pod.Name, "-")
+		splitName = splitName[0 : len(splitName)-2]
+		joinName := strings.Join(splitName, "-")
+		if joinName != name {
 			continue
 		}
 

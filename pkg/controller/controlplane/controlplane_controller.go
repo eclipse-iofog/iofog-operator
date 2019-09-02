@@ -122,7 +122,8 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 
 	// Create Connector
 	for idx := int32(0); idx < instance.Spec.ConnectorCount; idx++ {
-		if err = r.createIofogConnector(instance, logger); err != nil {
+		suffix := fmt.Sprintf("-%d", idx)
+		if err = r.createIofogConnector(suffix, instance, logger); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -132,10 +133,10 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileControlPlane) createIofogConnector(controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
+func (r *ReconcileControlPlane) createIofogConnector(suffix string, controlPlane *k8sv1alpha2.ControlPlane, logger logr.Logger) error {
 	// Configure
 	ms := connectorMicroservice
-	// TODO: support multiple connectors with naming
+	ms.name = ms.name + suffix
 
 	// Deployment
 	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
@@ -234,19 +235,19 @@ func (r *ReconcileControlPlane) createIofogKubelet(controlPlane *k8sv1alpha2.Con
 		"--iofog-token",
 		token,
 		"--iofog-url",
-		fmt.Sprintf("http://%s:%d", controllerMicroservice.name, controllerMicroservice.ports[0]),
+		fmt.Sprintf("http://%s", r.apiEndpoint),
 	}
 
 	// Service Account
-	if err := r.createServiceAccount(controlPlane, &kubeletMicroservice, logger); err != nil {
+	if err := r.createServiceAccount(controlPlane, &ms, logger); err != nil {
 		return err
 	}
 	// ClusterRoleBinding
-	if err := r.createClusterRoleBinding(controlPlane, &kubeletMicroservice, logger); err != nil {
+	if err := r.createClusterRoleBinding(controlPlane, &ms, logger); err != nil {
 		return err
 	}
 	// Deployment
-	if err := r.createDeployment(controlPlane, &kubeletMicroservice, logger); err != nil {
+	if err := r.createDeployment(controlPlane, &ms, logger); err != nil {
 		return err
 	}
 
