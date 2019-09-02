@@ -47,6 +47,7 @@ type KogStatus struct {
 	ControllerPods []string `json:"controllerPods"`
 }
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Kog is the Schema for the kogs API

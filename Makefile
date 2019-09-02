@@ -50,32 +50,8 @@ ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 endif
 	operator-sdk generate k8s
 	operator-sdk generate openapi
+	cd $(GOPATH)/src/k8s.io/code-generator && ./generate-groups.sh all "github.com/eclipse-iofog/iofog-operator/pkg/client" "github.com/eclipse-iofog/iofog-operator/pkg/apis" k8s:v1alpha2
 	go build $(GOARGS) $(BUILD_PACKAGE)
-
-.PHONY: build-img
-build-img:
-	docker build --rm -t $(IMAGE):latest -f Dockerfile .
-
-.PHONY: push-img
-push-img:
-	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-ifeq ($(BRANCH), master)
-	# Master branch
-	docker push $(IMAGE):latest
-	docker tag $(IMAGE):latest $(IMAGE):$(RELEASE_TAG)
-	docker push $(IMAGE):$(RELEASE_TAG)
-endif
-ifneq (,$(findstring release,$(BRANCH)))
-	# Release branch
-	docker tag $(IMAGE):latest $(IMAGE):rc-$(RELEASE_TAG)
-	docker push $(IMAGE):rc-$(RELEASE_TAG)
-else
-	# Develop and feature branches
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):latest
-	docker push $(IMAGE)-$(BRANCH):latest
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-	docker push $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-endif
 
 .PHONY: fmt
 fmt:
