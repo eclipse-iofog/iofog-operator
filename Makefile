@@ -50,8 +50,6 @@ ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 endif
 	operator-sdk generate k8s
 	operator-sdk generate openapi
-	cd $(GOPATH)/src/k8s.io/code-generator && ./generate-groups.sh all "github.com/eclipse-iofog/iofog-operator/pkg/client" "github.com/eclipse-iofog/iofog-operator/pkg/apis" k8s:v1alpha2
-	go build $(GOARGS) $(BUILD_PACKAGE)
 
 .PHONY: fmt
 fmt:
