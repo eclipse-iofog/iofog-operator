@@ -108,7 +108,7 @@ func schema_pkg_apis_k8s_v1alpha2_KogSpec(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"controllerReplicaCount", "connectorCount", "database", "iofogUser"},
+				Required: []string{"controllerReplicaCount", "connectorCount", "iofogUser"},
 			},
 		},
 		Dependencies: []string{

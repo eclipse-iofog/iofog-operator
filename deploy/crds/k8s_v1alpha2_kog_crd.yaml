@@ -87,7 +87,6 @@ spec:
           required:
           - controllerReplicaCount
           - connectorCount
-          - database
           - iofogUser
           type: object
         status:
