@@ -92,7 +92,6 @@ spec:
               type: object
           required:
           - controlPlane
-          - connectors
           type: object
         status:
           properties:

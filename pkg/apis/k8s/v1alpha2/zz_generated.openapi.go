@@ -78,7 +78,7 @@ func schema_pkg_apis_k8s_v1alpha2_KogSpec(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"controlPlane", "connectors"},
+				Required: []string{"controlPlane"},
 			},
 		},
 		Dependencies: []string{

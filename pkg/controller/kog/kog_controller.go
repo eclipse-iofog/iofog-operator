@@ -123,8 +123,7 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 
 	// Create Connector
 	for _, connector := range instance.Spec.Connectors.Instances {
-		suffix := fmt.Sprintf("-%s", connector.Name)
-		if err = r.createIofogConnector(suffix, instance); err != nil {
+		if err = r.createIofogConnector(connector.Name, instance); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -134,10 +133,10 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileKog) createIofogConnector(suffix string, kog *k8sv1alpha2.Kog) error {
+func (r *ReconcileKog) createIofogConnector(name string, kog *k8sv1alpha2.Kog) error {
 	// Configure
 	ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
-	ms.name = ms.name + suffix
+	ms.name = ms.name + "-" + name
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
@@ -178,7 +177,7 @@ func (r *ReconcileKog) createIofogConnector(suffix string, kog *k8sv1alpha2.Kog)
 	if err = iofogClient.AddConnector(iofogclient.ConnectorInfo{
 		IP:     ip,
 		Domain: ip,
-		Name:   ms.name,
+		Name:   name,
 	}); err != nil {
 		return err
 	}

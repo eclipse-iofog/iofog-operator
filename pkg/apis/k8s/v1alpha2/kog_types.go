@@ -14,7 +14,7 @@ type KogSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	ControlPlane ControlPlane `json:"controlPlane"`
-	Connectors   Connectors   `json:"connectors"`
+	Connectors   Connectors   `json:"connectors,omitempty"`
 }
 
 type Connectors struct {
