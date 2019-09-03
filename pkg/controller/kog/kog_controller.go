@@ -231,6 +231,17 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 			}
 		}
 	}
+	// Update existing Connector deployments (e.g. image change)
+	for k, v := range deleteConnectors {
+		if !v {
+			ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
+			ms.name = k
+			// Deployment
+			if err := r.createDeployment(kog, ms); err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }
@@ -279,10 +290,28 @@ func (r *ReconcileKog) createIofogController(kog *k8sv1alpha2.Kog) error {
 }
 
 func (r *ReconcileKog) createIofogKubelet(kog *k8sv1alpha2.Kog) error {
-	// Get Kubelet token
-	token, err := r.getKubeletToken(&kog.Spec.ControlPlane.IofogUser)
-	if err != nil {
-		return err
+	// Generate new token if required
+	token := ""
+	kubeletKey := client.ObjectKey{
+		Name:      "kubelet",
+		Namespace: kog.ObjectMeta.Namespace,
+	}
+	dep := appsv1.Deployment{}
+	if err := r.client.Get(context.TODO(), kubeletKey, &dep); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		// Not found, generate new token
+		token, err = r.getKubeletToken(&kog.Spec.ControlPlane.IofogUser)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Found, use existing token
+		token, err = getKubeletToken(dep.Spec.Template.Spec.Containers)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Configure
@@ -327,8 +356,12 @@ func (r *ReconcileKog) createDeployment(kog *k8sv1alpha2.Kog, ms *microservice) 
 		return err
 	}
 
-	// Resource already exists - don't requeue
-	r.logger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	// Resource already exists - update it
+	r.logger.Info("Updating existing Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	if err = r.client.Update(context.TODO(), dep); err != nil {
+		return err
+	}
+
 	return nil
 }
 

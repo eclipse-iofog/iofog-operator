@@ -14,8 +14,10 @@
 package kog
 
 import (
+	"errors"
 	"fmt"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 )
@@ -111,6 +113,19 @@ func newConnectorMicroservice(image string) *microservice {
 			},
 		},
 	}
+}
+
+func getKubeletToken(containers []corev1.Container) (token string, err error) {
+	if len(containers) != 1 {
+		err = errors.New(fmt.Sprintf("Expected 1 container in Kubelet deployment config. Found %d", len(containers)))
+		return
+	}
+	if len(containers[0].Args) != 6 {
+		err = errors.New(fmt.Sprintf("Expected 6 args in Kubelet deployment config. Found %d", len(containers[0].Args)))
+		return
+	}
+	token = containers[0].Args[3]
+	return
 }
 
 func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) *microservice {
