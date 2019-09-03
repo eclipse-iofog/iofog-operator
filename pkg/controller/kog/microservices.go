@@ -20,6 +20,10 @@ import (
 	"strings"
 )
 
+func getConnectorNamePrefix() string {
+	return "connector-"
+}
+
 func prefixConnectorName(name string) string {
 	return "connector-" + name
 }

@@ -150,9 +150,11 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 		deleteConnectors[name] = false
 	}
 	for _, dep := range depList.Items {
-		createConnectors[dep.ObjectMeta.Name] = false
-		if _, exists := deleteConnectors[dep.ObjectMeta.Name]; !exists {
-			deleteConnectors[dep.ObjectMeta.Name] = true
+		if strings.Contains(dep.ObjectMeta.Name, getConnectorNamePrefix()) {
+			createConnectors[dep.ObjectMeta.Name] = false
+			if _, exists := deleteConnectors[dep.ObjectMeta.Name]; !exists {
+				deleteConnectors[dep.ObjectMeta.Name] = true
+			}
 		}
 	}
 	for k, v := range deleteConnectors {
