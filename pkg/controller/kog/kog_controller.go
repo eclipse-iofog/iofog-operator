@@ -139,8 +139,8 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 	}
 
 	// Find the current state to compare against requested state
-	depList, err := k8sClient.AppsV1().Deployments(kog.ObjectMeta.Namespace).List(metav1.ListOptions{})
-	if err != nil {
+	depList := &appsv1.DeploymentList{}
+	if err = r.client.List(context.Background(), &client.ListOptions{}, depList); err != nil {
 		return err
 	}
 	// Determine which connectors to create and delete
@@ -162,16 +162,25 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 	// Delete connectors
 	for k, v := range deleteConnectors {
 		if v {
+			meta := metav1.ObjectMeta{
+				Name:      k,
+				Namespace: kog.ObjectMeta.Namespace,
+			}
 			// Delete deployment
-			if err := k8sClient.Clientset.AppsV1().Deployments(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+			dep := &appsv1.Deployment{ObjectMeta: meta}
+			if err = r.client.Delete(context.Background(), dep); err != nil {
 				return err
 			}
+
 			// Delete service
-			if err := k8sClient.Clientset.CoreV1().Services(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+			svc := &corev1.Service{ObjectMeta: meta}
+			if err = r.client.Delete(context.Background(), svc); err != nil {
 				return err
 			}
+
 			// Delete service account
-			if err = k8sClient.Clientset.CoreV1().ServiceAccounts(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+			svcAcc := &corev1.ServiceAccount{ObjectMeta: meta}
+			if err = r.client.Delete(context.Background(), svcAcc); err != nil {
 				return err
 			}
 		}
