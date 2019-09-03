@@ -29,7 +29,7 @@ func prefixConnectorName(name string) string {
 }
 
 func removeConnectorNamePrefix(name string) string {
-	pos := strings.Index(name, "connector-")
+	pos := strings.Index(name, "-")
 	if pos == -1 || pos >= len(name)-1 {
 		return name
 	}
