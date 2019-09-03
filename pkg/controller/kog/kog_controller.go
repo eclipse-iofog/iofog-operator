@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -88,8 +89,6 @@ type ReconcileKog struct {
 
 // Reconcile reads that state of the cluster for a Kog object and makes changes based on the state read
 // and what is in the Kog.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -121,11 +120,9 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	// Create Connector
-	for _, connector := range instance.Spec.Connectors.Instances {
-		if err = r.createIofogConnector(connector.Name, instance); err != nil {
-			return reconcile.Result{}, err
-		}
+	// Create Connectors
+	if err = r.createIofogConnectors(instance); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	r.logger.Info("Completed Reconciliation")
@@ -133,53 +130,91 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileKog) createIofogConnector(name string, kog *k8sv1alpha2.Kog) error {
-	// Configure
-	ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
-	ms.name = ms.name + "-" + name
-
-	// Service Account
-	if err := r.createServiceAccount(kog, ms); err != nil {
-		return err
-	}
-	// Deployment
-	if err := r.createDeployment(kog, ms); err != nil {
-		return err
-	}
-	// Service
-	if err := r.createService(kog, ms); err != nil {
-		return err
-	}
+func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 
 	// Connect to cluster
 	k8sClient, err := k8sclient.NewClient()
 	if err != nil {
 		return err
 	}
-	// Wait for Pods
-	if err = k8sClient.WaitForPod(kog.ObjectMeta.Namespace, ms.name, 120); err != nil {
-		return err
-	}
-	// Wait for Service
-	ip, err := k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
+
+	depList, err := k8sClient.AppsV1().Deployments(kog.ObjectMeta.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	// Log into Controller
-	iofogClient := iofogclient.New(r.apiEndpoint)
-	if err = iofogClient.Login(iofogclient.LoginRequest{
-		Email:    kog.Spec.ControlPlane.IofogUser.Email,
-		Password: kog.Spec.ControlPlane.IofogUser.Password,
-	}); err != nil {
-		return err
+	createConnectors := make(map[string]bool)
+	deleteConnectors := make(map[string]bool)
+	for _, connector := range kog.Spec.Connectors.Instances {
+		name := prefixConnectorName(connector.Name)
+		createConnectors[name] = true
+		deleteConnectors[name] = false
 	}
-	// Provision the Connector
-	if err = iofogClient.AddConnector(iofogclient.ConnectorInfo{
-		IP:     ip,
-		Domain: ip,
-		Name:   name,
-	}); err != nil {
-		return err
+	for _, dep := range depList.Items {
+		createConnectors[dep.ObjectMeta.Name] = false
+		if _, exists := deleteConnectors[dep.ObjectMeta.Name]; !exists {
+			deleteConnectors[dep.ObjectMeta.Name] = true
+		}
+	}
+	for k, v := range deleteConnectors {
+		if v {
+			// Delete deployment
+			if err := k8sClient.Clientset.AppsV1().Deployments(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+			// Delete service
+			if err := k8sClient.Clientset.CoreV1().Services(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+			// Delete service account
+			if err = k8sClient.Clientset.CoreV1().ServiceAccounts(kog.ObjectMeta.Namespace).Delete(k, &metav1.DeleteOptions{}); err != nil {
+				return err
+			}
+		}
+	}
+	for k, v := range createConnectors {
+		if v {
+			ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
+			ms.name = k
+			// Create
+			// Service Account
+			if err := r.createServiceAccount(kog, ms); err != nil {
+				return err
+			}
+			// Deployment
+			if err := r.createDeployment(kog, ms); err != nil {
+				return err
+			}
+			// Service
+			if err := r.createService(kog, ms); err != nil {
+				return err
+			}
+
+			// Wait for Pods
+			if err = k8sClient.WaitForPod(kog.ObjectMeta.Namespace, ms.name, 120); err != nil {
+				return err
+			}
+			// Wait for Service
+			ip, err := k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
+			if err != nil {
+				return err
+			}
+			// Log into Controller
+			iofogClient := iofogclient.New(r.apiEndpoint)
+			if err = iofogClient.Login(iofogclient.LoginRequest{
+				Email:    kog.Spec.ControlPlane.IofogUser.Email,
+				Password: kog.Spec.ControlPlane.IofogUser.Password,
+			}); err != nil {
+				return err
+			}
+			// Provision the Connector
+			if err = iofogClient.AddConnector(iofogclient.ConnectorInfo{
+				IP:     ip,
+				Domain: ip,
+				Name:   removeConnectorNamePrefix(k),
+			}); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

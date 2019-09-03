@@ -17,7 +17,20 @@ import (
 	"fmt"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
+
+func prefixConnectorName(name string) string {
+	return "connector-" + name
+}
+
+func removeConnectorNamePrefix(name string) string {
+	pos := strings.Index(name, "connector-")
+	if pos == -1 || pos >= len(name)-1 {
+		return name
+	}
+	return name[pos+1:]
+}
 
 type microservice struct {
 	name       string
