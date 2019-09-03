@@ -138,10 +138,12 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 		return err
 	}
 
+	// Find the current state to compare against requested state
 	depList, err := k8sClient.AppsV1().Deployments(kog.ObjectMeta.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
+	// Determine which connectors to create and delete
 	createConnectors := make(map[string]bool)
 	deleteConnectors := make(map[string]bool)
 	for _, connector := range kog.Spec.Connectors.Instances {
@@ -157,6 +159,7 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 			}
 		}
 	}
+	// Delete connectors
 	for k, v := range deleteConnectors {
 		if v {
 			// Delete deployment
@@ -173,6 +176,7 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 			}
 		}
 	}
+	// Create connectors
 	for k, v := range createConnectors {
 		if v {
 			ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
