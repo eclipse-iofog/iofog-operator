@@ -50,6 +50,7 @@ ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 endif
 	operator-sdk generate k8s
 	operator-sdk generate openapi
+	go build $(GOARGS) $(BUILD_PACKAGE)
 
 .PHONY: fmt
 fmt:

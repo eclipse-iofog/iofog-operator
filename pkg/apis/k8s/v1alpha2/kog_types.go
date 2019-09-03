@@ -13,13 +13,25 @@ type KogSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
-	ControllerImage        string    `json:"controllerImage,omitempty"`
-	ConnectorCount         int32     `json:"connectorCount"`
-	ConnectorImage         string    `json:"connectorImage,omitempty"`
-	KubeletImage           string    `json:"kubeletImage,omitempty"`
-	Database               Database  `json:"database,omitempty"`
+	ControlPlane ControlPlane `json:"controlPlane"`
+	Connectors   Connectors   `json:"connectors"`
+}
+
+type Connectors struct {
+	Image     string      `json:"image,omitempty"`
+	Instances []Connector `json:instances"`
+}
+
+type Connector struct {
+	Name string `json:"name"`
+}
+
+type ControlPlane struct {
 	IofogUser              IofogUser `json:"iofogUser"`
+	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
+	Database               Database  `json:"database,omitempty"`
+	ControllerImage        string    `json:"controllerImage,omitempty"`
+	KubeletImage           string    `json:"kubeletImage,omitempty"`
 }
 
 type Database struct {

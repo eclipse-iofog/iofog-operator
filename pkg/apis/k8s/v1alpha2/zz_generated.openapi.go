@@ -66,53 +66,23 @@ func schema_pkg_apis_k8s_v1alpha2_KogSpec(ref common.ReferenceCallback) common.O
 			SchemaProps: spec.SchemaProps{
 				Description: "KogSpec defines the desired state of Kog",
 				Properties: map[string]spec.Schema{
-					"controllerReplicaCount": {
+					"controlPlane": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Ref:         ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlane"),
 						},
 					},
-					"controllerImage": {
+					"connectors": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"connectorCount": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
-					"connectorImage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"kubeletImage": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"database": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database"),
-						},
-					},
-					"iofogUser": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.IofogUser"),
+							Ref: ref("github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Connectors"),
 						},
 					},
 				},
-				Required: []string{"controllerReplicaCount", "connectorCount", "iofogUser"},
+				Required: []string{"controlPlane", "connectors"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Database", "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.IofogUser"},
+			"github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.Connectors", "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2.ControlPlane"},
 	}
 }
 

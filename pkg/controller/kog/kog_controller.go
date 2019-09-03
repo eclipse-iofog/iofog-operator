@@ -122,8 +122,8 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	}
 
 	// Create Connector
-	for idx := int32(0); idx < instance.Spec.ConnectorCount; idx++ {
-		suffix := fmt.Sprintf("-%d", idx)
+	for _, connector := range instance.Spec.Connectors.Instances {
+		suffix := fmt.Sprintf("-%s", connector.Name)
 		if err = r.createIofogConnector(suffix, instance); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -136,7 +136,7 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 
 func (r *ReconcileKog) createIofogConnector(suffix string, kog *k8sv1alpha2.Kog) error {
 	// Configure
-	ms := newConnectorMicroservice(kog.Spec.ConnectorImage)
+	ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
 	ms.name = ms.name + suffix
 
 	// Service Account
@@ -169,8 +169,8 @@ func (r *ReconcileKog) createIofogConnector(suffix string, kog *k8sv1alpha2.Kog)
 	// Log into Controller
 	iofogClient := iofogclient.New(r.apiEndpoint)
 	if err = iofogClient.Login(iofogclient.LoginRequest{
-		Email:    kog.Spec.IofogUser.Email,
-		Password: kog.Spec.IofogUser.Password,
+		Email:    kog.Spec.ControlPlane.IofogUser.Email,
+		Password: kog.Spec.ControlPlane.IofogUser.Password,
 	}); err != nil {
 		return err
 	}
@@ -188,7 +188,8 @@ func (r *ReconcileKog) createIofogConnector(suffix string, kog *k8sv1alpha2.Kog)
 
 func (r *ReconcileKog) createIofogController(kog *k8sv1alpha2.Kog) error {
 	// Configure
-	ms := newControllerMicroservice(kog.Spec.ControllerReplicaCount, kog.Spec.ControllerImage)
+	ms := newControllerMicroservice(kog.Spec.ControlPlane.ControllerReplicaCount, kog.Spec.ControlPlane.ControllerImage)
+	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
@@ -213,16 +214,15 @@ func (r *ReconcileKog) createIofogController(kog *k8sv1alpha2.Kog) error {
 		return err
 	}
 	// Wait for Service
-	ip, err := k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
+	_, err = k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
 	if err != nil {
 		return err
 	}
-	r.apiEndpoint = fmt.Sprintf("%s:%d", ip, ms.ports[0])
 	if err = r.waitForControllerAPI(); err != nil {
 		return err
 	}
 	// Set up user
-	if err = r.createIofogUser(&kog.Spec.IofogUser); err != nil {
+	if err = r.createIofogUser(&kog.Spec.ControlPlane.IofogUser); err != nil {
 		return err
 	}
 
@@ -231,13 +231,13 @@ func (r *ReconcileKog) createIofogController(kog *k8sv1alpha2.Kog) error {
 
 func (r *ReconcileKog) createIofogKubelet(kog *k8sv1alpha2.Kog) error {
 	// Get Kubelet token
-	token, err := r.getKubeletToken(&kog.Spec.IofogUser)
+	token, err := r.getKubeletToken(&kog.Spec.ControlPlane.IofogUser)
 	if err != nil {
 		return err
 	}
 
 	// Configure
-	ms := newKubeletMicroservice(kog.Spec.KubeletImage, kog.ObjectMeta.Namespace, token, r.apiEndpoint)
+	ms := newKubeletMicroservice(kog.Spec.ControlPlane.KubeletImage, kog.ObjectMeta.Namespace, token, r.apiEndpoint)
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
