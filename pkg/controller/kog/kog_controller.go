@@ -248,7 +248,7 @@ func (r *ReconcileKog) createIofogConnectors(kog *k8sv1alpha2.Kog) error {
 
 func (r *ReconcileKog) createIofogController(kog *k8sv1alpha2.Kog) error {
 	// Configure
-	ms := newControllerMicroservice(kog.Spec.ControlPlane.ControllerReplicaCount, kog.Spec.ControlPlane.ControllerImage)
+	ms := newControllerMicroservice(kog.Spec.ControlPlane.ControllerReplicaCount, kog.Spec.ControlPlane.ControllerImage, &kog.Spec.ControlPlane.Database)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
 	// Service Account

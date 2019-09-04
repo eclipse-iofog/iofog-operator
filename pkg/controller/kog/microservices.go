@@ -16,9 +16,11 @@ package kog
 import (
 	"errors"
 	"fmt"
+	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strconv"
 	"strings"
 )
 
@@ -57,7 +59,7 @@ type container struct {
 	ports           []v1.ContainerPort
 }
 
-func newControllerMicroservice(replicas int32, image string) *microservice {
+func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Database) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}
@@ -83,6 +85,32 @@ func newControllerMicroservice(replicas int32, image string) *microservice {
 					InitialDelaySeconds: 1,
 					PeriodSeconds:       4,
 					FailureThreshold:    3,
+				},
+				env: []v1.EnvVar{
+					{
+						Name:  "DB_PROVIDER",
+						Value: db.Provider,
+					},
+					{
+						Name:  "DB_NAME",
+						Value: db.DatabaseName,
+					},
+					{
+						Name:  "DB_USERNAME",
+						Value: db.User,
+					},
+					{
+						Name:  "DB_PASSWORD",
+						Value: db.Password,
+					},
+					{
+						Name:  "DB_HOST",
+						Value: db.Host,
+					},
+					{
+						Name:  "DB_PORT",
+						Value: strconv.Itoa(db.Port),
+					},
 				},
 			},
 		},
