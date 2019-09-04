@@ -2,7 +2,7 @@ FROM golang:1.12-alpine as backend
 
 COPY . /go/src/github.com/eclipse-iofog/iofog-operator
 WORKDIR /go/src/github.com/eclipse-iofog/iofog-operator
-RUN rm bin/*
+RUN rm bin/* || true
 
 RUN apk add --update --no-cache bash curl git make
 
