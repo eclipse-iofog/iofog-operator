@@ -118,7 +118,7 @@ func (r *ReconcileKog) createClusterRoleBinding(kog *k8sv1alpha2.Kog, ms *micros
 	found := &rbacv1.ClusterRoleBinding{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		r.logger.Info("Creating a new Cluste Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
+		r.logger.Info("Creating a new Cluster Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
 		err = r.client.Create(context.TODO(), crb)
 		if err != nil {
 			return err

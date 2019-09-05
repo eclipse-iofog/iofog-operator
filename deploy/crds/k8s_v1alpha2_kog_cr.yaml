@@ -1,20 +1,27 @@
 apiVersion: k8s.iofog.org/v1alpha2
 kind: Kog
 metadata:
-  name: example-kog
+  name: iokog
+  namespace: default
 spec:
-  controllerReplicaCount: 1
-  connectorCount: 1
-  iofogUser:
-    name: "Serge"
-    surname: "Radinovich"
-    email: "serge@edgeworx.io"
-    password: "Boih2h380gub9i43"
-  controllerImage: ""
-  database:
-    provider: ""
-    host: ""
-    port: 0
-    user: ""
-    password: ""
-    databaseName: ""
+  controlPlane:
+    iofogUser:
+      name: ""
+      surname: ""
+      email: ""
+      password: ""
+    database:
+      provider: ""
+      host: ""
+      port: 0
+      user: ""
+      password: ""
+      databaseName: ""
+    controllerReplicaCount: ""
+    controllerImage: ""
+    kubeletImage: ""
+  connectors:
+    image: ""
+    instances: 
+      - name: ""
+
