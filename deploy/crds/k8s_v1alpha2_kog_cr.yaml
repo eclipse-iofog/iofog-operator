@@ -1,0 +1,20 @@
+apiVersion: k8s.iofog.org/v1alpha2
+kind: Kog
+metadata:
+  name: example-kog
+spec:
+  controllerReplicaCount: 1
+  connectorCount: 1
+  iofogUser:
+    name: "Serge"
+    surname: "Radinovich"
+    email: "serge@edgeworx.io"
+    password: "Boih2h380gub9i43"
+  controllerImage: ""
+  database:
+    provider: ""
+    host: ""
+    port: 0
+    user: ""
+    password: ""
+    databaseName: ""

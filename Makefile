@@ -48,32 +48,8 @@ build:
 ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 	@printf "$(GOLANG_VERSION)\n$$(go version | awk '{sub(/^go/, "", $$3);print $$3}')" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -g | head -1 | grep -q -E "^$(GOLANG_VERSION)$$" || (printf "Required Go version is $(GOLANG_VERSION)\nInstalled: `go version`" && exit 1)
 endif
+	operator-sdk generate k8s
 	go build $(GOARGS) $(BUILD_PACKAGE)
-
-.PHONY: build-img
-build-img:
-	docker build --rm -t $(IMAGE):latest -f Dockerfile .
-
-.PHONY: push-img
-push-img:
-	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-ifeq ($(BRANCH), master)
-	# Master branch
-	docker push $(IMAGE):latest
-	docker tag $(IMAGE):latest $(IMAGE):$(RELEASE_TAG)
-	docker push $(IMAGE):$(RELEASE_TAG)
-endif
-ifneq (,$(findstring release,$(BRANCH)))
-	# Release branch
-	docker tag $(IMAGE):latest $(IMAGE):rc-$(RELEASE_TAG)
-	docker push $(IMAGE):rc-$(RELEASE_TAG)
-else
-	# Develop and feature branches
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):latest
-	docker push $(IMAGE)-$(BRANCH):latest
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-	docker push $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-endif
 
 .PHONY: fmt
 fmt:
