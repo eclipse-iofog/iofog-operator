@@ -10,30 +10,11 @@ trigger:
     exclude:
       - README.md
 
-pr: none
-
 variables:
   repository: 'focal-freedom-236620/operator'
   primaryTag: $(Build.SourceBranchName)
 
 jobs:
-  - job: Platform
-    dependsOn: Operator
-    pool: server
-    variables:
-      tag: b-$(buildTag)
-
-    steps:
-      - task: InvokeRESTAPI@1
-        displayName: 'trigger platform job'
-        inputs:
-          connectionType: 'connectedServiceName'
-          serviceConnection: 'Pipelines'
-          method: 'POST'
-          urlSuffix: '/edgeworx/_apis/build/builds?api-version=5.0'
-          body: "{\"Parameters\":\"{\\\"images.operator\\\": \\\"gcr.io/$(repository):$(tag)\\\"}\", \"Definition\":{\"id\":\"5\"}}"
-          waitForCompletion: 'false'
-
   - job: Operator
     pool:
       vmImage: 'Ubuntu-16.04'
