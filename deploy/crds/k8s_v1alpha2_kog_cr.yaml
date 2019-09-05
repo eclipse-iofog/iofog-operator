@@ -6,10 +6,10 @@ metadata:
 spec:
   controlPlane:
     iofogUser:
-      name: ""
-      surname: ""
-      email: ""
-      password: ""
+      name: "Ihff"
+      surname: "Jghiog"
+      email: "user@domain.com"
+      password: "FDJLhu98buisdkj"
     database:
       provider: ""
       host: ""
@@ -17,11 +17,11 @@ spec:
       user: ""
       password: ""
       databaseName: ""
-    controllerReplicaCount: ""
+    controllerReplicaCount: 1
     controllerImage: ""
     kubeletImage: ""
   connectors:
     image: ""
     instances: 
-      - name: ""
+      - name: "first"
 

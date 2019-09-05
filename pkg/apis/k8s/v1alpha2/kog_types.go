@@ -18,7 +18,7 @@ type KogSpec struct {
 
 type Connectors struct {
 	Image     string      `json:"image,omitempty"`
-	Instances []Connector `json:instances"`
+	Instances []Connector `json:"instances"`
 }
 
 type Connector struct {
