@@ -140,9 +140,10 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 
 	connected := false
 	iter := 0
+	const timeoutSeconds = 120
 	for !connected {
 		// Time out
-		if iter > 60 {
+		if iter > timeoutSeconds {
 			err = errors.NewTimeoutError("Timed out waiting for Controller API", iter)
 			return
 		}
