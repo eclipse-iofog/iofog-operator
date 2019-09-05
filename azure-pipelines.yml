@@ -62,6 +62,7 @@ jobs:
           repository: $(repository)
           command: 'buildAndPush'
           Dockerfile: 'build/Dockerfile'
+          buildContext: './'
           tags: |
             $(primaryTag)
             $(secondaryTag)
