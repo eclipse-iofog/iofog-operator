@@ -39,27 +39,30 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
 	}
 
 	// Delete connectors
-	for k, v := range deleteConnectors {
-		if v {
+	for k, isDelete := range deleteConnectors {
+		if isDelete {
 			r.deleteConnector(kog, k)
 		}
 	}
 
 	// Create connectors
-	for k, v := range createConnectors {
-		if v {
+	for k, isCreate := range createConnectors {
+		if isCreate {
 			r.createConnector(kog, k)
 		}
 	}
 
-	// Update existing Connector deployments (e.g. image change)
-	for k, v := range deleteConnectors {
-		if !v {
-			ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
-			ms.name = k
-			// Deployment
-			if err := r.createDeployment(kog, ms); err != nil {
-				return err
+	// Update existing Connector deployments (e.g. for image change)
+	for k, isDelete := range deleteConnectors {
+		// Untouched Connectors were neither deleted nor created
+		if !isDelete {
+			if isCreate, _ := createConnectors[k]; !isCreate {
+				ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
+				ms.name = k
+				// Deployment
+				if err := r.createDeployment(kog, ms); err != nil {
+					return err
+				}
 			}
 		}
 	}
