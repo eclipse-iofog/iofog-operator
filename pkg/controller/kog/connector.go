@@ -2,6 +2,7 @@ package kog
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
@@ -21,18 +22,38 @@ func (r *ReconcileKog) deleteConnector(kog *k8sv1alpha2.Kog, name string) error 
 	// Delete deployment
 	dep := &appsv1.Deployment{ObjectMeta: meta}
 	if err := r.client.Delete(context.Background(), dep); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
 		return err
 	}
 
 	// Delete service
 	svc := &corev1.Service{ObjectMeta: meta}
 	if err := r.client.Delete(context.Background(), svc); err != nil {
-		return err
+		if !errors.IsNotFound(err) {
+			return err
+		}
 	}
 
 	// Delete service account
 	svcAcc := &corev1.ServiceAccount{ObjectMeta: meta}
 	if err := r.client.Delete(context.Background(), svcAcc); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Log into Controller
+	iofogClient := iofogclient.New(r.apiEndpoint)
+	if err := iofogClient.Login(iofogclient.LoginRequest{
+		Email:    kog.Spec.ControlPlane.IofogUser.Email,
+		Password: kog.Spec.ControlPlane.IofogUser.Password,
+	}); err != nil {
+		return err
+	}
+	// Unprovision the Connector
+	if err := iofogClient.DeleteConnector(name); err != nil {
 		return err
 	}
 
@@ -80,9 +101,10 @@ func (r *ReconcileKog) createConnector(kog *k8sv1alpha2.Kog, name string) error 
 	}
 	// Provision the Connector
 	if err = iofogClient.AddConnector(iofogclient.ConnectorInfo{
-		IP:     ip,
-		Domain: ip,
-		Name:   removeConnectorNamePrefix(name),
+		IP:      ip,
+		Domain:  ip,
+		Name:    removeConnectorNamePrefix(name),
+		DevMode: true,
 	}); err != nil {
 		return err
 	}

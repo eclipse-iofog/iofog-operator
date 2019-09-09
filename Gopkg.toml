@@ -12,7 +12,7 @@ required = [
 
 [[override]]
  name = "github.com/eclipse-iofog/iofogctl"
- revision = "7d7b3a008b903c28bfeabfeb3aa0f85da079fddd"
+ branch = "develop"
 
 [[override]]
   name = "k8s.io/code-generator"
