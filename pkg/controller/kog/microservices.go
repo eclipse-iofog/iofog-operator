@@ -67,8 +67,11 @@ func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Dat
 		image = "iofog/controller:1.2.1"
 	}
 	return &microservice{
-		name:     "controller",
-		ports:    []int{51121},
+		name: "controller",
+		ports: []int{
+			51121,
+			80,
+		},
 		replicas: replicas,
 		containers: []container{
 			{
