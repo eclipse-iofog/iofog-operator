@@ -41,14 +41,18 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
 	// Delete connectors
 	for k, isDelete := range deleteConnectors {
 		if isDelete {
-			r.deleteConnector(kog, k)
+			if err := r.deleteConnector(kog, k); err != nil {
+				return err
+			}
 		}
 	}
 
 	// Create connectors
 	for k, isCreate := range createConnectors {
 		if isCreate {
-			r.createConnector(kog, k)
+			if err := r.createConnector(kog, k); err != nil {
+				return err
+			}
 		}
 	}
 
