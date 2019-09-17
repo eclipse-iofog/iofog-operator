@@ -13,7 +13,6 @@ trigger:
 variables:
   repository: 'focal-freedom-236620/operator'
   build: $(Build.BuildId)
-  rc_version: 1 # Manually update this on your release branches as necessary. Should always be 1 on develop branch
   version:
 
 jobs:
