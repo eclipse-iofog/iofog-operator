@@ -13,6 +13,7 @@ trigger:
 variables:
   repository: 'focal-freedom-236620/operator'
   build: $(Build.BuildId)
+  ref: $(Build.SourceBranch)
   version:
 
 jobs:
