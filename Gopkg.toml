@@ -10,8 +10,8 @@ required = [
   "k8s.io/gengo/args",
 ]
 
-[[override]]
- name = "github.com/eclipse-iofog/iofogctl"
+[[constraint]]
+ name = "github.com/eclipse-iofog/iofog-go-sdk"
  branch = "develop"
 
 [[override]]

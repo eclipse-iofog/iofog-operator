@@ -7,7 +7,7 @@ import (
 	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
-	iofogclient "github.com/eclipse-iofog/iofogctl/pkg/iofog/client"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

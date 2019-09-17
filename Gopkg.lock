@@ -42,11 +42,12 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:5abbaf751eb8995299074abdb3c5ea6aee8f6e42e6f8aa90ac4847be8e1935a0"
-  name = "github.com/eclipse-iofog/iofogctl"
-  packages = ["pkg/iofog/client"]
+  branch = "develop"
+  digest = "1:0d8dfa8dd38336d8d3c5624fd9d335c556ef15a43f80a3b7545575f8d53b6930"
+  name = "github.com/eclipse-iofog/iofog-go-sdk"
+  packages = ["pkg/client"]
   pruneopts = "NT"
-  revision = "7d7b3a008b903c28bfeabfeb3aa0f85da079fddd"
+  revision = "bbb60edef4a40fd34daf2ab163062cc686f2c3b4"
 
 [[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
@@ -811,7 +812,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/eclipse-iofog/iofogctl/pkg/iofog/client",
+    "github.com/eclipse-iofog/iofog-go-sdk/pkg/client",
     "github.com/go-logr/logr",
     "github.com/go-openapi/spec",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",

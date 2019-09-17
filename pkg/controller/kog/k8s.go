@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
-	iofogclient "github.com/eclipse-iofog/iofogctl/pkg/iofog/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
