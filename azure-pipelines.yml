@@ -46,3 +46,13 @@ jobs:
         tags: |
           $(version)
           latest
+
+    - script: |
+          cp build/Dockerfile $(Build.ArtifactStagingDirectory)
+      displayName: 'Copy Dockerfile to staging'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathToPublish: $(Build.ArtifactStagingDirectory)
+        ArtifactName: 'operator'
+      displayName: 'Publish Dockerfile'
