@@ -53,7 +53,7 @@ func (r *ReconcileKog) deleteConnector(kog *k8sv1alpha2.Kog, name string) error 
 		return err
 	}
 	// Unprovision the Connector
-	if err := iofogClient.DeleteConnector(name); err != nil {
+	if err := iofogClient.DeleteConnector(removeConnectorNamePrefix(name)); err != nil {
 		return err
 	}
 
