@@ -75,6 +75,9 @@ func (cl *Client) WaitForPod(namespace, name string, timeoutSeconds int64) error
 		}
 		// Check pod is in running state
 		splitName := strings.Split(pod.Name, "-")
+		if len(splitName) <= 2 {
+			continue
+		}
 		splitName = splitName[0 : len(splitName)-2]
 		joinName := strings.Join(splitName, "-")
 		if joinName != name {
