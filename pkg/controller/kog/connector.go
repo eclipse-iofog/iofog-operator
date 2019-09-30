@@ -86,8 +86,8 @@ func (r *ReconcileKog) createConnector(kog *k8sv1alpha2.Kog, name string) error 
 	if err := k8sClient.WaitForPod(kog.ObjectMeta.Namespace, ms.name, 120); err != nil {
 		return err
 	}
-	// Wait for Service
-	ip, err := k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
+	// Wait for external IP of LB Service
+	ip, err := k8sClient.WaitForLoadBalancer(kog.ObjectMeta.Namespace, ms.name, 240)
 	if err != nil {
 		return err
 	}

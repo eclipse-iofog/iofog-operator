@@ -41,11 +41,13 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name       string
-	IP         string
-	ports      []int
-	replicas   int32
-	containers []container
+	name           string
+	loadBalancerIP string
+	serviceType    string
+	trafficPolicy  string
+	ports          []int
+	replicas       int32
+	containers     []container
 }
 
 type container struct {
@@ -59,12 +61,9 @@ type container struct {
 	ports           []v1.ContainerPort
 }
 
-func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Database) *microservice {
+func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Database, svcType, trafficPolicy string, loadBalancerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
-	}
-	if image == "" {
-		image = "iofog/controller:1.2.1"
 	}
 	return &microservice{
 		name: "controller",
@@ -72,7 +71,10 @@ func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Dat
 			51121,
 			80,
 		},
-		replicas: replicas,
+		replicas:       replicas,
+		serviceType:    svcType,
+		trafficPolicy:  trafficPolicy,
+		loadBalancerIP: loadBalancerIP,
 		containers: []container{
 			{
 				name:            "controller",
@@ -121,9 +123,6 @@ func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Dat
 }
 
 func newConnectorMicroservice(image string) *microservice {
-	if image == "" {
-		image = "iofog/connector:1.2.0"
-	}
 	return &microservice{
 		name: "connector",
 		ports: []int{
@@ -135,7 +134,9 @@ func newConnectorMicroservice(image string) *microservice {
 			6040, 6041, 6042, 6043, 6044, 6045, 6046, 6047, 6048, 6049,
 			6050,
 		},
-		replicas: 1,
+		replicas:      1,
+		serviceType:   "LoadBalancer",
+		trafficPolicy: "Local",
 		containers: []container{
 			{
 				name:            "connector",
@@ -160,9 +161,6 @@ func getKubeletToken(containers []corev1.Container) (token string, err error) {
 }
 
 func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) *microservice {
-	if image == "" {
-		image = "iofog/iofog-kubelet:1.2.0"
-	}
 	return &microservice{
 		name:     "kubelet",
 		ports:    []int{60000},

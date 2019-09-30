@@ -75,8 +75,13 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
 }
 
 func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
+	cp := &kog.Spec.ControlPlane
 	// Configure
-	ms := newControllerMicroservice(kog.Spec.ControlPlane.ControllerReplicaCount, kog.Spec.ControlPlane.ControllerImage, &kog.Spec.ControlPlane.Database)
+	trafficPolicy := "Local"
+	if cp.ServiceType == "NodePort" {
+		trafficPolicy = "Cluster"
+	}
+	ms := newControllerMicroservice(cp.ControllerReplicaCount, cp.ControllerImage, &cp.Database, cp.ServiceType, trafficPolicy, cp.LoadBalancerIP)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
 	// Service Account
@@ -105,17 +110,21 @@ func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
 		return err
 	}
 
-	// Wait for Service
-	_, err = k8sClient.WaitForService(kog.ObjectMeta.Namespace, ms.name, 240)
-	if err != nil {
-		return err
+	// Wait for external IP of LB Service
+	if cp.ServiceType == "LoadBalancer" {
+		_, err = k8sClient.WaitForLoadBalancer(kog.ObjectMeta.Namespace, ms.name, 240)
+		if err != nil {
+			return err
+		}
 	}
+
+	// Wait for Controller REST API
 	if err = r.waitForControllerAPI(); err != nil {
 		return err
 	}
 
 	// Set up user
-	if err = r.createIofogUser(&kog.Spec.ControlPlane.IofogUser); err != nil {
+	if err = r.createIofogUser(&cp.IofogUser); err != nil {
 		return err
 	}
 

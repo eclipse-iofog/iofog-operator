@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cl *Client) WaitForService(namespace, name string, timeoutSeconds int64) (ip string, err error) {
+func (cl *Client) WaitForLoadBalancer(namespace, name string, timeoutSeconds int64) (ip string, err error) {
 	// Get watch handler to observe changes to services
 	watch, err := cl.CoreV1().Services(namespace).Watch(metav1.ListOptions{TimeoutSeconds: &timeoutSeconds})
 	if err != nil {

@@ -17,7 +17,7 @@ type KogSpec struct {
 }
 
 type Connectors struct {
-	Image     string      `json:"image,omitempty"`
+	Image     string      `json:"image"`
 	Instances []Connector `json:"instances"`
 }
 
@@ -29,8 +29,10 @@ type ControlPlane struct {
 	IofogUser              IofogUser `json:"iofogUser"`
 	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
 	Database               Database  `json:"database,omitempty"`
-	ControllerImage        string    `json:"controllerImage,omitempty"`
-	KubeletImage           string    `json:"kubeletImage,omitempty"`
+	ControllerImage        string    `json:"controllerImage"`
+	KubeletImage           string    `json:"kubeletImage"`
+	ServiceType            string    `json:"serviceType"`
+	LoadBalancerIP         string    `json:"loadBalancerIP,omitempty"`
 }
 
 type Database struct {
