@@ -77,9 +77,11 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
 func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
-	trafficPolicy := "Local"
+	trafficPolicy := ""
 	if cp.ServiceType == "NodePort" {
 		trafficPolicy = "Cluster"
+	} else if cp.ServiceType == "LoadBalancer" {
+		trafficPolicy = "Local"
 	}
 	ms := newControllerMicroservice(cp.ControllerReplicaCount, cp.ControllerImage, &cp.Database, cp.ServiceType, trafficPolicy, cp.LoadBalancerIP)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
