@@ -32,9 +32,9 @@ func newService(namespace string, ms *microservice) *v1.Service {
 			},
 		},
 		Spec: v1.ServiceSpec{
-			Type:                  "LoadBalancer",
-			ExternalTrafficPolicy: "Local",
-			LoadBalancerIP:        ms.IP,
+			Type:                  v1.ServiceType(ms.serviceType),
+			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(ms.trafficPolicy),
+			LoadBalancerIP:        ms.loadBalancerIP,
 			Selector: map[string]string{
 				"name": ms.name,
 			},

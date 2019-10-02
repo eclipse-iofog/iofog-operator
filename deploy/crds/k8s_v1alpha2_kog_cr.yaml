@@ -18,10 +18,12 @@ spec:
       password: ""
       databaseName: ""
     controllerReplicaCount: 1
-    controllerImage: ""
+    controllerImage: "iofog/controller:latest"
     kubeletImage: ""
+    loadBalancerIP: ""
+    serviceType: "ClusterIP"
   connectors:
-    image: ""
+    image: "iofog/connector:latest"
     instances: 
       - name: "first"
 
