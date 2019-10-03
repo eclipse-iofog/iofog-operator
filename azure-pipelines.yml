@@ -23,16 +23,17 @@ jobs:
 
     steps:
     - script: |
-          if [[ $(ref) == refs/tags* ]]; then
-            TAG=$(echo $(ref) | sed "s|refs/tags/v||g")
-            echo "##vso[task.setvariable variable=version]$TAG"
-          else
-            LATESTTAG=$(git tag | tail -1)
-            LATESTVERS=${LATESTTAG#?}
-            if [ -z "$LATESTVERS" ]; then LATESTVERS=0.0.0; fi
-            echo "##vso[task.setvariable variable=version]$LATESTVERS-b$(build)"
+        . version
+        VERS=$MAJOR.$MINOR.$PATCH$SUFFIX
+        if [[ $(ref) == refs/tags* ]]; then
+          TAG=$(echo $(ref) | sed "s|refs/tags/v||g")
+          if [[ $TAG != $(VERS) ]]; then
+            echo 'Version file does not match git tag'
+            exit 1
           fi
-          echo $(version)
+        fi
+        echo "##vso[task.setvariable variable=version]$VERS"
+        echo $(version)
       displayName: 'Set version variable'
 
     - task: Docker@2
@@ -45,4 +46,5 @@ jobs:
         buildContext: './'
         tags: |
           $(version)
+          $(version)-$(build)
           latest
