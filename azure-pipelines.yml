@@ -14,6 +14,7 @@ variables:
   repository: 'focal-freedom-236620/operator'
   build: $(Build.BuildId)
   ref: $(Build.SourceBranch)
+  branch: $(Build.SourceBranchName)
   version:
 
 jobs:
@@ -46,7 +47,8 @@ jobs:
       buildContext: './'
       tags: |
         $(version)
-        $(version)-$(build)
+        $(branch)
+        $(branch)-$(build)
         latest
 
   - script: |
