@@ -1,0 +1,42 @@
+apiVersion: k8s.iofog.org/v1alpha2
+kind: app
+metadata:
+  name: heart
+  namespace: default
+spec:
+  microservices:
+    - name: heart-rate-monitor
+      agent:
+        name: zebra-1
+        config:
+          bluetoothenabled: true
+          abstractedhardwareenabled: false
+      images:
+        x86: edgeworx/healthcare-heart-rate:x86-v1
+        arm: edgeworx/healthcare-heart-rate:arm-v1
+      config:
+        data_label: Anonymous Person
+        test_mode: true
+      roothostaccess: false
+      ports: []
+      volumes: []
+      env: []
+    - name: heart-rate-viewer
+      agent:
+        name: zebra-2
+      images:
+        x86: edgeworx/healthcare-heart-rate-ui:x86
+        arm: edgeworx/healthcare-heart-rate-ui:arm
+      config: {}
+      roothostaccess: false
+      ports:
+        - internal: 80
+          external: 5000
+      volumes: []
+      env:
+        - key: BASE_URL
+          value: http://localhost:8080/data
+  routes:
+    - from: heart-rate-monitor
+      to: heart-rate-viewer
+  replicas: 1
