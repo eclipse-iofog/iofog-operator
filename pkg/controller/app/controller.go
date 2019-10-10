@@ -156,7 +156,7 @@ func (r *ReconcileApp) deploymentForApp(app *k8sv1alpha2.App) *appsv1.Deployment
 	for _, microservice := range app.Spec.Microservices {
 		container := corev1.Container{
 			Name:  microservice.Name,
-			Image: fmt.Sprintf("%s\n%s", microservice.Images.X86, microservice.Images.ARM),
+			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
 		}
 		containers = append(containers, container)
 	}
