@@ -42,12 +42,15 @@
   version = "v1.1.1"
 
 [[projects]]
-  branch = "develop"
-  digest = "1:bb23fffb0718fb211b2d7e5fd7384e99b1d9e922a24f0052854662044d339df8"
+  branch = "feature/autogen"
+  digest = "1:4b1397c875bd957079ea3dd8fbfe424061adab918c290d7adfb1d79ca482f2da"
   name = "github.com/eclipse-iofog/iofog-go-sdk"
-  packages = ["pkg/client"]
+  packages = [
+    "pkg/apps",
+    "pkg/client",
+  ]
   pruneopts = "NT"
-  revision = "0f97b4bf1b91c18ee746754d1f6f23a3274e0f78"
+  revision = "74b4da0ad23b1657eed3461c9573f3752bea8fce"
 
 [[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
@@ -812,9 +815,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/eclipse-iofog/iofog-go-sdk/pkg/apps",
     "github.com/eclipse-iofog/iofog-go-sdk/pkg/client",
     "github.com/go-logr/logr",
-    "github.com/go-openapi/spec",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/ready",
@@ -840,7 +843,6 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/code-generator/cmd/openapi-gen",
     "k8s.io/gengo/args",
-    "k8s.io/kube-openapi/pkg/common",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/controller",

@@ -12,7 +12,7 @@ required = [
 
 [[constraint]]
  name = "github.com/eclipse-iofog/iofog-go-sdk"
- branch = "develop"
+ branch = "feature/autogen"
 
 [[override]]
   name = "k8s.io/code-generator"
