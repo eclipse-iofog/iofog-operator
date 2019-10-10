@@ -42,15 +42,15 @@
   version = "v1.1.1"
 
 [[projects]]
-  branch = "feature/autogen"
-  digest = "1:4b1397c875bd957079ea3dd8fbfe424061adab918c290d7adfb1d79ca482f2da"
+  branch = "develop"
+  digest = "1:666009c38f94257fee2e4a5159aa3a32535a4c1add48bcad00a87380980d04f7"
   name = "github.com/eclipse-iofog/iofog-go-sdk"
   packages = [
     "pkg/apps",
     "pkg/client",
   ]
   pruneopts = "NT"
-  revision = "74b4da0ad23b1657eed3461c9573f3752bea8fce"
+  revision = "895ea7cacb8768df9b5a80ee833003427767cf7d"
 
 [[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
