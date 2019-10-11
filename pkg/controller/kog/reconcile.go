@@ -87,7 +87,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
 	// Service Account
-	if err := r.createServiceAccount(kog, ms); err != nil {
+	if err := r.createServiceAccountWithImagePullSecrets(kog, ms, cp.ImagePullSecret); err != nil {
 		return err
 	}
 
