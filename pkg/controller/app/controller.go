@@ -41,14 +41,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &k8sv1alpha2.App{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &k8sv1alpha2.Application{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &k8sv1alpha2.App{},
+		OwnerType:    &k8sv1alpha2.Application{},
 	})
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling App")
 
-	instance := &k8sv1alpha2.App{}
+	instance := &k8sv1alpha2.Application{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -144,7 +144,7 @@ func labelsForIOFog(name string) map[string]string {
 	}
 }
 
-func (r *ReconcileApp) deploymentForApp(app *k8sv1alpha2.App) *appsv1.Deployment {
+func (r *ReconcileApp) deploymentForApp(app *k8sv1alpha2.Application) *appsv1.Deployment {
 	labels := labelsForIOFog(app.Name)
 
 	microservices, _ := json.Marshal(app.Spec.Microservices)

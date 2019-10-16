@@ -5,10 +5,10 @@ metadata:
 spec:
   group: k8s.iofog.org
   names:
-    kind: App
-    listKind: AppList
-    plural: apps
-    singular: app
+    kind: Application
+    listKind: ApplicationList
+    plural: applications
+    singular: application
   scope: Namespaced
   subresources:
     status: {}
