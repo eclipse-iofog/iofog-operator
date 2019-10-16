@@ -7,8 +7,8 @@ spec:
   names:
     kind: Application
     listKind: ApplicationList
-    plural: applications
-    singular: application
+    plural: apps
+    singular: app
   scope: Namespaced
   subresources:
     status: {}
