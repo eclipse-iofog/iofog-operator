@@ -1,5 +1,5 @@
 apiVersion: k8s.iofog.org/v1alpha2
-kind: App
+kind: Application
 metadata:
   name: heart
   namespace: default
@@ -12,7 +12,7 @@ spec:
       config:
         data_label: Anonymous Person
         test_mode: true
-      roothostaccess: false
+      rootHostAccess: false
       ports: []
       volumes: []
       env: []
@@ -21,7 +21,7 @@ spec:
         x86: edgeworx/healthcare-heart-rate-ui:x86
         arm: edgeworx/healthcare-heart-rate-ui:arm
       config: {}
-      roothostaccess: false
+      rootHostAccess: false
       ports:
         - internal: 80
           external: 5000
