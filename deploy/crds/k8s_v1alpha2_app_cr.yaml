@@ -6,11 +6,6 @@ metadata:
 spec:
   microservices:
     - name: heart-rate-monitor
-      agent:
-        name: zebra-1
-        config:
-          bluetoothEnabled: true
-          abstractedHardwareEnabled: false
       images:
         x86: edgeworx/healthcare-heart-rate:x86-v1
         arm: edgeworx/healthcare-heart-rate:arm-v1
@@ -22,8 +17,6 @@ spec:
       volumes: []
       env: []
     - name: heart-rate-viewer
-      agent:
-        name: zebra-2
       images:
         x86: edgeworx/healthcare-heart-rate-ui:x86
         arm: edgeworx/healthcare-heart-rate-ui:arm

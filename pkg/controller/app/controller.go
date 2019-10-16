@@ -148,8 +148,10 @@ func (r *ReconcileApp) deploymentForApp(app *k8sv1alpha2.Application) *appsv1.De
 	labels := labelsForIOFog(app.Name)
 
 	microservices, _ := json.Marshal(app.Spec.Microservices)
+	routes, _ := json.Marshal(app.Spec.Routes)
 	annotations := map[string]string{
 		"microservices": string(microservices),
+		"routes":        string(routes),
 	}
 
 	var containers []corev1.Container
