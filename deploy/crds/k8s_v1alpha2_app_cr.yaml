@@ -9,15 +9,15 @@ spec:
       agent:
         name: zebra-1
         config:
-          bluetoothenabled: true
-          abstractedhardwareenabled: false
+          bluetoothEnabled: true
+          abstractedHardwareEnabled: false
       images:
         x86: edgeworx/healthcare-heart-rate:x86-v1
         arm: edgeworx/healthcare-heart-rate:arm-v1
       config:
         data_label: Anonymous Person
         test_mode: true
-      roothostaccess: false
+      rootHostAccess: false
       ports: []
       volumes: []
       env: []
@@ -28,7 +28,7 @@ spec:
         x86: edgeworx/healthcare-heart-rate-ui:x86
         arm: edgeworx/healthcare-heart-rate-ui:arm
       config: {}
-      roothostaccess: false
+      rootHostAccess: false
       ports:
         - internal: 80
           external: 5000
