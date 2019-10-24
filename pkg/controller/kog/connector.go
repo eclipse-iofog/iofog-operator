@@ -4,7 +4,7 @@ import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *ReconcileKog) deleteConnector(kog *k8sv1alpha2.Kog, name string) error {
+func (r *ReconcileKog) deleteConnector(kog *iofogv1.Kog, name string) error {
 	meta := metav1.ObjectMeta{
 		Name:      name,
 		Namespace: kog.ObjectMeta.Namespace,
@@ -60,7 +60,7 @@ func (r *ReconcileKog) deleteConnector(kog *k8sv1alpha2.Kog, name string) error 
 	return nil
 }
 
-func (r *ReconcileKog) createConnector(kog *k8sv1alpha2.Kog, name string) error {
+func (r *ReconcileKog) createConnector(kog *iofogv1.Kog, name string) error {
 	// Connect to cluster
 	k8sClient, err := k8sclient.NewClient()
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
+func (r *ReconcileKog) reconcileIofogConnectors(kog *iofogv1.Kog) error {
 
 	// Find the current state to compare against requested state
 	depList := &appsv1.DeploymentList{}
@@ -74,7 +74,7 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *k8sv1alpha2.Kog) error {
 	return nil
 }
 
-func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
+func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
 	trafficPolicy := ""
@@ -133,7 +133,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *k8sv1alpha2.Kog) error {
 	return nil
 }
 
-func (r *ReconcileKog) reconcileIofogKubelet(kog *k8sv1alpha2.Kog) error {
+func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 	// Generate new token if required
 	token := ""
 	kubeletKey := client.ObjectKey{

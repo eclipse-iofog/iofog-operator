@@ -6,7 +6,7 @@ import (
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
-	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *ReconcileKog) createDeployment(kog *k8sv1alpha2.Kog, ms *microservice) error {
+func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) error {
 	dep := newDeployment(kog.ObjectMeta.Namespace, ms)
 	// Set Kog instance as the owner and controller
 	if err := controllerutil.SetControllerReference(kog, dep, r.scheme); err != nil {
@@ -49,7 +49,7 @@ func (r *ReconcileKog) createDeployment(kog *k8sv1alpha2.Kog, ms *microservice) 
 	return nil
 }
 
-func (r *ReconcileKog) createService(kog *k8sv1alpha2.Kog, ms *microservice) error {
+func (r *ReconcileKog) createService(kog *iofogv1.Kog, ms *microservice) error {
 	svc := newService(kog.ObjectMeta.Namespace, ms)
 	// Set Kog instance as the owner and controller
 	if err := controllerutil.SetControllerReference(kog, svc, r.scheme); err != nil {
@@ -77,11 +77,11 @@ func (r *ReconcileKog) createService(kog *k8sv1alpha2.Kog, ms *microservice) err
 	return nil
 }
 
-func (r *ReconcileKog) createServiceAccount(kog *k8sv1alpha2.Kog, ms *microservice) error {
+func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) error {
 	return r.createServiceAccountWithImagePullSecrets(kog, ms, "")
 }
 
-func (r *ReconcileKog) createServiceAccountWithImagePullSecrets(kog *k8sv1alpha2.Kog, ms *microservice, pullSecret string) error {
+func (r *ReconcileKog) createServiceAccountWithImagePullSecrets(kog *iofogv1.Kog, ms *microservice, pullSecret string) error {
 	svcAcc := newServiceAccount(kog.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
@@ -129,7 +129,7 @@ func (r *ReconcileKog) createServiceAccountWithImagePullSecrets(kog *k8sv1alpha2
 	return nil
 }
 
-func (r *ReconcileKog) createClusterRoleBinding(kog *k8sv1alpha2.Kog, ms *microservice) error {
+func (r *ReconcileKog) createClusterRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
 	crb := newClusterRoleBinding(kog.ObjectMeta.Namespace, ms)
 
 	// Set Kog instance as the owner and controller
@@ -189,7 +189,7 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 	return
 }
 
-func (r *ReconcileKog) createIofogUser(user *k8sv1alpha2.IofogUser) (err error) {
+func (r *ReconcileKog) createIofogUser(user *iofogv1.IofogUser) (err error) {
 	iofogClient := iofogclient.New(r.apiEndpoint)
 
 	if err = iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
@@ -209,7 +209,7 @@ func (r *ReconcileKog) createIofogUser(user *k8sv1alpha2.IofogUser) (err error) 
 	return nil
 }
 
-func (r *ReconcileKog) getKubeletToken(user *k8sv1alpha2.IofogUser) (token string, err error) {
+func (r *ReconcileKog) getKubeletToken(user *iofogv1.IofogUser) (token string, err error) {
 	iofogClient := iofogclient.New(r.apiEndpoint)
 	if err = iofogClient.Login(iofogclient.LoginRequest{
 		Email:    user.Email,
