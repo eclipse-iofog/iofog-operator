@@ -16,7 +16,7 @@ package kog
 import (
 	"errors"
 	"fmt"
-	k8sv1alpha2 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha2"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -61,7 +61,7 @@ type container struct {
 	ports           []v1.ContainerPort
 }
 
-func newControllerMicroservice(replicas int32, image string, db *k8sv1alpha2.Database, svcType, trafficPolicy string, loadBalancerIP string) *microservice {
+func newControllerMicroservice(replicas int32, image string, db *iofogv1.Database, svcType, trafficPolicy string, loadBalancerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}

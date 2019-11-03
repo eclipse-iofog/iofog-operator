@@ -1,4 +1,4 @@
-package v1alpha2
+package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +30,7 @@ type ControlPlane struct {
 	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
 	Database               Database  `json:"database,omitempty"`
 	ControllerImage        string    `json:"controllerImage"`
+	ImagePullSecret        string    `json:"imagePullSecret,omitempty"`
 	KubeletImage           string    `json:"kubeletImage"`
 	ServiceType            string    `json:"serviceType"`
 	LoadBalancerIP         string    `json:"loadBalancerIP,omitempty"`

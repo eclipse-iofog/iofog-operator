@@ -1,0 +1,35 @@
+apiVersion: iofog.org/v1
+kind: Application
+metadata:
+  name: heart
+  namespace: default
+spec:
+  microservices:
+    - name: heart-rate-monitor
+      images:
+        x86: edgeworx/healthcare-heart-rate:x86-v1
+        arm: edgeworx/healthcare-heart-rate:arm-v1
+      config:
+        data_label: Anonymous Person
+        test_mode: true
+      rootHostAccess: false
+      ports: []
+      volumes: []
+      env: []
+    - name: heart-rate-viewer
+      images:
+        x86: edgeworx/healthcare-heart-rate-ui:x86
+        arm: edgeworx/healthcare-heart-rate-ui:arm
+      config: {}
+      rootHostAccess: false
+      ports:
+        - internal: 80
+          external: 5000
+      volumes: []
+      env:
+        - key: BASE_URL
+          value: http://localhost:8080/data
+  routes:
+    - from: heart-rate-monitor
+      to: heart-rate-viewer
+  replicas: 1

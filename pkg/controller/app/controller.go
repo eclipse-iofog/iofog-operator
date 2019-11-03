@@ -1,4 +1,4 @@
-package iofog
+package app
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
-	k8sv1alpha1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/k8s/v1alpha1"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -25,30 +25,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_iofog")
+var log = logf.Log.WithName("controller_app")
 
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileIOFog{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileApp{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	c, err := controller.New("iofog-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("app-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &k8sv1alpha1.IOFog{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &iofogv1.Application{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &k8sv1alpha1.IOFog{},
+		OwnerType:    &iofogv1.Application{},
 	})
 	if err != nil {
 		return err
@@ -57,18 +57,18 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileIOFog{}
+var _ reconcile.Reconciler = &ReconcileApp{}
 
-type ReconcileIOFog struct {
+type ReconcileApp struct {
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-func (r *ReconcileIOFog) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling IOFog")
+	reqLogger.Info("Reconciling App")
 
-	instance := &k8sv1alpha1.IOFog{}
+	instance := &iofogv1.Application{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -80,7 +80,7 @@ func (r *ReconcileIOFog) Reconcile(request reconcile.Request) (reconcile.Result,
 	found := &appsv1.Deployment{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		dep := r.deploymentForIOFog(instance)
+		dep := r.deploymentForApp(instance)
 		reqLogger.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
@@ -144,19 +144,21 @@ func labelsForIOFog(name string) map[string]string {
 	}
 }
 
-func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.Deployment {
-	labels := labelsForIOFog(iofog.Name)
+func (r *ReconcileApp) deploymentForApp(app *iofogv1.Application) *appsv1.Deployment {
+	labels := labelsForIOFog(app.Name)
 
-	microservices, _ := json.Marshal(iofog.Spec.Microservices)
+	microservices, _ := json.Marshal(app.Spec.Microservices)
+	routes, _ := json.Marshal(app.Spec.Routes)
 	annotations := map[string]string{
 		"microservices": string(microservices),
+		"routes":        string(routes),
 	}
 
 	var containers []corev1.Container
-	for _, microservice := range iofog.Spec.Microservices {
+	for _, microservice := range app.Spec.Microservices {
 		container := corev1.Container{
 			Name:  microservice.Name,
-			Image: fmt.Sprintf("catalog-item-id-%d", microservice.CatalogItemId),
+			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
 		}
 		containers = append(containers, container)
 	}
@@ -167,11 +169,11 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      iofog.Name,
-			Namespace: iofog.Namespace,
+			Name:      app.ObjectMeta.Name,
+			Namespace: app.ObjectMeta.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &iofog.Spec.Replicas,
+			Replicas: &app.Spec.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -213,7 +215,7 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 											{
 												Key:      "app",
 												Operator: metav1.LabelSelectorOpIn,
-												Values:   []string{iofog.Name},
+												Values:   []string{app.ObjectMeta.Name},
 											},
 										},
 									},
@@ -228,6 +230,6 @@ func (r *ReconcileIOFog) deploymentForIOFog(iofog *k8sv1alpha1.IOFog) *appsv1.De
 		},
 	}
 
-	controllerutil.SetControllerReference(iofog, dep, r.scheme)
+	controllerutil.SetControllerReference(app, dep, r.scheme)
 	return dep
 }
