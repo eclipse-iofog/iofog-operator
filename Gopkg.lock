@@ -42,15 +42,15 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:9352e102bffa83545aed8b0eae65b2d4c6b5f91226acf83f2294004c9bab0ccf"
+  digest = "1:cd4a2f8e99da126787fbcdf4d792b67a11e01fce4eab7beed3a152413bb29372"
   name = "github.com/eclipse-iofog/iofog-go-sdk"
   packages = [
     "pkg/apps",
     "pkg/client",
   ]
   pruneopts = "NT"
-  revision = "857176811d8d5ccc5035579864deca1f7ac1aea3"
-  version = "v1.3.0-beta"
+  revision = "209d5e3244c3a8c8dfe2956ae49812f4b251dbfc"
+  version = "v1.3.0-rc1"
 
 [[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
