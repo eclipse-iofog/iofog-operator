@@ -49,7 +49,7 @@
     "pkg/client",
   ]
   pruneopts = "NT"
-  revision = "209d5e3244c3a8c8dfe2956ae49812f4b251dbfc"
+  revision = "c163e2e90f72055083b80b5b03d419e5800a028d"
   version = "v1.3.0-rc1"
 
 [[projects]]
