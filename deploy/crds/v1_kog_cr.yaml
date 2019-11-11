@@ -20,7 +20,7 @@ spec:
     controllerReplicaCount: 1
     controllerImage: "iofog/controller:latest"
     kubeletImage: ""
-    loadBalancerIP: ""
+    loadBalancerIp: ""
     serviceType: "ClusterIP"
   connectors:
     image: "iofog/connector:latest"

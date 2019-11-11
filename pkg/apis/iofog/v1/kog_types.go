@@ -33,7 +33,7 @@ type ControlPlane struct {
 	ImagePullSecret        string    `json:"imagePullSecret,omitempty"`
 	KubeletImage           string    `json:"kubeletImage"`
 	ServiceType            string    `json:"serviceType"`
-	LoadBalancerIP         string    `json:"loadBalancerIP,omitempty"`
+	LoadBalancerIP         string    `json:"loadBalancerIp,omitempty"`
 }
 
 type Database struct {
