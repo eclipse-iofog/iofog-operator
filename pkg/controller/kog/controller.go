@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	b64 "encoding/base64"
 )
 
 var log = logf.Log.WithName("controller_kog")
@@ -79,9 +81,9 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	r.logger = log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	r.logger.Info("Reconciling Control Plane")
 
-	// Fetch the Kog instance
-	instance := &iofogv1.Kog{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	// Fetch the Kog kog
+	kog := &iofogv1.Kog{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, kog)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -93,22 +95,40 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
+	// Decode credentials
+	kog.Spec.ControlPlane.IofogUser.Email, err = decode(kog.Spec.ControlPlane.IofogUser.Email)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	kog.Spec.ControlPlane.IofogUser.Password, err = decode(kog.Spec.ControlPlane.IofogUser.Password)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Reconcile Iofog Controller
-	if err = r.reconcileIofogController(instance); err != nil {
+	if err = r.reconcileIofogController(kog); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Reconcile Iofog Kubelet
-	if err = r.reconcileIofogKubelet(instance); err != nil {
+	if err = r.reconcileIofogKubelet(kog); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Reconcile Connectors
-	if err = r.reconcileIofogConnectors(instance); err != nil {
+	if err = r.reconcileIofogConnectors(kog); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	r.logger.Info("Completed Reconciliation")
 
 	return reconcile.Result{}, nil
+}
+
+func decode(encoded string) (string, error) {
+	decodedBytes, err := b64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", err
+	}
+	return string(decodedBytes), nil
 }
