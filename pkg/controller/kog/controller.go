@@ -96,12 +96,7 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	}
 
 	// Decode credentials
-	kog.Spec.ControlPlane.IofogUser.Email, err = decode(kog.Spec.ControlPlane.IofogUser.Email)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	kog.Spec.ControlPlane.IofogUser.Password, err = decode(kog.Spec.ControlPlane.IofogUser.Password)
-	if err != nil {
+	if kog.Spec.ControlPlane.IofogUser.Password, err = decode(kog.Spec.ControlPlane.IofogUser.Password); err != nil {
 		return reconcile.Result{}, err
 	}
 
