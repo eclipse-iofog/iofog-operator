@@ -1,24 +1,20 @@
 FROM golang:1.12-alpine as backend
 
-COPY ./cmd /go/src/github.com/eclipse-iofog/iofog-operator/cmd
-COPY ./pkg /go/src/github.com/eclipse-iofog/iofog-operator/pkg
-COPY ./Gopkg.* /go/src/github.com/eclipse-iofog/iofog-operator/
-COPY ./Makefile /go/src/github.com/eclipse-iofog/iofog-operator/
-COPY ./script /go/src/github.com/eclipse-iofog/iofog-operator/script
-COPY ./.git /go/src/github.com/eclipse-iofog/iofog-operator/.git
-COPY ./build /go/src/github.com/eclipse-iofog/iofog-operator/build
-COPY ./deploy /go/src/github.com/eclipse-iofog/iofog-operator/deploy
+COPY ./go.* /
+COPY ./cmd /cmd
+COPY ./pkg /pkg
+COPY ./Makefile /
+COPY ./build /build
+COPY ./script /script
 
-WORKDIR /go/src/github.com/eclipse-iofog/iofog-operator
+WORKDIR /
 
-RUN apk add --update --no-cache bash curl git make
+RUN apk add --update --no-cache bash curl git make mercurial
 
-RUN script/bootstrap.sh
-
-RUN make vendor 
+RUN ./script/bootstrap.sh
 RUN make build
 
 FROM alpine:3.7
-COPY --from=backend /go/src/github.com/eclipse-iofog/iofog-operator/bin /bin
+COPY --from=backend /bin /bin
 
 ENTRYPOINT ["/bin/iofog-operator"]
