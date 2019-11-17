@@ -3,7 +3,7 @@ module github.com/eclipse-iofog/iofog-operator
 go 1.12
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20191110234250-92c6c6d34082
+	github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20191117221727-97277d47e500
 	github.com/go-logr/logr v0.1.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/operator-framework/operator-sdk v0.10.0
