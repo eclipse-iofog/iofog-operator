@@ -9,18 +9,14 @@ IMAGE = iofog/iofog-operator
 # Build variables
 BUILD_DIR ?= bin
 BUILD_PACKAGE = $(PACKAGE)/cmd/manager
-VERSION ?= $(shell git rev-parse --abbrev-ref HEAD)
-COMMIT_HASH ?= $(shell git rev-parse --short HEAD 2>/dev/null)
-BUILD_DATE ?= $(shell date +%FT%T%z)
-LDFLAGS += -X main.Version=$(VERSION) -X main.CommitHash=$(COMMIT_HASH) -X main.BuildDate=$(BUILD_DATE)
 export CGO_ENABLED ?= 0
 ifeq ($(VERBOSE), 1)
 	GOARGS += -v
 endif
 
-# Golang variables
 DEP_VERSION = 0.5.0
 GOLANG_VERSION = 1.11
+
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
 BRANCH ?= $(TRAVIS_BRANCH)
@@ -44,36 +40,12 @@ vendor: bin/dep ## Install dependencies
 
 .PHONY: build
 build: GOARGS += -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
-build:
+build: fmt
 ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 	@printf "$(GOLANG_VERSION)\n$$(go version | awk '{sub(/^go/, "", $$3);print $$3}')" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -g | head -1 | grep -q -E "^$(GOLANG_VERSION)$$" || (printf "Required Go version is $(GOLANG_VERSION)\nInstalled: `go version`" && exit 1)
 endif
+	operator-sdk generate k8s
 	go build $(GOARGS) $(BUILD_PACKAGE)
-
-.PHONY: build-img
-build-img:
-	docker build --rm -t $(IMAGE):latest -f Dockerfile .
-
-.PHONY: push-img
-push-img:
-	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-ifeq ($(BRANCH), master)
-	# Master branch
-	docker push $(IMAGE):latest
-	docker tag $(IMAGE):latest $(IMAGE):$(RELEASE_TAG)
-	docker push $(IMAGE):$(RELEASE_TAG)
-endif
-ifneq (,$(findstring release,$(BRANCH)))
-	# Release branch
-	docker tag $(IMAGE):latest $(IMAGE):rc-$(RELEASE_TAG)
-	docker push $(IMAGE):rc-$(RELEASE_TAG)
-else
-	# Develop and feature branches
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):latest
-	docker push $(IMAGE)-$(BRANCH):latest
-	docker tag $(IMAGE):latest $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-	docker push $(IMAGE)-$(BRANCH):$(COMMIT_HASH)
-endif
 
 .PHONY: fmt
 fmt:
@@ -83,17 +55,6 @@ fmt:
 test:
 	set -o pipefail; go list ./... | xargs -n1 go test $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
 
-# Docker image targets
-.PHONY: build-img
-build-img: ## Builds docker image for the operator
-	docker build --rm -t $(IMAGE):$(TAG) -f build/Dockerfile .
-
-.PHONY: push-img
-push-img: ## Pushes the docker image to docker hub
-	@echo $(DOCKER_PASS) | docker login -u $(DOCKER_USER) --password-stdin
-	docker push $(IMAGE):$(TAG)
-
-# Util targets
 .PHONY: list
 list: ## List all make targets
 	@$(MAKE) -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort

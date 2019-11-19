@@ -42,6 +42,17 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:2500c5a4aa48d655e52619c2a8eb17eb5bfd0401842e3e905345d8d06599ce57"
+  name = "github.com/eclipse-iofog/iofog-go-sdk"
+  packages = [
+    "pkg/apps",
+    "pkg/client",
+  ]
+  pruneopts = "NT"
+  revision = "30b1afb80e9928b840672d4b8877c947736479f6"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
   name = "github.com/emicklei/go-restful"
   packages = [
@@ -804,19 +815,26 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/eclipse-iofog/iofog-go-sdk/pkg/apps",
+    "github.com/eclipse-iofog/iofog-go-sdk/pkg/client",
+    "github.com/go-logr/logr",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/ready",
     "github.com/operator-framework/operator-sdk/version",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
+    "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/intstr",
+    "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    "k8s.io/client-go/rest",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
