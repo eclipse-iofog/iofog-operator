@@ -50,7 +50,7 @@
   ]
   pruneopts = "NT"
   revision = "30b1afb80e9928b840672d4b8877c947736479f6"
-  version = "v1.3.0-rc2"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:2453249730493850718f891fb40b8f1bc932a0265384fc85b269dc04a01d4673"
