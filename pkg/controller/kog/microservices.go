@@ -19,6 +19,7 @@ import (
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strconv"
 	"strings"
@@ -59,6 +60,7 @@ type container struct {
 	env             []v1.EnvVar
 	command         []string
 	ports           []v1.ContainerPort
+	resources       v1.ResourceRequirements
 }
 
 func newControllerMicroservice(replicas int32, image string, db *iofogv1.Database, svcType, trafficPolicy string, loadBalancerIP string) *microservice {
@@ -117,6 +119,16 @@ func newControllerMicroservice(replicas int32, image string, db *iofogv1.Databas
 						Value: strconv.Itoa(db.Port),
 					},
 				},
+				resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						"cpu":    resource.MustParse("1800m"),
+						"memory": resource.MustParse("3Gi"),
+					},
+					Requests: v1.ResourceList{
+						"cpu":    resource.MustParse("400m"),
+						"memory": resource.MustParse("1Gi"),
+					},
+				},
 			},
 		},
 	}
@@ -142,6 +154,16 @@ func newConnectorMicroservice(image string) *microservice {
 				name:            "connector",
 				image:           image,
 				imagePullPolicy: "Always",
+				resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						"cpu":    resource.MustParse("200m"),
+						"memory": resource.MustParse("1Gi"),
+					},
+					Requests: v1.ResourceList{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("200Mi"),
+					},
+				},
 			},
 		},
 	}
@@ -177,6 +199,16 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 					token,
 					"--iofog-url",
 					fmt.Sprintf("http://%s", controllerEndpoint),
+				},
+				resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						"cpu":    resource.MustParse("200m"),
+						"memory": resource.MustParse("1Gi"),
+					},
+					Requests: v1.ResourceList{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("200Mi"),
+					},
 				},
 			},
 		},
