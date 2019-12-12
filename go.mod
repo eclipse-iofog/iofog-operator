@@ -8,9 +8,11 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/operator-framework/operator-sdk v0.10.0
 	golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db // indirect
+	golang.org/x/tools v0.0.0-20191212203136-8facea2ecf42 // indirect
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
 	sigs.k8s.io/controller-runtime v0.1.10
 )
 

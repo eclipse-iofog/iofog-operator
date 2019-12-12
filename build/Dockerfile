@@ -6,10 +6,11 @@ COPY ./pkg /pkg
 COPY ./Makefile /
 COPY ./build /build
 COPY ./script /script
+COPY ./vendor /vendor
 
 WORKDIR /
 
-RUN apk add --update --no-cache bash curl git make mercurial
+RUN apk add --update --no-cache bash curl git make
 
 RUN ./script/bootstrap.sh
 RUN make build
