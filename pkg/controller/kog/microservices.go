@@ -19,6 +19,7 @@ import (
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strconv"
@@ -50,6 +51,11 @@ type microservice struct {
 	ports           []int
 	replicas        int32
 	containers      []container
+	labels          map[string]string
+	annotations     map[string]string
+	secrets         []v1.Secret
+	volumes         []v1.Volume
+	rbacRules       []rbacv1.PolicyRule
 }
 
 type container struct {
@@ -57,11 +63,13 @@ type container struct {
 	image           string
 	imagePullPolicy string
 	args            []string
+	livenessProbe   *v1.Probe
 	readinessProbe  *v1.Probe
 	env             []v1.EnvVar
 	command         []string
 	ports           []v1.ContainerPort
 	resources       v1.ResourceRequirements
+	volumeMounts    []v1.VolumeMount
 }
 
 func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP string) *microservice {
@@ -70,6 +78,9 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 	}
 	return &microservice{
 		name: "controller",
+		labels: map[string]string{
+			"name": "controller",
+		},
 		ports: []int{
 			51121,
 			80,
@@ -139,6 +150,9 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 func newConnectorMicroservice(image, svcType string) *microservice {
 	return &microservice{
 		name: "connector",
+		labels: map[string]string{
+			"name": "connector",
+		},
 		ports: []int{
 			8080,
 			6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009,
@@ -186,7 +200,10 @@ func getKubeletToken(containers []corev1.Container) (token string, err error) {
 
 func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) *microservice {
 	return &microservice{
-		name:     "kubelet",
+		name: "kubelet",
+		labels: map[string]string{
+			"name": "kubelet",
+		},
 		ports:    []int{60000},
 		replicas: 1,
 		containers: []container{
@@ -222,4 +239,119 @@ func getTrafficPolicy(serviceType string) string {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
 	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
+}
+
+func newSkupperMicroservice(image, volumeMountPath string) *microservice {
+	return &microservice{
+		name: "skupper",
+		labels: map[string]string{
+			"name":                 "skupper",
+			"application":          "skupper-router",
+			"skupper.io/component": "router",
+		},
+		annotations: map[string]string{
+			"prometheus.io/port":   "9090",
+			"prometheus.io/scrape": "true",
+		},
+		ports: []int{
+			5671,  // amqps
+			9090,  // http
+			55671, // interior
+			45671, // edge
+		},
+		replicas:      1,
+		serviceType:   "LoadBalancer",
+		trafficPolicy: "Local",
+		rbacRules: []rbacv1.PolicyRule{
+			{
+				Verbs:     []string{"get", "list", "watch"},
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+			},
+		},
+		volumes: []v1.Volume{
+			{
+				Name: "skupper-internal",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "skupper-internal",
+					},
+				},
+			},
+			{
+				Name: "skupper-amqps",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "skupper-amqps",
+					},
+				},
+			},
+		},
+		containers: []container{
+			{
+				name:            "skupper",
+				image:           image,
+				imagePullPolicy: "Always",
+				livenessProbe: &corev1.Probe{
+					InitialDelaySeconds: 60,
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Port: intstr.FromInt(9090),
+							Path: "/healthz",
+						},
+					},
+				},
+				env: []v1.EnvVar{
+					{
+						Name:  "APPLICATION_NAME",
+						Value: "skupper-router",
+					},
+					{
+						Name:  "QDROUTERD_AUTO_MESH_DISCOVERY",
+						Value: "QUERY",
+					},
+					{
+						Name:  "QDROUTERD_CONF",
+						Value: routerConfig,
+					},
+					{
+						Name: "POD_NAMESPACE",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
+								FieldPath: "metadata.namespace",
+							},
+						},
+					},
+					{
+						Name: "POD_IP",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
+								FieldPath: "status.podIP",
+							},
+						},
+					},
+				},
+				volumeMounts: []v1.VolumeMount{
+					{
+						Name:      "skupper-internal",
+						MountPath: volumeMountPath + "/skupper-internal",
+					},
+					{
+						Name:      "skupper-amqps",
+						MountPath: volumeMountPath + "/skupper-amqps",
+					},
+				},
+				resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						"cpu":    resource.MustParse("200m"),
+						"memory": resource.MustParse("1Gi"),
+					},
+					Requests: v1.ResourceList{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("200Mi"),
+					},
+				},
+			},
+		},
+	}
 }

@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/skupperproject/skupper-cli/pkg/certs"
 )
 
 func (r *ReconcileKog) reconcileIofogConnectors(kog *iofogv1.Kog) error {
@@ -104,7 +106,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	}
 
 	// Connect to cluster
-	k8sClient, err := k8sclient.NewClient()
+	k8sClient, err := k8sclient.New()
 	if err != nil {
 		return err
 	}
@@ -171,6 +173,70 @@ func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 	if err := r.createClusterRoleBinding(kog, ms); err != nil {
 		return err
 	}
+	// Deployment
+	if err := r.createDeployment(kog, ms); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReconcileKog) reconcileSkupper(kog *iofogv1.Kog) error {
+	// Configure
+	qpidRouterImageName := "quay.io/interconnectedcloud/qdrouterd"
+	volumeMountPath := "/etc/qpid-dispatch-certs/"
+	ms := newSkupperMicroservice(qpidRouterImageName, volumeMountPath)
+
+	// Service Account
+	if err := r.createServiceAccount(kog, ms); err != nil {
+		return err
+	}
+
+	// Role
+	if err := r.createRole(kog, ms); err != nil {
+		return err
+	}
+
+	// Role binding
+	if err := r.createRoleBinding(kog, ms); err != nil {
+		return err
+	}
+
+	// Service
+	if err := r.createService(kog, ms); err != nil {
+		return err
+	}
+
+	// Wait for IP
+	k8sClient, err := k8sclient.New()
+	if err != nil {
+		return err
+	}
+
+	ip, err := k8sClient.WaitForLoadBalancer(kog.ObjectMeta.Namespace, ms.name, 120)
+	if err != nil {
+		return err
+	}
+
+	// Secrets
+	// CA
+	caName := "skupper-ca"
+	caSecret := certs.GenerateCASecret(caName, caName)
+	caSecret.ObjectMeta.Namespace = kog.ObjectMeta.Namespace
+	ms.secrets = append(ms.secrets, caSecret)
+
+	// AMQPS and Internal
+	for _, suffix := range []string{"amqps", "internal"} {
+		secret := certs.GenerateSecret("skupper-"+suffix, ip, ip, &caSecret)
+		secret.ObjectMeta.Namespace = kog.ObjectMeta.Namespace
+		ms.secrets = append(ms.secrets, secret)
+	}
+
+	// Create secrets
+	if err := r.createSecrets(kog, ms); err != nil {
+		return err
+	}
+
 	// Deployment
 	if err := r.createDeployment(kog, ms); err != nil {
 		return err

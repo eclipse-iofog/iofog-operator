@@ -27,17 +27,13 @@ func newService(namespace string, ms *microservice) *v1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
 			Namespace: namespace,
-			Labels: map[string]string{
-				"name": ms.name,
-			},
+			Labels:    ms.labels,
 		},
 		Spec: v1.ServiceSpec{
 			Type:                  v1.ServiceType(ms.serviceType),
 			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(ms.trafficPolicy),
 			LoadBalancerIP:        ms.loadBalancerIP,
-			Selector: map[string]string{
-				"name": ms.name,
-			},
+			Selector:              ms.labels,
 		},
 	}
 	// Add ports
@@ -58,25 +54,20 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
 			Namespace: namespace,
-			Labels: map[string]string{
-				"name": ms.name,
-			},
+			Labels:    ms.labels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &ms.replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"name": ms.name,
-				},
+				MatchLabels: ms.labels,
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"name": ms.name,
-					},
+					Labels: ms.labels,
 				},
 				Spec: v1.PodSpec{
 					ServiceAccountName: ms.name,
+					Volumes:            ms.volumes,
 				},
 			},
 		},
@@ -92,6 +83,7 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			Env:             msCont.env,
 			Resources:       msCont.resources,
 			ReadinessProbe:  msCont.readinessProbe,
+			VolumeMounts:    msCont.volumeMounts,
 			ImagePullPolicy: v1.PullPolicy(msCont.imagePullPolicy),
 		}
 		*containers = append(*containers, cont)
@@ -158,72 +150,6 @@ func newRole(namespace string, ms *microservice) *rbacv1.Role {
 			Name:      ms.name,
 			Namespace: namespace,
 		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{
-					"",
-				},
-				Resources: []string{
-					"pods",
-					"services",
-					"endpoints",
-					"persistentvolumeclaims",
-					"events",
-					"configmaps",
-					"secrets",
-				},
-				Verbs: []string{
-					"*",
-				},
-			},
-			{
-				APIGroups: []string{
-					"",
-				},
-				Resources: []string{
-					"namespaces",
-				},
-				Verbs: []string{
-					"get",
-				},
-			},
-			{
-				APIGroups: []string{
-					"apps",
-				},
-				Resources: []string{
-					"deployments",
-					"daemonsets",
-					"replicas",
-					"statefulsets",
-				},
-				Verbs: []string{
-					"*",
-				},
-			},
-			{
-				APIGroups: []string{
-					"monitoring.coreos.com",
-				},
-				Resources: []string{
-					"servicemonitors",
-				},
-				Verbs: []string{
-					"get",
-					"create",
-				},
-			},
-			{
-				APIGroups: []string{
-					"k8s.iofog.org",
-				},
-				Resources: []string{
-					"*",
-				},
-				Verbs: []string{
-					"*",
-				},
-			},
-		},
+		Rules: ms.rbacRules,
 	}
 }

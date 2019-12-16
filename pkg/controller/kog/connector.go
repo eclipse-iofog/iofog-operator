@@ -62,7 +62,7 @@ func (r *ReconcileKog) deleteConnector(kog *iofogv1.Kog, name string) error {
 
 func (r *ReconcileKog) createConnector(kog *iofogv1.Kog, name string) error {
 	// Connect to cluster
-	k8sClient, err := k8sclient.NewClient()
+	k8sClient, err := k8sclient.New()
 	if err != nil {
 		return err
 	}

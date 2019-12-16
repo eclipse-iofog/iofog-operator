@@ -115,6 +115,11 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
+	// Reconcile Skupper
+	if err = r.reconcileSkupper(kog); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	r.logger.Info("Completed Reconciliation")
 
 	return reconcile.Result{}, nil

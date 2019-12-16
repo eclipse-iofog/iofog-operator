@@ -49,6 +49,35 @@ func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) erro
 	return nil
 }
 
+func (r *ReconcileKog) createSecrets(kog *iofogv1.Kog, ms *microservice) error {
+	for _, secret := range ms.secrets {
+		// Set Kog instance as the owner and controller
+		if err := controllerutil.SetControllerReference(kog, &secret, r.scheme); err != nil {
+			return err
+		}
+
+		// Check if this resource already exists
+		found := &corev1.Secret{}
+		err := r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			r.logger.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
+			err = r.client.Create(context.TODO(), &secret)
+			if err != nil {
+				return err
+			}
+
+			// Resource created successfully - don't requeue
+			continue
+		} else if err != nil {
+			return err
+		}
+
+		// Resource already exists - don't requeue
+		r.logger.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+	}
+	return nil
+}
+
 func (r *ReconcileKog) createService(kog *iofogv1.Kog, ms *microservice) error {
 	svc := newService(kog.ObjectMeta.Namespace, ms)
 	// Set Kog instance as the owner and controller
@@ -122,6 +151,65 @@ func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) 
 
 	// Resource already exists - don't requeue
 	r.logger.Info("Skip reconcile: Service Account already exists", "ServiceAccount.Namespace", found.Namespace, "ServiceAccount.Name", found.Name)
+	return nil
+}
+
+func (r *ReconcileKog) createRole(kog *iofogv1.Kog, ms *microservice) error {
+	role := newRole(kog.ObjectMeta.Namespace, ms)
+
+	// Set Kog instance as the owner and controller
+	if err := controllerutil.SetControllerReference(kog, role, r.scheme); err != nil {
+		return err
+	}
+
+	// Check if this resource already exists
+	found := &rbacv1.Role{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		r.logger.Info("Creating a new Role ", "Role.Namespace", role.Namespace, "Role.Name", role.Name)
+		err = r.client.Create(context.TODO(), role)
+		if err != nil {
+			return err
+		}
+
+		// Resource created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Resource already exists - don't requeue
+	r.logger.Info("Skip reconcile: Role already exists", "Role.Namespace", found.Namespace, "Role.Name", found.Name)
+
+	return nil
+}
+
+func (r *ReconcileKog) createRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
+	crb := newRoleBinding(kog.ObjectMeta.Namespace, ms)
+
+	// Set Kog instance as the owner and controller
+	if err := controllerutil.SetControllerReference(kog, crb, r.scheme); err != nil {
+		return err
+	}
+
+	// Check if this resource already exists
+	found := &rbacv1.RoleBinding{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		r.logger.Info("Creating a new Role Binding", "RoleBinding.Namespace", crb.Namespace, "RoleBinding.Name", crb.Name)
+		err = r.client.Create(context.TODO(), crb)
+		if err != nil {
+			return err
+		}
+
+		// Resource created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Resource already exists - don't requeue
+	r.logger.Info("Skip reconcile: Role Binding already exists", "RoleBinding.Namespace", found.Namespace, "RoleBinding.Name", found.Name)
 	return nil
 }
 
