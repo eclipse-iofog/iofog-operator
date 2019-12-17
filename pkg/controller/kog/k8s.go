@@ -78,28 +78,24 @@ func (r *ReconcileKog) createService(kog *iofogv1.Kog, ms *microservice) error {
 }
 
 func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) error {
-	return r.createServiceAccountWithImagePullSecrets(kog, ms, "")
-}
-
-func (r *ReconcileKog) createServiceAccountWithImagePullSecrets(kog *iofogv1.Kog, ms *microservice, pullSecret string) error {
 	svcAcc := newServiceAccount(kog.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
-	if len(pullSecret) > 0 {
+	if ms.imagePullSecret != "" {
 		secret := &corev1.Secret{}
 		err := r.client.Get(context.TODO(), types.NamespacedName{
 			Namespace: svcAcc.Namespace,
-			Name:      pullSecret,
+			Name:      ms.imagePullSecret,
 		}, secret)
 		if err != nil || secret.Type != corev1.SecretTypeDockerConfigJson {
 			r.logger.Error(err, "Failed to create a new Service Account with imagePullSecret",
 				"ServiceAccount.Namespace", svcAcc.Namespace,
 				"ServiceAccount.Name", svcAcc.Name,
-				"pullSecret", pullSecret)
+				"pullSecret", ms.imagePullSecret)
 			return err
 		}
 		svcAcc.ImagePullSecrets = []corev1.LocalObjectReference{
-			{Name: pullSecret},
+			{Name: ms.imagePullSecret},
 		}
 	}
 

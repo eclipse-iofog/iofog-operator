@@ -83,11 +83,19 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	} else if cp.ServiceType == "LoadBalancer" {
 		trafficPolicy = "Local"
 	}
-	ms := newControllerMicroservice(cp.ControllerReplicaCount, cp.ControllerImage, &cp.Database, cp.ServiceType, trafficPolicy, cp.LoadBalancerIP)
+	ms := newControllerMicroservice(
+		cp.ControllerReplicaCount,
+		cp.ControllerImage,
+		cp.ImagePullSecret,
+		&cp.Database,
+		cp.ServiceType,
+		trafficPolicy,
+		cp.LoadBalancerIP,
+	)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
 	// Service Account
-	if err := r.createServiceAccountWithImagePullSecrets(kog, ms, cp.ImagePullSecret); err != nil {
+	if err := r.createServiceAccount(kog, ms); err != nil {
 		return err
 	}
 

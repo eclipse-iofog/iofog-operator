@@ -42,13 +42,14 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name           string
-	loadBalancerIP string
-	serviceType    string
-	trafficPolicy  string
-	ports          []int
-	replicas       int32
-	containers     []container
+	name            string
+	loadBalancerIP  string
+	serviceType     string
+	trafficPolicy   string
+	imagePullSecret string
+	ports           []int
+	replicas        int32
+	containers      []container
 }
 
 type container struct {
@@ -63,7 +64,7 @@ type container struct {
 	resources       v1.ResourceRequirements
 }
 
-func newControllerMicroservice(replicas int32, image string, db *iofogv1.Database, svcType, trafficPolicy string, loadBalancerIP string) *microservice {
+func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, trafficPolicy, loadBalancerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}
@@ -73,10 +74,11 @@ func newControllerMicroservice(replicas int32, image string, db *iofogv1.Databas
 			51121,
 			80,
 		},
-		replicas:       replicas,
-		serviceType:    svcType,
-		trafficPolicy:  trafficPolicy,
-		loadBalancerIP: loadBalancerIP,
+		imagePullSecret: imagePullSecret,
+		replicas:        replicas,
+		serviceType:     svcType,
+		trafficPolicy:   trafficPolicy,
+		loadBalancerIP:  loadBalancerIP,
 		containers: []container{
 			{
 				name:            "controller",
