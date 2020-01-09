@@ -27,6 +27,13 @@ RELEASE_TAG ?= 0.0.0
 clean: ## Clean the working area and the project
 	rm -rf $(BUILD_DIR)/
 
+.PHONY: vendor
+vendor: # Vendor all deps
+	@go mod vendor
+	@for dep in golang.org/x/tools k8s.io/gengo; do \
+		git checkout -- vendor/$$dep; \
+	done \
+
 .PHONY: build
 build: GOARGS += -mod=vendor -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
 build: gen
