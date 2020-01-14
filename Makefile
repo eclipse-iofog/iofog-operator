@@ -15,7 +15,7 @@ ifeq ($(VERBOSE), 1)
 endif
 
 DEP_VERSION = 0.5.0
-GOLANG_VERSION = 1.11
+GOLANG_VERSION = 1.12
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
