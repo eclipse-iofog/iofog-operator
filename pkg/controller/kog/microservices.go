@@ -64,7 +64,7 @@ type container struct {
 	resources       v1.ResourceRequirements
 }
 
-func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, trafficPolicy, loadBalancerIP string) *microservice {
+func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}
@@ -77,7 +77,7 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 		imagePullSecret: imagePullSecret,
 		replicas:        replicas,
 		serviceType:     svcType,
-		trafficPolicy:   trafficPolicy,
+		trafficPolicy:   getTrafficPolicy(svcType),
 		loadBalancerIP:  loadBalancerIP,
 		containers: []container{
 			{
@@ -136,7 +136,7 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 	}
 }
 
-func newConnectorMicroservice(image string) *microservice {
+func newConnectorMicroservice(image, svcType string) *microservice {
 	return &microservice{
 		name: "connector",
 		ports: []int{
@@ -149,8 +149,8 @@ func newConnectorMicroservice(image string) *microservice {
 			6050,
 		},
 		replicas:      1,
-		serviceType:   "LoadBalancer",
-		trafficPolicy: "Local",
+		serviceType:   svcType,
+		trafficPolicy: getTrafficPolicy(svcType),
 		containers: []container{
 			{
 				name:            "connector",
@@ -215,4 +215,11 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 			},
 		},
 	}
+}
+
+func getTrafficPolicy(serviceType string) string {
+	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
+		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
+	}
+	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
 }

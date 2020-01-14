@@ -9,6 +9,7 @@ import (
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,7 +62,7 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *iofogv1.Kog) error {
 		// Untouched Connectors were neither deleted nor created
 		if !isDelete {
 			if isCreate, _ := createConnectors[k]; !isCreate {
-				ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
+				ms := newConnectorMicroservice(kog.Spec.Connectors.Image, kog.Spec.Connectors.ServiceType)
 				ms.name = k
 				// Deployment
 				if err := r.createDeployment(kog, ms); err != nil {
@@ -77,19 +78,12 @@ func (r *ReconcileKog) reconcileIofogConnectors(kog *iofogv1.Kog) error {
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
-	trafficPolicy := ""
-	if cp.ServiceType == "NodePort" {
-		trafficPolicy = "Cluster"
-	} else if cp.ServiceType == "LoadBalancer" {
-		trafficPolicy = "Local"
-	}
 	ms := newControllerMicroservice(
 		cp.ControllerReplicaCount,
 		cp.ControllerImage,
 		cp.ImagePullSecret,
 		&cp.Database,
 		cp.ServiceType,
-		trafficPolicy,
 		cp.LoadBalancerIP,
 	)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
@@ -121,7 +115,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	}
 
 	// Wait for external IP of LB Service
-	if cp.ServiceType == "LoadBalancer" {
+	if cp.ServiceType == string(corev1.ServiceTypeLoadBalancer) {
 		_, err = k8sClient.WaitForLoadBalancer(kog.ObjectMeta.Namespace, ms.name, 240)
 		if err != nil {
 			return err

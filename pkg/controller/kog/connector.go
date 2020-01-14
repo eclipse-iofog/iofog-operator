@@ -66,7 +66,7 @@ func (r *ReconcileKog) createConnector(kog *iofogv1.Kog, name string) error {
 	if err != nil {
 		return err
 	}
-	ms := newConnectorMicroservice(kog.Spec.Connectors.Image)
+	ms := newConnectorMicroservice(kog.Spec.Connectors.Image, kog.Spec.Connectors.ServiceType)
 	ms.name = name
 	// Create
 	// Service Account
