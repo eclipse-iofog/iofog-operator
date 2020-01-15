@@ -246,6 +246,19 @@ func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUser
 				name:            "port-manager",
 				image:           image,
 				imagePullPolicy: "Always",
+				readinessProbe: &v1.Probe{
+					Handler: v1.Handler{
+						Exec: &v1.ExecAction{
+							Command: []string{
+								"stat",
+								"/tmp/operator-sdk-ready",
+							},
+						},
+					},
+					InitialDelaySeconds: 4,
+					PeriodSeconds:       10,
+					FailureThreshold:    1,
+				},
 				resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
 						"cpu":    resource.MustParse("200m"),
