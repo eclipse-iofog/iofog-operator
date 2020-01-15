@@ -234,11 +234,45 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 	}
 }
 
-func getTrafficPolicy(serviceType string) string {
-	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
-		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
+func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUserPass string) *microservice {
+	return &microservice{
+		name: "port-manager",
+		labels: map[string]string{
+			"name": "port-manager",
+		},
+		replicas: 1,
+		containers: []container{
+			{
+				name:            "port-manager",
+				image:           image,
+				imagePullPolicy: "Always",
+				resources: v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						"cpu":    resource.MustParse("200m"),
+						"memory": resource.MustParse("1Gi"),
+					},
+					Requests: v1.ResourceList{
+						"cpu":    resource.MustParse("50m"),
+						"memory": resource.MustParse("200Mi"),
+					},
+				},
+				env: []v1.EnvVar{
+					{
+						Name:  "WATCH_NAMESPACE",
+						Value: watchNamespace,
+					},
+					{
+						Name:  "IOFOG_USER_EMAIL",
+						Value: iofogUserEmail,
+					},
+					{
+						Name:  "IOFOG_USER_PASS",
+						Value: iofogUserPass,
+					},
+				},
+			},
+		},
 	}
-	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
 }
 
 func newSkupperMicroservice(image, volumeMountPath string) *microservice {
@@ -354,4 +388,11 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 			},
 		},
 	}
+}
+
+func getTrafficPolicy(serviceType string) string {
+	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
+		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
+	}
+	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
 }

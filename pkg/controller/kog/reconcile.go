@@ -137,6 +137,30 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	return nil
 }
 
+func (r *ReconcileKog) reconcilePortManager(kog *iofogv1.Kog) error {
+	// TODO: remove hard coded image
+	image := "gcr.io/focal-freedom-236620/port-manager"
+	ms := newPortManagerMicroservice(image,
+		kog.ObjectMeta.Namespace,
+		kog.Spec.ControlPlane.IofogUser.Email,
+		kog.Spec.ControlPlane.IofogUser.Password)
+
+	// Service Account
+	if err := r.createServiceAccount(kog, ms); err != nil {
+		return err
+	}
+	// TODO: Use Role Binding instead
+	// ClusterRoleBinding
+	if err := r.createClusterRoleBinding(kog, ms); err != nil {
+		return err
+	}
+	// Deployment
+	if err := r.createDeployment(kog, ms); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 	// Generate new token if required
 	token := ""
