@@ -44,7 +44,7 @@ endif
 
 .PHONY: gen
 gen: ## Generate code
-	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog/v1 -O zz_generated.deepcopy -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
+	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog/v1 -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
 
 .PHONY: fmt
 fmt:
