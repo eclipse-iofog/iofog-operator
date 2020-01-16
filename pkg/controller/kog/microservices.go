@@ -275,6 +275,18 @@ func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUser
 						Value: watchNamespace,
 					},
 					{
+						Name: "POD_NAME",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &v1.ObjectFieldSelector{
+								FieldPath: "metadata.name",
+							},
+						},
+					},
+					{
+						Name:  "OPERATOR_NAME",
+						Value: "port-manager",
+					},
+					{
 						Name:  "IOFOG_USER_EMAIL",
 						Value: iofogUserEmail,
 					},
