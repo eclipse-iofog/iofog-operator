@@ -139,8 +139,8 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 
 func (r *ReconcileKog) reconcilePortManager(kog *iofogv1.Kog) error {
 	// TODO: remove hard coded image
-	image := "gcr.io/focal-freedom-236620/port-manager"
-	ms := newPortManagerMicroservice(image,
+	ms := newPortManagerMicroservice(
+		kog.Spec.ControlPlane.PortManagerImage,
 		kog.ObjectMeta.Namespace,
 		kog.Spec.ControlPlane.IofogUser.Email,
 		kog.Spec.ControlPlane.IofogUser.Password)

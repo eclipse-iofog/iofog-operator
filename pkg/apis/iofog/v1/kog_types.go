@@ -31,6 +31,7 @@ type ControlPlane struct {
 	ControllerReplicaCount int32     `json:"controllerReplicaCount"`
 	Database               Database  `json:"database,omitempty"`
 	ControllerImage        string    `json:"controllerImage"`
+	PortManagerImage       string    `json:"portManagerImage"`
 	ImagePullSecret        string    `json:"imagePullSecret,omitempty"`
 	KubeletImage           string    `json:"kubeletImage"`
 	ServiceType            string    `json:"serviceType"`
