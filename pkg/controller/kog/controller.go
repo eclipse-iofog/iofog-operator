@@ -110,11 +110,6 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	// Reconcile Connectors
-	if err = r.reconcileIofogConnectors(kog); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	// Reconcile Port Manager
 	if err = r.reconcilePortManager(kog); err != nil {
 		return reconcile.Result{}, err

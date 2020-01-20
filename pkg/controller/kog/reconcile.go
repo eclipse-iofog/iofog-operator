@@ -3,7 +3,6 @@ package kog
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
@@ -16,66 +15,6 @@ import (
 
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 )
-
-func (r *ReconcileKog) reconcileIofogConnectors(kog *iofogv1.Kog) error {
-
-	// Find the current state to compare against requested state
-	depList := &appsv1.DeploymentList{}
-	if err := r.client.List(context.Background(), &client.ListOptions{}, depList); err != nil {
-		return err
-	}
-	// Determine which connectors to create and delete
-	createConnectors := make(map[string]bool)
-	deleteConnectors := make(map[string]bool)
-	for _, connector := range kog.Spec.Connectors.Instances {
-		name := prefixConnectorName(connector.Name)
-		createConnectors[name] = true
-		deleteConnectors[name] = false
-	}
-	for _, dep := range depList.Items {
-		if strings.Contains(dep.ObjectMeta.Name, getConnectorNamePrefix()) {
-			createConnectors[dep.ObjectMeta.Name] = false
-			if _, exists := deleteConnectors[dep.ObjectMeta.Name]; !exists {
-				deleteConnectors[dep.ObjectMeta.Name] = true
-			}
-		}
-	}
-
-	// Delete connectors
-	for k, isDelete := range deleteConnectors {
-		if isDelete {
-			if err := r.deleteConnector(kog, k); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Create connectors
-	for k, isCreate := range createConnectors {
-		if isCreate {
-			if err := r.createConnector(kog, k); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Update existing Connector deployments (e.g. for image change)
-	for k, isDelete := range deleteConnectors {
-		// Untouched Connectors were neither deleted nor created
-		if !isDelete {
-			if isCreate, _ := createConnectors[k]; !isCreate {
-				ms := newConnectorMicroservice(kog.Spec.Connectors.Image, kog.Spec.Connectors.ServiceType)
-				ms.name = k
-				// Deployment
-				if err := r.createDeployment(kog, ms); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
 
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
