@@ -16,14 +16,16 @@ package kog
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/skupper"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strconv"
-	"strings"
 )
 
 func getConnectorNamePrefix() string {
@@ -72,7 +74,7 @@ type container struct {
 	volumeMounts    []v1.VolumeMount
 }
 
-func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP string) *microservice {
+func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP, routerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}
@@ -130,6 +132,22 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 					{
 						Name:  "DB_PORT",
 						Value: strconv.Itoa(db.Port),
+					},
+					{
+						Name:  "IOFOG_DEFAULT_ROUTER_HOST",
+						Value: routerIP,
+					},
+					{
+						Name:  "IOFOG_DEFAULT_INTER_ROUTER_PORT",
+						Value: skupper.InteriorPort,
+					},
+					{
+						Name:  "IOFOG_DEFAULT_EDGE_ROUTER_PORT",
+						Value: skupper.EdgePort,
+					},
+					{
+						Name:  "IOFOG_DEFAULT_MESSAGING_ROUTER_PORT",
+						Value: skupper.MessagePort,
 					},
 				},
 				resources: v1.ResourceRequirements{
@@ -371,7 +389,7 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 					},
 					{
 						Name:  "QDROUTERD_CONF",
-						Value: routerConfig,
+						Value: skupper.GetRouterConfig(),
 					},
 					{
 						Name: "POD_NAMESPACE",

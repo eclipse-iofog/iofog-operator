@@ -18,6 +18,19 @@ import (
 
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
+
+	// Connect to cluster
+	k8sClient, err := k8sclient.New()
+	if err != nil {
+		return err
+	}
+
+	// Get Router IP
+	routerIP, err := k8sClient.WaitForLoadBalancer(kog.Namespace, newSkupperMicroservice("", "").name, 120)
+	if err != nil {
+		return err
+	}
+
 	// Configure
 	ms := newControllerMicroservice(
 		cp.ControllerReplicaCount,
@@ -26,6 +39,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 		&cp.Database,
 		cp.ServiceType,
 		cp.LoadBalancerIP,
+		routerIP,
 	)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
@@ -41,12 +55,6 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 
 	// Service
 	if err := r.createService(kog, ms); err != nil {
-		return err
-	}
-
-	// Connect to cluster
-	k8sClient, err := k8sclient.New()
-	if err != nil {
 		return err
 	}
 

@@ -1,14 +1,33 @@
-package kog
+package skupper
 
-const routerConfig = `
+import (
+	"strings"
+)
+
+func GetRouterConfig() string {
+	replacer := strings.NewReplacer("<MESSAGE_PORT>", MessagePort,
+		"<HTTP_PORT>", HTTPPort,
+		"<INTERIOR_PORT>", InteriorPort,
+		"<EDGE_PORT>", EdgePort)
+	return replacer.Replace(rawRouterConfig)
+}
+
+const (
+	MessagePort  = "5672"
+	HTTPPort     = "9090"
+	InteriorPort = "55672"
+	EdgePort     = "45672"
+)
+
+const rawRouterConfig = `
 router {
     mode: interior
     id: Router.A
 }
 
 listener {
-    host: localhost
-    port: 5672
+    host: 0.0.0.0
+    port: <MESSAGE_PORT>
     role: normal
 }
 
@@ -21,35 +40,7 @@ sslProfile {
 
 listener {
     host: 0.0.0.0
-    port: 5671
-    role: normal
-    #sslProfile: skupper-amqps
-    #saslMechanisms: EXTERNAL
-    #authenticatePeer: true
-    saslMechanisms: ANONYMOUS
-    authenticatePeer: no
-}
-
-#{{- if eq .Console "internal"}}
-#listener {
-#    host: 0.0.0.0
-#    port: 8080
-#    role: normal
-#    http: true
-#    authenticatePeer: true
-#}
-#{{- else if eq .Console "unsecured"}}
-#listener {
-#    host: 0.0.0.0
-#    port: 8080
-#    role: normal
-#    http: true
-#}
-#{{- end }}
-
-listener {
-    host: 0.0.0.0
-    port: 9090
+    port: <HTTP_PORT>
     role: normal
     http: true
     httpRootDir: disabled
@@ -58,7 +49,6 @@ listener {
     metrics: true
 }
 
-#{{- if eq .Mode "interior" }}
 sslProfile {
     name: skupper-internal
     certFile: /etc/qpid-dispatch-certs/skupper-internal/tls.crt
@@ -69,7 +59,7 @@ sslProfile {
 listener {
     role: inter-router
     host: 0.0.0.0
-    port: 55671
+    port: <INTERIOR_PORT>
     #sslProfile: skupper-internal
     #saslMechanisms: EXTERNAL
     #authenticatePeer: true
@@ -80,19 +70,17 @@ listener {
 listener {
     role: edge
     host: 0.0.0.0
-    port: 45671
+    port: <EDGE_PORT>
     #sslProfile: skupper-internal
     #saslMechanisms: EXTERNAL
     #authenticatePeer: true
     saslMechanisms: ANONYMOUS
     authenticatePeer: no
 }
-#{{- end}}
 
 address {
     prefix: mc
     distribution: multicast
 }
 
-## Connectors: ##
 `
