@@ -28,6 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const (
+	skupperName = "skupper"
+)
+
 func getConnectorNamePrefix() string {
 	return "connector-"
 }
@@ -139,15 +143,15 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 					},
 					{
 						Name:  "IOFOG_DEFAULT_INTER_ROUTER_PORT",
-						Value: skupper.InteriorPort,
+						Value: strconv.Itoa(skupper.InteriorPort),
 					},
 					{
 						Name:  "IOFOG_DEFAULT_EDGE_ROUTER_PORT",
-						Value: skupper.EdgePort,
+						Value: strconv.Itoa(skupper.EdgePort),
 					},
 					{
 						Name:  "IOFOG_DEFAULT_MESSAGING_ROUTER_PORT",
-						Value: skupper.MessagePort,
+						Value: strconv.Itoa(skupper.MessagePort),
 					},
 				},
 				resources: v1.ResourceRequirements{
@@ -252,7 +256,7 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 	}
 }
 
-func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUserPass string) *microservice {
+func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmail, iofogUserPass string) *microservice {
 	return &microservice{
 		name: "port-manager",
 		labels: map[string]string{
@@ -312,6 +316,14 @@ func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUser
 						Name:  "IOFOG_USER_PASS",
 						Value: iofogUserPass,
 					},
+					{
+						Name:  "PROXY_IMAGE",
+						Value: proxyImage,
+					},
+					{
+						Name:  "ROUTER_ADDRESS",
+						Value: skupperName,
+					},
 				},
 			},
 		},
@@ -320,10 +332,10 @@ func newPortManagerMicroservice(image, watchNamespace, iofogUserEmail, iofogUser
 
 func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 	return &microservice{
-		name: "skupper",
+		name: skupperName,
 		labels: map[string]string{
-			"name":                 "skupper",
-			"application":          "skupper-router",
+			"name":                 skupperName,
+			"application":          "interior-router",
 			"skupper.io/component": "router",
 		},
 		annotations: map[string]string{
@@ -331,10 +343,10 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 			"prometheus.io/scrape": "true",
 		},
 		ports: []int{
-			5671,  // amqps
-			9090,  // http
-			55671, // interior
-			45671, // edge
+			skupper.MessagePort,
+			skupper.HTTPPort,
+			skupper.InteriorPort,
+			skupper.EdgePort,
 		},
 		replicas:      1,
 		serviceType:   "LoadBalancer",
@@ -366,7 +378,7 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 		},
 		containers: []container{
 			{
-				name:            "skupper",
+				name:            skupperName,
 				image:           image,
 				imagePullPolicy: "Always",
 				livenessProbe: &corev1.Probe{

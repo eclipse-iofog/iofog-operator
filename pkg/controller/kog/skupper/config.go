@@ -1,22 +1,23 @@
 package skupper
 
 import (
+	"strconv"
 	"strings"
 )
 
 func GetRouterConfig() string {
-	replacer := strings.NewReplacer("<MESSAGE_PORT>", MessagePort,
-		"<HTTP_PORT>", HTTPPort,
-		"<INTERIOR_PORT>", InteriorPort,
-		"<EDGE_PORT>", EdgePort)
+	replacer := strings.NewReplacer("<MESSAGE_PORT>", strconv.Itoa(MessagePort),
+		"<HTTP_PORT>", strconv.Itoa(HTTPPort),
+		"<INTERIOR_PORT>", strconv.Itoa(InteriorPort),
+		"<EDGE_PORT>", strconv.Itoa(EdgePort))
 	return replacer.Replace(rawRouterConfig)
 }
 
 const (
-	MessagePort  = "5672"
-	HTTPPort     = "9090"
-	InteriorPort = "55672"
-	EdgePort     = "45672"
+	MessagePort  = 5672
+	HTTPPort     = 9090
+	InteriorPort = 55672
+	EdgePort     = 45672
 )
 
 const rawRouterConfig = `

@@ -85,9 +85,9 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 }
 
 func (r *ReconcileKog) reconcilePortManager(kog *iofogv1.Kog) error {
-	// TODO: remove hard coded image
 	ms := newPortManagerMicroservice(
 		kog.Spec.ControlPlane.PortManagerImage,
+		kog.Spec.ControlPlane.ProxyImage,
 		kog.ObjectMeta.Namespace,
 		kog.Spec.ControlPlane.IofogUser.Email,
 		kog.Spec.ControlPlane.IofogUser.Password)
