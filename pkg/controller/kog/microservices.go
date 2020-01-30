@@ -78,7 +78,7 @@ type container struct {
 	volumeMounts    []v1.VolumeMount
 }
 
-func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP, routerIP string) *microservice {
+func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP string) *microservice {
 	if replicas == 0 {
 		replicas = 1
 	}
@@ -136,22 +136,6 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 					{
 						Name:  "DB_PORT",
 						Value: strconv.Itoa(db.Port),
-					},
-					{
-						Name:  "IOFOG_DEFAULT_ROUTER_HOST",
-						Value: routerIP,
-					},
-					{
-						Name:  "IOFOG_DEFAULT_INTER_ROUTER_PORT",
-						Value: strconv.Itoa(skupper.InteriorPort),
-					},
-					{
-						Name:  "IOFOG_DEFAULT_EDGE_ROUTER_PORT",
-						Value: strconv.Itoa(skupper.EdgePort),
-					},
-					{
-						Name:  "IOFOG_DEFAULT_MESSAGING_ROUTER_PORT",
-						Value: strconv.Itoa(skupper.MessagePort),
 					},
 				},
 				resources: v1.ResourceRequirements{

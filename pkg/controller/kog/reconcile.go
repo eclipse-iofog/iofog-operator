@@ -39,7 +39,6 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 		&cp.Database,
 		cp.ServiceType,
 		cp.LoadBalancerIP,
-		routerIP,
 	)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 
@@ -78,6 +77,11 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 
 	// Set up user
 	if err = r.createIofogUser(&cp.IofogUser); err != nil {
+		return err
+	}
+
+	// Create default router
+	if err = r.createDefaultRouter(&cp.IofogUser, routerIP); err != nil {
 		return err
 	}
 

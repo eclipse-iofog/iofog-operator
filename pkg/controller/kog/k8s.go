@@ -7,6 +7,7 @@ import (
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/skupper"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -290,6 +291,26 @@ func (r *ReconcileKog) createIofogUser(user *iofogv1.IofogUser) (err error) {
 		}
 	}
 
+	return nil
+}
+
+func newInt(val int) *int {
+	return &val
+}
+
+func (r *ReconcileKog) createDefaultRouter(user *iofogv1.IofogUser, routerIP string) (err error) {
+	iofogClient := iofogclient.New(r.apiEndpoint)
+	routerConfig := iofogclient.Router{
+		Host: routerIP,
+		RouterConfig: iofogclient.RouterConfig{
+			InterRouterPort: newInt(skupper.InteriorPort),
+			EdgeRouterPort:  newInt(skupper.EdgePort),
+			MessagingPort:   newInt(skupper.MessagePort),
+		},
+	}
+	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
+		return err
+	}
 	return nil
 }
 
