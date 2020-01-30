@@ -23,7 +23,7 @@ const (
 const rawRouterConfig = `
 router {
     mode: interior
-    id: Router.A
+    id: default-router
 }
 
 listener {
