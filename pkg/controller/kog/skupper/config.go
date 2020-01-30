@@ -79,9 +79,4 @@ listener {
     authenticatePeer: no
 }
 
-address {
-    prefix: mc
-    distribution: multicast
-}
-
 `
