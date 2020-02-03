@@ -32,14 +32,6 @@ const (
 	skupperName = "skupper"
 )
 
-func getConnectorNamePrefix() string {
-	return "connector-"
-}
-
-func prefixConnectorName(name string) string {
-	return "connector-" + name
-}
-
 func removeConnectorNamePrefix(name string) string {
 	pos := strings.Index(name, "-")
 	if pos == -1 || pos >= len(name)-1 {
@@ -146,44 +138,6 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 					Requests: v1.ResourceList{
 						"cpu":    resource.MustParse("400m"),
 						"memory": resource.MustParse("1Gi"),
-					},
-				},
-			},
-		},
-	}
-}
-
-func newConnectorMicroservice(image, svcType string) *microservice {
-	return &microservice{
-		name: "connector",
-		labels: map[string]string{
-			"name": "connector",
-		},
-		ports: []int{
-			8080,
-			6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009,
-			6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017, 6018, 6019,
-			6020, 6021, 6022, 6023, 6024, 6025, 6026, 6027, 6028, 6029,
-			6030, 6031, 6032, 6033, 6034, 6035, 6036, 6037, 6038, 6039,
-			6040, 6041, 6042, 6043, 6044, 6045, 6046, 6047, 6048, 6049,
-			6050,
-		},
-		replicas:      1,
-		serviceType:   svcType,
-		trafficPolicy: getTrafficPolicy(svcType),
-		containers: []container{
-			{
-				name:            "connector",
-				image:           image,
-				imagePullPolicy: "Always",
-				resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						"cpu":    resource.MustParse("200m"),
-						"memory": resource.MustParse("1Gi"),
-					},
-					Requests: v1.ResourceList{
-						"cpu":    resource.MustParse("50m"),
-						"memory": resource.MustParse("200Mi"),
 					},
 				},
 			},
