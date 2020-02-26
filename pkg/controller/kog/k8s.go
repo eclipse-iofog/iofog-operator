@@ -244,8 +244,6 @@ func (r *ReconcileKog) createClusterRoleBinding(kog *iofogv1.Kog, ms *microservi
 }
 
 func (r *ReconcileKog) waitForControllerAPI() (err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-
 	connected := false
 	iter := 0
 	const timeoutSeconds = 120
@@ -256,7 +254,7 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 			return
 		}
 		// Check the status endpoint
-		if _, err = iofogClient.GetStatus(); err != nil {
+		if _, err = r.iofogClient.GetStatus(); err != nil {
 			// Retry if connection is refused, this is usually only necessary on K8s Controller
 			if strings.Contains(err.Error(), "connection refused") {
 				time.Sleep(time.Millisecond * 1000)
@@ -275,20 +273,19 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 }
 
 func (r *ReconcileKog) createIofogUser(user *iofogv1.IofogUser) (err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-
-	if err = iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
+	if err = r.iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
 			return err
 		}
-		// Try to log in
-		if err = iofogClient.Login(iofogclient.LoginRequest{
-			Email:    user.Email,
-			Password: user.Password,
-		}); err != nil {
-			return err
-		}
+	}
+
+	// Try to log in
+	if err = r.iofogClient.Login(iofogclient.LoginRequest{
+		Email:    user.Email,
+		Password: user.Password,
+	}); err != nil {
+		return err
 	}
 
 	return nil
@@ -299,7 +296,6 @@ func newInt(val int) *int {
 }
 
 func (r *ReconcileKog) createDefaultRouter(user *iofogv1.IofogUser, routerIP string) (err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
 	routerConfig := iofogclient.Router{
 		Host: routerIP,
 		RouterConfig: iofogclient.RouterConfig{
@@ -308,20 +304,8 @@ func (r *ReconcileKog) createDefaultRouter(user *iofogv1.IofogUser, routerIP str
 			MessagingPort:   newInt(skupper.MessagePort),
 		},
 	}
-	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
+	if err = r.iofogClient.PutDefaultRouter(routerConfig); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (r *ReconcileKog) getKubeletToken(user *iofogv1.IofogUser) (token string, err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-	if err = iofogClient.Login(iofogclient.LoginRequest{
-		Email:    user.Email,
-		Password: user.Password,
-	}); err != nil {
-		return
-	}
-	token = iofogClient.GetAccessToken()
-	return
 }

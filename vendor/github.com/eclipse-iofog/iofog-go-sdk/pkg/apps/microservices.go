@@ -165,7 +165,7 @@ func (exe *microserviceExecutor) validate() error {
 	exe.routes = routes
 
 	// Validate microservice
-	if err := validateMicroservice(exe.msvc, exe.agentsByName, exe.catalogByID, exe.registryByID); err != nil {
+	if err := validateMicroservice(&exe.msvc, exe.agentsByName, exe.catalogByID, exe.registryByID); err != nil {
 		return err
 	}
 

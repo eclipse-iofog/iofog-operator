@@ -96,6 +96,8 @@ github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200112205444-b0cebcdf3134 h1:OM1P
 github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200112205444-b0cebcdf3134/go.mod h1:JtMRzY7mu4od6Nwzu0TITg20bsNnKW78OwSCI59fbu8=
 github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200130014039-94af5b16622e h1:TuTGTPsZ9mtJzos8jkRYheZ/esoyQRyySj2aSWLyMdQ=
 github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200130014039-94af5b16622e/go.mod h1:JtMRzY7mu4od6Nwzu0TITg20bsNnKW78OwSCI59fbu8=
+github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200217003231-92179a9a77f2 h1:2VtyfPd8FXnfALpEcnSTV2xOmYtLHncwv1xOZtJM8sE=
+github.com/eclipse-iofog/iofog-go-sdk v0.0.0-20200217003231-92179a9a77f2/go.mod h1:JtMRzY7mu4od6Nwzu0TITg20bsNnKW78OwSCI59fbu8=
 github.com/eclipse-iofog/iofog-go-sdk v1.3.0-rc2 h1:92c7RJLvHMyH+Khs5d2JKSYawPlPGF8HEoy133mO144=
 github.com/eclipse-iofog/iofog-go-sdk v1.3.0-rc2/go.mod h1:X9xGwzS9ySY5iqY5hpEK6mtWBvwr5EH8377kq+ohSVY=
 github.com/eclipse-iofog/iofog-go-sdk v1.3.0 h1:6OD+WUw6bl/gDflGMID8xAvZDPGlKQcK/ONxTQa100k=

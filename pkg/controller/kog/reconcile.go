@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
@@ -18,19 +19,6 @@ import (
 
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
-
-	// Connect to cluster
-	k8sClient, err := k8sclient.New()
-	if err != nil {
-		return err
-	}
-
-	// Get Router IP
-	routerIP, err := k8sClient.WaitForLoadBalancer(kog.Namespace, newSkupperMicroservice("", "").name, 120)
-	if err != nil {
-		return err
-	}
-
 	// Configure
 	ms := newControllerMicroservice(
 		cp.ControllerReplicaCount,
@@ -41,6 +29,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 		cp.LoadBalancerIP,
 	)
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
+	r.iofogClient = iofogclient.New(r.apiEndpoint)
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
@@ -54,6 +43,12 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 
 	// Service
 	if err := r.createService(kog, ms); err != nil {
+		return err
+	}
+
+	// Connect to cluster
+	k8sClient, err := k8sclient.New()
+	if err != nil {
 		return err
 	}
 
@@ -80,6 +75,11 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 		return err
 	}
 
+	// Get Router IP
+	routerIP, err := k8sClient.WaitForLoadBalancer(kog.Namespace, newSkupperMicroservice("", "").name, 120)
+	if err != nil {
+		return err
+	}
 	// Create default router
 	if err = r.createDefaultRouter(&cp.IofogUser, routerIP); err != nil {
 		return err
@@ -125,10 +125,7 @@ func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 			return err
 		}
 		// Not found, generate new token
-		token, err = r.getKubeletToken(&kog.Spec.ControlPlane.IofogUser)
-		if err != nil {
-			return err
-		}
+		token = r.iofogClient.GetAccessToken()
 	} else {
 		// Found, use existing token
 		token, err = getKubeletToken(dep.Spec.Template.Spec.Containers)

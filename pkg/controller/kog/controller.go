@@ -2,6 +2,7 @@ package kog
 
 import (
 	"context"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 
 	"github.com/go-logr/logr"
@@ -70,6 +71,7 @@ type ReconcileKog struct {
 	scheme      *runtime.Scheme
 	logger      logr.Logger
 	apiEndpoint string
+	iofogClient *iofogclient.Client
 }
 
 // Reconcile reads that state of the cluster for a Kog object and makes changes based on the state read
