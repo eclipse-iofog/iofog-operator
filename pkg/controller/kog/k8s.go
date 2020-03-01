@@ -7,6 +7,7 @@ import (
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/skupper"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -46,6 +47,35 @@ func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) erro
 		return err
 	}
 
+	return nil
+}
+
+func (r *ReconcileKog) createSecrets(kog *iofogv1.Kog, ms *microservice) error {
+	for _, secret := range ms.secrets {
+		// Set Kog instance as the owner and controller
+		if err := controllerutil.SetControllerReference(kog, &secret, r.scheme); err != nil {
+			return err
+		}
+
+		// Check if this resource already exists
+		found := &corev1.Secret{}
+		err := r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			r.logger.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
+			err = r.client.Create(context.TODO(), &secret)
+			if err != nil {
+				return err
+			}
+
+			// Resource created successfully - don't requeue
+			continue
+		} else if err != nil {
+			return err
+		}
+
+		// Resource already exists - don't requeue
+		r.logger.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+	}
 	return nil
 }
 
@@ -125,6 +155,65 @@ func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) 
 	return nil
 }
 
+func (r *ReconcileKog) createRole(kog *iofogv1.Kog, ms *microservice) error {
+	role := newRole(kog.ObjectMeta.Namespace, ms)
+
+	// Set Kog instance as the owner and controller
+	if err := controllerutil.SetControllerReference(kog, role, r.scheme); err != nil {
+		return err
+	}
+
+	// Check if this resource already exists
+	found := &rbacv1.Role{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		r.logger.Info("Creating a new Role ", "Role.Namespace", role.Namespace, "Role.Name", role.Name)
+		err = r.client.Create(context.TODO(), role)
+		if err != nil {
+			return err
+		}
+
+		// Resource created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Resource already exists - don't requeue
+	r.logger.Info("Skip reconcile: Role already exists", "Role.Namespace", found.Namespace, "Role.Name", found.Name)
+
+	return nil
+}
+
+func (r *ReconcileKog) createRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
+	crb := newRoleBinding(kog.ObjectMeta.Namespace, ms)
+
+	// Set Kog instance as the owner and controller
+	if err := controllerutil.SetControllerReference(kog, crb, r.scheme); err != nil {
+		return err
+	}
+
+	// Check if this resource already exists
+	found := &rbacv1.RoleBinding{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		r.logger.Info("Creating a new Role Binding", "RoleBinding.Namespace", crb.Namespace, "RoleBinding.Name", crb.Name)
+		err = r.client.Create(context.TODO(), crb)
+		if err != nil {
+			return err
+		}
+
+		// Resource created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Resource already exists - don't requeue
+	r.logger.Info("Skip reconcile: Role Binding already exists", "RoleBinding.Namespace", found.Namespace, "RoleBinding.Name", found.Name)
+	return nil
+}
+
 func (r *ReconcileKog) createClusterRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
 	crb := newClusterRoleBinding(kog.ObjectMeta.Namespace, ms)
 
@@ -155,8 +244,6 @@ func (r *ReconcileKog) createClusterRoleBinding(kog *iofogv1.Kog, ms *microservi
 }
 
 func (r *ReconcileKog) waitForControllerAPI() (err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-
 	connected := false
 	iter := 0
 	const timeoutSeconds = 120
@@ -167,7 +254,7 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 			return
 		}
 		// Check the status endpoint
-		if _, err = iofogClient.GetStatus(); err != nil {
+		if _, err = r.iofogClient.GetStatus(); err != nil {
 			// Retry if connection is refused, this is usually only necessary on K8s Controller
 			if strings.Contains(err.Error(), "connection refused") {
 				time.Sleep(time.Millisecond * 1000)
@@ -186,33 +273,39 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 }
 
 func (r *ReconcileKog) createIofogUser(user *iofogv1.IofogUser) (err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-
-	if err = iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
+	if err = r.iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
 			return err
 		}
-		// Try to log in
-		if err = iofogClient.Login(iofogclient.LoginRequest{
-			Email:    user.Email,
-			Password: user.Password,
-		}); err != nil {
-			return err
-		}
+	}
+
+	// Try to log in
+	if err = r.iofogClient.Login(iofogclient.LoginRequest{
+		Email:    user.Email,
+		Password: user.Password,
+	}); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (r *ReconcileKog) getKubeletToken(user *iofogv1.IofogUser) (token string, err error) {
-	iofogClient := iofogclient.New(r.apiEndpoint)
-	if err = iofogClient.Login(iofogclient.LoginRequest{
-		Email:    user.Email,
-		Password: user.Password,
-	}); err != nil {
-		return
+func newInt(val int) *int {
+	return &val
+}
+
+func (r *ReconcileKog) createDefaultRouter(user *iofogv1.IofogUser, routerIP string) (err error) {
+	routerConfig := iofogclient.Router{
+		Host: routerIP,
+		RouterConfig: iofogclient.RouterConfig{
+			InterRouterPort: newInt(skupper.InteriorPort),
+			EdgeRouterPort:  newInt(skupper.EdgePort),
+			MessagingPort:   newInt(skupper.MessagePort),
+		},
 	}
-	token = iofogClient.GetAccessToken()
-	return
+	if err = r.iofogClient.PutDefaultRouter(routerConfig); err != nil {
+		return err
+	}
+	return nil
 }

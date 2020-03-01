@@ -22,8 +22,3 @@ spec:
     kubeletImage: ""
     loadBalancerIp: ""
     serviceType: "ClusterIP"
-  connectors:
-    image: "iofog/connector:latest"
-    instances: 
-      - name: "first"
-
