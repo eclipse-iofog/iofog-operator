@@ -20,14 +20,14 @@ import (
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
-	ms := newControllerMicroservice(
-		cp.ControllerReplicaCount,
-		cp.ControllerImage,
-		cp.ImagePullSecret,
-		&cp.Database,
-		cp.ServiceType,
-		cp.LoadBalancerIP,
-	)
+	ms := newControllerMicroservice(controllerMicroserviceConfig{
+		replicas:        cp.ControllerReplicaCount,
+		image:           cp.ControllerImage,
+		imagePullSecret: cp.ImagePullSecret,
+		db:              &cp.Database,
+		serviceType:     cp.ServiceType,
+		loadBalancerIP:  cp.LoadBalancerIP,
+	})
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
 	r.iofogClient = iofogclient.New(r.apiEndpoint)
 
@@ -43,6 +43,11 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 
 	// Service
 	if err := r.createService(kog, ms); err != nil {
+		return err
+	}
+
+	// PVC
+	if err := r.createPersistentVolumeClaims(kog, ms); err != nil {
 		return err
 	}
 

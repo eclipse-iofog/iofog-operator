@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -47,6 +48,56 @@ func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) erro
 		return err
 	}
 
+	return nil
+}
+
+func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofogv1.Kog, ms *microservice) error {
+	for _, vol := range ms.volumes {
+		if vol.VolumeSource.PersistentVolumeClaim == nil {
+			continue
+		}
+		storageSize, err := resource.ParseQuantity("1Gi")
+		if err != nil {
+			return err
+		}
+		pvc := corev1.PersistentVolumeClaim{
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					corev1.ReadWriteOnce,
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						"storage": storageSize,
+					},
+				},
+			},
+		}
+		pvc.ObjectMeta.Name = vol.Name
+		pvc.ObjectMeta.Namespace = kog.Namespace
+		// Set Kog instance as the owner and controller
+		if err := controllerutil.SetControllerReference(kog, &pvc, r.scheme); err != nil {
+			return err
+		}
+
+		// Check if this resource already exists
+		found := &corev1.PersistentVolumeClaim{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			r.logger.Info("Creating a new PersistentVolumeClaim", "PersistentVolumeClaim.Namespace", pvc.Namespace, "PersistentVolumeClaim.Name", pvc.Name)
+			err = r.client.Create(context.TODO(), &pvc)
+			if err != nil {
+				return err
+			}
+
+			// Resource created successfully - don't requeue
+			continue
+		} else if err != nil {
+			return err
+		}
+
+		// Resource already exists - don't requeue
+		r.logger.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+	}
 	return nil
 }
 

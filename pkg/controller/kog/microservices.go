@@ -70,9 +70,18 @@ type container struct {
 	volumeMounts    []v1.VolumeMount
 }
 
-func newControllerMicroservice(replicas int32, image, imagePullSecret string, db *iofogv1.Database, svcType, loadBalancerIP string) *microservice {
-	if replicas == 0 {
-		replicas = 1
+type controllerMicroserviceConfig struct {
+	replicas        int32
+	image           string
+	imagePullSecret string
+	serviceType     string
+	loadBalancerIP  string
+	db              *iofogv1.Database
+}
+
+func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
+	if cfg.replicas == 0 {
+		cfg.replicas = 1
 	}
 	return &microservice{
 		name: "controller",
@@ -83,15 +92,26 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 			51121,
 			80,
 		},
-		imagePullSecret: imagePullSecret,
-		replicas:        replicas,
-		serviceType:     svcType,
-		trafficPolicy:   getTrafficPolicy(svcType),
-		loadBalancerIP:  loadBalancerIP,
+		imagePullSecret: cfg.imagePullSecret,
+		replicas:        cfg.replicas,
+		serviceType:     cfg.serviceType,
+		trafficPolicy:   getTrafficPolicy(cfg.serviceType),
+		loadBalancerIP:  cfg.loadBalancerIP,
+		volumes: []v1.Volume{
+			{
+				Name: "controller-sqlite",
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: "controller-sqlite",
+						ReadOnly:  false,
+					},
+				},
+			},
+		},
 		containers: []container{
 			{
 				name:            "controller",
-				image:           image,
+				image:           cfg.image,
 				imagePullPolicy: "Always",
 				readinessProbe: &v1.Probe{
 					Handler: v1.Handler{
@@ -107,27 +127,34 @@ func newControllerMicroservice(replicas int32, image, imagePullSecret string, db
 				env: []v1.EnvVar{
 					{
 						Name:  "DB_PROVIDER",
-						Value: db.Provider,
+						Value: cfg.db.Provider,
 					},
 					{
 						Name:  "DB_NAME",
-						Value: db.DatabaseName,
+						Value: cfg.db.DatabaseName,
 					},
 					{
 						Name:  "DB_USERNAME",
-						Value: db.User,
+						Value: cfg.db.User,
 					},
 					{
 						Name:  "DB_PASSWORD",
-						Value: db.Password,
+						Value: cfg.db.Password,
 					},
 					{
 						Name:  "DB_HOST",
-						Value: db.Host,
+						Value: cfg.db.Host,
 					},
 					{
 						Name:  "DB_PORT",
-						Value: strconv.Itoa(db.Port),
+						Value: strconv.Itoa(cfg.db.Port),
+					},
+				},
+				volumeMounts: []v1.VolumeMount{
+					{
+						Name:      "controller-sqlite",
+						MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
+						SubPath:   "prod_database.sqlite",
 					},
 				},
 				resources: v1.ResourceRequirements{
