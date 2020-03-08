@@ -83,7 +83,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	if cfg.replicas == 0 {
 		cfg.replicas = 1
 	}
-	return &microservice{
+	msvc := &microservice{
 		name: "controller",
 		labels: map[string]string{
 			"name": "controller",
@@ -97,17 +97,6 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 		serviceType:     cfg.serviceType,
 		trafficPolicy:   getTrafficPolicy(cfg.serviceType),
 		loadBalancerIP:  cfg.loadBalancerIP,
-		volumes: []v1.Volume{
-			{
-				Name: "controller-sqlite",
-				VolumeSource: corev1.VolumeSource{
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "controller-sqlite",
-						ReadOnly:  false,
-					},
-				},
-			},
-		},
 		containers: []container{
 			{
 				name:            "controller",
@@ -150,13 +139,6 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						Value: strconv.Itoa(cfg.db.Port),
 					},
 				},
-				volumeMounts: []v1.VolumeMount{
-					{
-						Name:      "controller-sqlite",
-						MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
-						SubPath:   "prod_database.sqlite",
-					},
-				},
 				resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
 						"cpu":    resource.MustParse("1800m"),
@@ -170,6 +152,28 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 			},
 		},
 	}
+	// Add PVC details if no external DB provided
+	if cfg.db.Host == "" {
+		msvc.volumes = []corev1.Volume{
+			{
+				Name: "controller-sqlite",
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: "controller-sqlite",
+						ReadOnly:  false,
+					},
+				},
+			},
+		}
+		msvc.containers[0].volumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "controller-sqlite",
+				MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
+				SubPath:   "prod_database.sqlite",
+			},
+		}
+	}
+	return msvc
 }
 
 func getKubeletToken(containers []corev1.Container) (token string, err error) {
