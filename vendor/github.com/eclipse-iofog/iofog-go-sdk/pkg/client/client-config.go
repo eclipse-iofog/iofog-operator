@@ -13,28 +13,20 @@
 
 package client
 
-import (
-	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
-)
+// Toggle HTTP output
+var Verbose bool
 
-type Client struct {
-	*kubernetes.Clientset
+func SetVerbosity(verbose bool) {
+	Verbose = verbose
 }
 
-func New() (*Client, error) {
-	// Create the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
+var GlobalRetriesPolicy Retries
 
-	// Instantiate Kubernetes client
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
+func SetGlobalRetries(retries Retries) {
+	GlobalRetriesPolicy = retries
+}
 
-	return &Client{clientset}, nil
+type Retries struct {
+	Timeout       int
+	CustomMessage map[string]int
 }

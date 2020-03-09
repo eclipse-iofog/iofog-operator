@@ -11,16 +11,10 @@
  *
  */
 
-package client
+ package client
 
-import (
-	"strings"
-)
-
-func before(input string, substr string) string {
-	pos := strings.Index(input, substr)
-	if pos == -1 {
-		return input
-	}
-	return input[0:pos]
-}
+ func (clt *Client) PutDefaultProxy(address string) (err error) {
+	 _, err = clt.doRequest("PUT", "/config", newDefaultProxyRequest(address))
+	 return
+ }
+ 
