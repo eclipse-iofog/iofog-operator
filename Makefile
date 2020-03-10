@@ -14,7 +14,6 @@ ifeq ($(VERBOSE), 1)
 	GOARGS += -v
 endif
 
-DEP_VERSION = 0.5.0
 GOLANG_VERSION = 1.12
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
@@ -22,10 +21,26 @@ GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -
 BRANCH ?= $(TRAVIS_BRANCH)
 RELEASE_TAG ?= 0.0.0
 
+MAJOR ?= $(shell cat version | grep MAJOR | sed 's/MAJOR=//g')
+MINOR ?= $(shell cat version | grep MINOR | sed 's/MINOR=//g')
+PATCH ?= $(shell cat version | grep PATCH | sed 's/PATCH=//g')
+SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
+VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
+MODULES_VERSION = $(shell [ $(SUFFIX) == "-dev" ] && echo develop || echo $(VERSION))
+
 
 .PHONY: clean
 clean: ## Clean the working area and the project
 	rm -rf $(BUILD_DIR)/
+
+.PHONY: modules
+modules: get vendor ## Get modules and vendor them
+
+.PHONY: get
+get: ## Pull modules
+	@for module in iofog-go-sdk; do \
+		go get github.com/eclipse-iofog/$$module@$(MODULES_VERSION); \
+	done
 
 .PHONY: vendor
 vendor: # Vendor all deps
