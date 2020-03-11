@@ -17,7 +17,7 @@ require (
 
 // Pinned to kubernetes-1.13.4
 replace (
-    github.com/openshift/api => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 	k8s.io/api => k8s.io/api v0.0.0-20190222213804-5cb15d344471
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190228180357-d002e88f6236
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
