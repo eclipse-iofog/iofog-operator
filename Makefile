@@ -2,7 +2,7 @@ SHELL = /bin/bash
 OS = $(shell uname -s)
 
 # Project variables
-PACKAGE = github.com/eclipse-iofog/iofog-operator
+PACKAGE = github.com/eclipse-iofog/iofog-operator/v2
 BINARY_NAME = iofog-operator
 IMAGE = iofog/iofog-operator
 
@@ -17,9 +17,6 @@ endif
 GOLANG_VERSION = 1.12
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
-
-BRANCH ?= $(TRAVIS_BRANCH)
-RELEASE_TAG ?= 0.0.0
 
 MAJOR ?= $(shell cat version | grep MAJOR | sed 's/MAJOR=//g')
 MINOR ?= $(shell cat version | grep MINOR | sed 's/MINOR=//g')
