@@ -28,7 +28,6 @@ SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
 VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
 MODULES_VERSION = $(shell [ $(SUFFIX) == "-dev" ] && echo develop || echo v$(VERSION))
 
-
 .PHONY: clean
 clean: ## Clean the working area and the project
 	rm -rf $(BUILD_DIR)/
@@ -38,7 +37,7 @@ modules: get vendor ## Get modules and vendor them
 
 .PHONY: get
 get: ## Pull modules
-	@for module in iofog-go-sdk; do \
+	@for module in iofog-go-sdk/v2; do \
 		go get github.com/eclipse-iofog/$$module@$(MODULES_VERSION); \
 	done
 

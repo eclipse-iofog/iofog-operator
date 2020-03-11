@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
-	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/k8s"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
+	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 
 	appsv1 "k8s.io/api/apps/v1"

@@ -2,7 +2,7 @@ package kog
 
 import (
 	"context"
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
 
 	"github.com/go-logr/logr"
