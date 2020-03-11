@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/client"
+	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/pkg/k8s"
 	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
-	k8sclient "github.com/eclipse-iofog/iofog-operator/pkg/controller/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,16 +20,16 @@ import (
 func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
-	ms := newControllerMicroservice(
-		cp.ControllerReplicaCount,
-		cp.ControllerImage,
-		cp.ImagePullSecret,
-		&cp.Database,
-		cp.ServiceType,
-		cp.LoadBalancerIP,
-	)
+	ms := newControllerMicroservice(controllerMicroserviceConfig{
+		replicas:        cp.ControllerReplicaCount,
+		image:           cp.ControllerImage,
+		imagePullSecret: cp.ImagePullSecret,
+		db:              &cp.Database,
+		serviceType:     cp.ServiceType,
+		loadBalancerIP:  cp.LoadBalancerIP,
+	})
 	r.apiEndpoint = fmt.Sprintf("%s:%d", ms.name, ms.ports[0])
-	r.iofogClient = iofogclient.New(r.apiEndpoint)
+	r.iofogClient = iofogclient.New(iofogclient.Options{Endpoint: r.apiEndpoint})
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
@@ -46,8 +46,13 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 		return err
 	}
 
+	// PVC
+	if err := r.createPersistentVolumeClaims(kog, ms); err != nil {
+		return err
+	}
+
 	// Connect to cluster
-	k8sClient, err := k8sclient.New()
+	k8sClient, err := k8sclient.NewInCluster()
 	if err != nil {
 		return err
 	}
@@ -180,7 +185,7 @@ func (r *ReconcileKog) reconcileSkupper(kog *iofogv1.Kog) error {
 	}
 
 	// Wait for IP
-	k8sClient, err := k8sclient.New()
+	k8sClient, err := k8sclient.NewInCluster()
 	if err != nil {
 		return err
 	}

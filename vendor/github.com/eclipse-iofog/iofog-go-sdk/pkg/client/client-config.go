@@ -13,14 +13,20 @@
 
 package client
 
-import (
-	"strings"
-)
+// Toggle HTTP output
+var Verbose bool
 
-func before(input string, substr string) string {
-	pos := strings.Index(input, substr)
-	if pos == -1 {
-		return input
-	}
-	return input[0:pos]
+func SetVerbosity(verbose bool) {
+	Verbose = verbose
+}
+
+var GlobalRetriesPolicy Retries
+
+func SetGlobalRetries(retries Retries) {
+	GlobalRetriesPolicy = retries
+}
+
+type Retries struct {
+	Timeout       int
+	CustomMessage map[string]int
 }

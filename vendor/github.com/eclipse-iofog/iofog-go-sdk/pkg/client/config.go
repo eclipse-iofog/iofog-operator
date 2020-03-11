@@ -13,28 +13,7 @@
 
 package client
 
-import (
-	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
-)
-
-type Client struct {
-	*kubernetes.Clientset
-}
-
-func New() (*Client, error) {
-	// Create the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// Instantiate Kubernetes client
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{clientset}, nil
+func (clt *Client) PutDefaultProxy(address string) (err error) {
+	_, err = clt.doRequest("PUT", "/config", newDefaultProxyRequest(address))
+	return
 }
