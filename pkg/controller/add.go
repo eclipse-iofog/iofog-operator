@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"github.com/eclipse-iofog/iofog-operator/pkg/controller/app"
-	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/app"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog"
 )
 
 func init() {
