@@ -1,4 +1,4 @@
-module github.com/eclipse-iofog/iofog-operator
+module github.com/eclipse-iofog/iofog-operator/v2
 
 go 1.12
 

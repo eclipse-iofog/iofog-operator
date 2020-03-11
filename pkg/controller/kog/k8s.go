@@ -6,8 +6,8 @@ import (
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
-	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/skupper"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

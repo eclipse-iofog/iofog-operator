@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"strings"
 
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
-	"github.com/eclipse-iofog/iofog-operator/pkg/controller/kog/skupper"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
