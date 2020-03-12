@@ -6,7 +6,7 @@ import (
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createDeployment(kog *iofog.Kog, ms *microservice) error {
 	dep := newDeployment(kog.ObjectMeta.Namespace, ms)
 	// Set Kog instance as the owner and controller
 	if err := controllerutil.SetControllerReference(kog, dep, r.scheme); err != nil {
@@ -51,7 +51,7 @@ func (r *ReconcileKog) createDeployment(kog *iofogv1.Kog, ms *microservice) erro
 	return nil
 }
 
-func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofog.Kog, ms *microservice) error {
 	for _, vol := range ms.volumes {
 		if vol.VolumeSource.PersistentVolumeClaim == nil {
 			continue
@@ -101,7 +101,7 @@ func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofogv1.Kog, ms *micros
 	return nil
 }
 
-func (r *ReconcileKog) createSecrets(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createSecrets(kog *iofog.Kog, ms *microservice) error {
 	for _, secret := range ms.secrets {
 		// Set Kog instance as the owner and controller
 		if err := controllerutil.SetControllerReference(kog, &secret, r.scheme); err != nil {
@@ -130,7 +130,7 @@ func (r *ReconcileKog) createSecrets(kog *iofogv1.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createService(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createService(kog *iofog.Kog, ms *microservice) error {
 	svc := newService(kog.ObjectMeta.Namespace, ms)
 	// Set Kog instance as the owner and controller
 	if err := controllerutil.SetControllerReference(kog, svc, r.scheme); err != nil {
@@ -158,7 +158,7 @@ func (r *ReconcileKog) createService(kog *iofogv1.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createServiceAccount(kog *iofog.Kog, ms *microservice) error {
 	svcAcc := newServiceAccount(kog.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
@@ -206,7 +206,7 @@ func (r *ReconcileKog) createServiceAccount(kog *iofogv1.Kog, ms *microservice) 
 	return nil
 }
 
-func (r *ReconcileKog) createRole(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createRole(kog *iofog.Kog, ms *microservice) error {
 	role := newRole(kog.ObjectMeta.Namespace, ms)
 
 	// Set Kog instance as the owner and controller
@@ -236,7 +236,7 @@ func (r *ReconcileKog) createRole(kog *iofogv1.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createRoleBinding(kog *iofog.Kog, ms *microservice) error {
 	crb := newRoleBinding(kog.ObjectMeta.Namespace, ms)
 
 	// Set Kog instance as the owner and controller
@@ -265,7 +265,7 @@ func (r *ReconcileKog) createRoleBinding(kog *iofogv1.Kog, ms *microservice) err
 	return nil
 }
 
-func (r *ReconcileKog) createClusterRoleBinding(kog *iofogv1.Kog, ms *microservice) error {
+func (r *ReconcileKog) createClusterRoleBinding(kog *iofog.Kog, ms *microservice) error {
 	crb := newClusterRoleBinding(kog.ObjectMeta.Namespace, ms)
 
 	// Set Kog instance as the owner and controller
@@ -323,7 +323,7 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 	return
 }
 
-func (r *ReconcileKog) createIofogUser(user *iofogv1.IofogUser) (err error) {
+func (r *ReconcileKog) createIofogUser(user *iofog.IofogUser) (err error) {
 	if err = r.iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
@@ -346,7 +346,7 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileKog) createDefaultRouter(user *iofogv1.IofogUser, routerIP string) (err error) {
+func (r *ReconcileKog) createDefaultRouter(user *iofog.IofogUser, routerIP string) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: routerIP,
 		RouterConfig: iofogclient.RouterConfig{
