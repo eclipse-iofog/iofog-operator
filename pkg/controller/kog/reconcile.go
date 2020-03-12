@@ -6,7 +6,7 @@ import (
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +17,7 @@ import (
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 )
 
-func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
+func (r *ReconcileKog) reconcileIofogController(kog *iofog.Kog) error {
 	cp := &kog.Spec.ControlPlane
 	// Configure
 	ms := newControllerMicroservice(controllerMicroserviceConfig{
@@ -93,7 +93,7 @@ func (r *ReconcileKog) reconcileIofogController(kog *iofogv1.Kog) error {
 	return nil
 }
 
-func (r *ReconcileKog) reconcilePortManager(kog *iofogv1.Kog) error {
+func (r *ReconcileKog) reconcilePortManager(kog *iofog.Kog) error {
 	ms := newPortManagerMicroservice(
 		kog.Spec.ControlPlane.PortManagerImage,
 		kog.Spec.ControlPlane.ProxyImage,
@@ -117,7 +117,7 @@ func (r *ReconcileKog) reconcilePortManager(kog *iofogv1.Kog) error {
 	return nil
 }
 
-func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
+func (r *ReconcileKog) reconcileIofogKubelet(kog *iofog.Kog) error {
 	// Generate new token if required
 	token := ""
 	kubeletKey := client.ObjectKey{
@@ -158,7 +158,7 @@ func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 	return nil
 }
 
-func (r *ReconcileKog) reconcileSkupper(kog *iofogv1.Kog) error {
+func (r *ReconcileKog) reconcileSkupper(kog *iofog.Kog) error {
 	// Configure
 	volumeMountPath := "/etc/qpid-dispatch-certs/"
 	ms := newSkupperMicroservice(kog.Spec.ControlPlane.RouterImage, volumeMountPath)
