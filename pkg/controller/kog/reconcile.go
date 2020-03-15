@@ -160,9 +160,8 @@ func (r *ReconcileKog) reconcileIofogKubelet(kog *iofogv1.Kog) error {
 
 func (r *ReconcileKog) reconcileSkupper(kog *iofogv1.Kog) error {
 	// Configure
-	qpidRouterImageName := "quay.io/interconnectedcloud/qdrouterd"
 	volumeMountPath := "/etc/qpid-dispatch-certs/"
-	ms := newSkupperMicroservice(qpidRouterImageName, volumeMountPath)
+	ms := newSkupperMicroservice(kog.Spec.ControlPlane.RouterImage, volumeMountPath)
 
 	// Service Account
 	if err := r.createServiceAccount(kog, ms); err != nil {
