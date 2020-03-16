@@ -3,7 +3,7 @@ package kog
 import (
 	"context"
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -42,7 +42,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Kog
-	err = c.Watch(&source.Kind{Type: &iofog.Kog{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &iofogv1.Kog{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to secondary resource Pods and requeue the owner Kog
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &iofog.Kog{},
+		OwnerType:    &iofogv1.Kog{},
 	})
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	r.logger.Info("Reconciling Control Plane")
 
 	// Fetch the Kog kog
-	kog := &iofog.Kog{}
+	kog := &iofogv1.Kog{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, kog)
 	if err != nil {
 		if errors.IsNotFound(err) {

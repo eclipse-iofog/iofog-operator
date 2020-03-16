@@ -37,7 +37,6 @@ get: ## Pull modules
 	@for module in iofog-go-sdk/v2; do \
 		go get github.com/eclipse-iofog/$$module@$(MODULES_VERSION); \
 	done
-	@go get github.com/eclipse-iofog/iofog-operator@v1.3.0
 
 .PHONY: vendor
 vendor: # Vendor all deps
@@ -56,7 +55,7 @@ endif
 
 .PHONY: gen
 gen: ## Generate code
-	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
+	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog/v1 -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
 
 .PHONY: fmt
 fmt:

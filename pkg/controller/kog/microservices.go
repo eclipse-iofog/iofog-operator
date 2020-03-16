@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
+	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -76,7 +76,7 @@ type controllerMicroserviceConfig struct {
 	imagePullSecret string
 	serviceType     string
 	loadBalancerIP  string
-	db              *iofog.Database
+	db              *iofogv1.Database
 }
 
 func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
