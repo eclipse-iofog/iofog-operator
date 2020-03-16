@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/eclipse-iofog/iofog-go-sdk v1.3.0 // indirect
-	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-alpha.0.20200315200621-20eaaed13c41
+	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta
 	github.com/eclipse-iofog/iofog-operator v1.3.0
 	github.com/go-logr/logr v0.1.0
 	github.com/operator-framework/operator-sdk v0.10.0
