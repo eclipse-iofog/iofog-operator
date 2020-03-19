@@ -302,6 +302,7 @@ func (in *Services) DeepCopyInto(out *Services) {
 	*out = *in
 	out.Controller = in.Controller
 	out.Router = in.Router
+	out.Proxy = in.Proxy
 	return
 }
 

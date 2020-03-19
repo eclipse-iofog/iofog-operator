@@ -26,6 +26,7 @@ type Replicas struct {
 type Services struct {
 	Controller Service `json:"controller,omitempty"`
 	Router     Service `json:"router,omitempty"`
+	Proxy      Service `json:"proxy,omitempty"`
 }
 
 type Service struct {

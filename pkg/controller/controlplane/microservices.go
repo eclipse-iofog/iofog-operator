@@ -241,11 +241,13 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 }
 
 type portManagerConfig struct {
-	image          string
-	proxyImage     string
-	watchNamespace string
-	userEmail      string
-	userPass       string
+	image            string
+	proxyImage       string
+	proxyServiceType string
+	proxyIP          string
+	watchNamespace   string
+	userEmail        string
+	userPass         string
 }
 
 func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
@@ -254,6 +256,9 @@ func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
 	}
 	if cfg.proxyImage == "" {
 		cfg.proxyImage = util.GetProxyImage()
+	}
+	if cfg.proxyServiceType == "" {
+		cfg.proxyServiceType = string(corev1.ServiceTypeLoadBalancer)
 	}
 	return cfg
 }
@@ -322,6 +327,14 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 					{
 						Name:  "PROXY_IMAGE",
 						Value: cfg.proxyImage,
+					},
+					{
+						Name:  "PROXY_SERVICE_TYPE",
+						Value: cfg.proxyServiceType,
+					},
+					{
+						Name:  "PROXY_IP",
+						Value: cfg.proxyIP,
 					},
 					{
 						Name:  "ROUTER_ADDRESS",
