@@ -1,4 +1,4 @@
-package kog
+package controlplane
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 	b64 "encoding/base64"
 )
 
-var log = logf.Log.WithName("controller_kog")
+var log = logf.Log.WithName("controller_control_plane")
 
-// Add creates a new Kog Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new ControlPlane Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -30,28 +30,28 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKog{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileControlPlane{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("kog-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("control-plane-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource Kog
-	err = c.Watch(&source.Kind{Type: &iofog.Kog{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource ControlPlane
+	err = c.Watch(&source.Kind{Type: &iofog.ControlPlane{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Kog
+	// Watch for changes to secondary resource Pods and requeue the owner ControlPlane
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &iofog.Kog{},
+		OwnerType:    &iofog.ControlPlane{},
 	})
 	if err != nil {
 		return err
@@ -60,11 +60,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileKog implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileKog{}
+// blank assignment to verify that ReconcileControlPlane implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileControlPlane{}
 
-// ReconcileKog reconciles a Kog object
-type ReconcileKog struct {
+// ReconcileControlPlane reconciles a ControlPlane object
+type ReconcileControlPlane struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client      client.Client
@@ -74,18 +74,18 @@ type ReconcileKog struct {
 	iofogClient *iofogclient.Client
 }
 
-// Reconcile reads that state of the cluster for a Kog object and makes changes based on the state read
-// and what is in the Kog.Spec
+// Reconcile reads that state of the cluster for a ControlPlane object and makes changes based on the state read
+// and what is in the ControlPlane.Spec
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	r.logger = log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	r.logger.Info("Reconciling Control Plane")
 
-	// Fetch the Kog kog
-	kog := &iofog.Kog{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, kog)
+	// Fetch the ControlPlane control plane
+	cp := &iofog.ControlPlane{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, cp)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -98,27 +98,27 @@ func (r *ReconcileKog) Reconcile(request reconcile.Request) (reconcile.Result, e
 	}
 
 	// Decode credentials
-	if kog.Spec.ControlPlane.IofogUser.Password, err = decode(kog.Spec.ControlPlane.IofogUser.Password); err != nil {
+	if cp.Spec.User.Password, err = decode(cp.Spec.User.Password); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Reconcile Skupper
-	if err = r.reconcileSkupper(kog); err != nil {
+	// Reconcile Router
+	if err = r.reconcileRouter(cp); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Reconcile Iofog Controller
-	if err = r.reconcileIofogController(kog); err != nil {
+	if err = r.reconcileIofogController(cp); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Reconcile Iofog Kubelet
-	if err = r.reconcileIofogKubelet(kog); err != nil {
+	if err = r.reconcileIofogKubelet(cp); err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Reconcile Port Manager
-	if err = r.reconcilePortManager(kog); err != nil {
+	if err = r.reconcilePortManager(cp); err != nil {
 		return reconcile.Result{}, err
 	}
 

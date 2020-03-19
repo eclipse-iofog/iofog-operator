@@ -1,4 +1,4 @@
-package kog
+package controlplane
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,10 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *ReconcileKog) createDeployment(kog *iofog.Kog, ms *microservice) error {
-	dep := newDeployment(kog.ObjectMeta.Namespace, ms)
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, dep, r.scheme); err != nil {
+func (r *ReconcileControlPlane) createDeployment(cp *iofog.ControlPlane, ms *microservice) error {
+	dep := newDeployment(cp.ObjectMeta.Namespace, ms)
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, dep, r.scheme); err != nil {
 		return err
 	}
 
@@ -51,7 +51,7 @@ func (r *ReconcileKog) createDeployment(kog *iofog.Kog, ms *microservice) error 
 	return nil
 }
 
-func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofog.Kog, ms *microservice) error {
+func (r *ReconcileControlPlane) createPersistentVolumeClaims(cp *iofog.ControlPlane, ms *microservice) error {
 	for _, vol := range ms.volumes {
 		if vol.VolumeSource.PersistentVolumeClaim == nil {
 			continue
@@ -73,9 +73,9 @@ func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofog.Kog, ms *microser
 			},
 		}
 		pvc.ObjectMeta.Name = vol.Name
-		pvc.ObjectMeta.Namespace = kog.Namespace
-		// Set Kog instance as the owner and controller
-		if err := controllerutil.SetControllerReference(kog, &pvc, r.scheme); err != nil {
+		pvc.ObjectMeta.Namespace = cp.Namespace
+		// Set ControlPlane instance as the owner and controller
+		if err := controllerutil.SetControllerReference(cp, &pvc, r.scheme); err != nil {
 			return err
 		}
 
@@ -101,10 +101,10 @@ func (r *ReconcileKog) createPersistentVolumeClaims(kog *iofog.Kog, ms *microser
 	return nil
 }
 
-func (r *ReconcileKog) createSecrets(kog *iofog.Kog, ms *microservice) error {
+func (r *ReconcileControlPlane) createSecrets(cp *iofog.ControlPlane, ms *microservice) error {
 	for _, secret := range ms.secrets {
-		// Set Kog instance as the owner and controller
-		if err := controllerutil.SetControllerReference(kog, &secret, r.scheme); err != nil {
+		// Set ControlPlane instance as the owner and controller
+		if err := controllerutil.SetControllerReference(cp, &secret, r.scheme); err != nil {
 			return err
 		}
 
@@ -130,10 +130,10 @@ func (r *ReconcileKog) createSecrets(kog *iofog.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createService(kog *iofog.Kog, ms *microservice) error {
-	svc := newService(kog.ObjectMeta.Namespace, ms)
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, svc, r.scheme); err != nil {
+func (r *ReconcileControlPlane) createService(cp *iofog.ControlPlane, ms *microservice) error {
+	svc := newService(cp.ObjectMeta.Namespace, ms)
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, svc, r.scheme); err != nil {
 		return err
 	}
 
@@ -158,8 +158,8 @@ func (r *ReconcileKog) createService(kog *iofog.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createServiceAccount(kog *iofog.Kog, ms *microservice) error {
-	svcAcc := newServiceAccount(kog.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createServiceAccount(cp *iofog.ControlPlane, ms *microservice) error {
+	svcAcc := newServiceAccount(cp.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
 	if ms.imagePullSecret != "" {
@@ -180,8 +180,8 @@ func (r *ReconcileKog) createServiceAccount(kog *iofog.Kog, ms *microservice) er
 		}
 	}
 
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, svcAcc, r.scheme); err != nil {
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, svcAcc, r.scheme); err != nil {
 		return err
 	}
 
@@ -206,11 +206,11 @@ func (r *ReconcileKog) createServiceAccount(kog *iofog.Kog, ms *microservice) er
 	return nil
 }
 
-func (r *ReconcileKog) createRole(kog *iofog.Kog, ms *microservice) error {
-	role := newRole(kog.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createRole(cp *iofog.ControlPlane, ms *microservice) error {
+	role := newRole(cp.ObjectMeta.Namespace, ms)
 
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, role, r.scheme); err != nil {
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, role, r.scheme); err != nil {
 		return err
 	}
 
@@ -236,11 +236,11 @@ func (r *ReconcileKog) createRole(kog *iofog.Kog, ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileKog) createRoleBinding(kog *iofog.Kog, ms *microservice) error {
-	crb := newRoleBinding(kog.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createRoleBinding(cp *iofog.ControlPlane, ms *microservice) error {
+	crb := newRoleBinding(cp.ObjectMeta.Namespace, ms)
 
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, crb, r.scheme); err != nil {
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, crb, r.scheme); err != nil {
 		return err
 	}
 
@@ -265,11 +265,11 @@ func (r *ReconcileKog) createRoleBinding(kog *iofog.Kog, ms *microservice) error
 	return nil
 }
 
-func (r *ReconcileKog) createClusterRoleBinding(kog *iofog.Kog, ms *microservice) error {
-	crb := newClusterRoleBinding(kog.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createClusterRoleBinding(cp *iofog.ControlPlane, ms *microservice) error {
+	crb := newClusterRoleBinding(cp.ObjectMeta.Namespace, ms)
 
-	// Set Kog instance as the owner and controller
-	if err := controllerutil.SetControllerReference(kog, crb, r.scheme); err != nil {
+	// Set ControlPlane instance as the owner and controller
+	if err := controllerutil.SetControllerReference(cp, crb, r.scheme); err != nil {
 		return err
 	}
 
@@ -294,7 +294,7 @@ func (r *ReconcileKog) createClusterRoleBinding(kog *iofog.Kog, ms *microservice
 	return nil
 }
 
-func (r *ReconcileKog) waitForControllerAPI() (err error) {
+func (r *ReconcileControlPlane) waitForControllerAPI() (err error) {
 	connected := false
 	iter := 0
 	const timeoutSeconds = 120
@@ -323,7 +323,7 @@ func (r *ReconcileKog) waitForControllerAPI() (err error) {
 	return
 }
 
-func (r *ReconcileKog) createIofogUser(user *iofog.IofogUser) (err error) {
+func (r *ReconcileControlPlane) createIofogUser(user *iofog.User) (err error) {
 	if err = r.iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
@@ -346,13 +346,13 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileKog) createDefaultRouter(user *iofog.IofogUser, routerIP string) (err error) {
+func (r *ReconcileControlPlane) createDefaultRouter(user *iofog.User, routerIP string) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: routerIP,
 		RouterConfig: iofogclient.RouterConfig{
-			InterRouterPort: newInt(skupper.InteriorPort),
-			EdgeRouterPort:  newInt(skupper.EdgePort),
-			MessagingPort:   newInt(skupper.MessagePort),
+			InterRouterPort: newInt(router.InteriorPort),
+			EdgeRouterPort:  newInt(router.EdgePort),
+			MessagingPort:   newInt(router.MessagePort),
 		},
 	}
 	if err = r.iofogClient.PutDefaultRouter(routerConfig); err != nil {
