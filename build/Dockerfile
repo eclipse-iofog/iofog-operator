@@ -4,6 +4,7 @@ WORKDIR /operator
 
 COPY ./go.* ./
 COPY ./cmd ./cmd
+COPY ./internal ./internal
 COPY ./pkg ./pkg
 COPY ./Makefile ./
 COPY ./build ./build
