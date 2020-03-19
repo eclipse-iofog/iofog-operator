@@ -64,3 +64,30 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 		},
 	}
 }
+
+func sameVersionsSupported(left, right *extsv1.CustomResourceDefinition) bool {
+	for _, leftVersion := range left.Spec.Versions {
+		matched := false
+		for _, rightVersion := range right.Spec.Versions {
+			if leftVersion.Name == rightVersion.Name {
+				matched = true
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
+}
+
+func IsSupportedCustomResource(crd *extsv1.CustomResourceDefinition) bool {
+	cpCR := NewControlPlaneCustomResource()
+	if crd.Name == cpCR.Name {
+		return sameVersionsSupported(cpCR, crd)
+	}
+	appCR := NewAppCustomResource()
+	if crd.Name == appCR.Name {
+		return sameVersionsSupported(appCR, crd)
+	}
+	return false
+}
