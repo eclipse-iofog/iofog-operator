@@ -30,6 +30,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+	iofogclient.SetGlobalRetries(iofogclient.Retries{
+		CustomMessage: map[string]int{
+			"timeout": 10,
+			"refuse":  10,
+		},
+	})
 	return &ReconcileControlPlane{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
