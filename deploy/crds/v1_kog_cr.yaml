@@ -1,11 +1,11 @@
-apiVersion: k8s.iofog.org/v1alpha2
-kind: Kog
+apiVersion: iofog.org/v2
+kind: ControlPlane
 metadata:
   name: iokog
   namespace: default
 spec:
   controlPlane:
-    iofogUser:
+    user:
       name: "Ihff"
       surname: "Jghiog"
       email: "user@domain.com"
@@ -17,8 +17,19 @@ spec:
       user: ""
       password: ""
       databaseName: ""
-    controllerReplicaCount: 1
-    controllerImage: "iofog/controller:latest"
-    kubeletImage: ""
-    loadBalancerIp: ""
-    serviceType: "ClusterIP"
+    services:
+      controller:
+        type: ""
+        ip: ""
+      router:
+        type: ""
+        ip: ""
+    replicas:
+      controller: 0
+    images:
+      pullSecret: ""
+      kubelet: ""
+      controller: ""
+      router: ""
+      portManager: ""
+      proxy: ""

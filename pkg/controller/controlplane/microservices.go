@@ -11,7 +11,7 @@
  *
  */
 
-package kog
+package controlplane
 
 import (
 	"errors"
@@ -19,8 +19,9 @@ import (
 	"strconv"
 	"strings"
 
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog/v1"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/kog/skupper"
+	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -29,7 +30,7 @@ import (
 )
 
 const (
-	skupperName = "skupper"
+	routerName = "router"
 )
 
 func removeConnectorNamePrefix(name string) string {
@@ -76,13 +77,24 @@ type controllerMicroserviceConfig struct {
 	imagePullSecret string
 	serviceType     string
 	loadBalancerIP  string
-	db              *iofogv1.Database
+	db              *iofog.Database
 }
 
-func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
+func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
 	if cfg.replicas == 0 {
 		cfg.replicas = 1
 	}
+	if cfg.image == "" {
+		cfg.image = util.GetControllerImage()
+	}
+	if cfg.serviceType == "" {
+		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
+	}
+	return cfg
+}
+
+func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
+	cfg = filterControllerConfig(cfg)
 	msvc := &microservice{
 		name: "controller",
 		labels: map[string]string{
@@ -190,6 +202,9 @@ func getKubeletToken(containers []corev1.Container) (token string, err error) {
 }
 
 func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) *microservice {
+	if image == "" {
+		image = util.GetKubeletImage()
+	}
 	return &microservice{
 		name: "kubelet",
 		labels: map[string]string{
@@ -225,7 +240,31 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 	}
 }
 
-func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmail, iofogUserPass string) *microservice {
+type portManagerConfig struct {
+	image            string
+	proxyImage       string
+	proxyServiceType string
+	proxyIP          string
+	watchNamespace   string
+	userEmail        string
+	userPass         string
+}
+
+func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
+	if cfg.image == "" {
+		cfg.image = util.GetPortManagerImage()
+	}
+	if cfg.proxyImage == "" {
+		cfg.proxyImage = util.GetProxyImage()
+	}
+	if cfg.proxyServiceType == "" {
+		cfg.proxyServiceType = string(corev1.ServiceTypeLoadBalancer)
+	}
+	return cfg
+}
+
+func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
+	cfg = filterPortManagerConfig(cfg)
 	return &microservice{
 		name: "port-manager",
 		labels: map[string]string{
@@ -235,7 +274,7 @@ func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmai
 		containers: []container{
 			{
 				name:            "port-manager",
-				image:           image,
+				image:           cfg.image,
 				imagePullPolicy: "Always",
 				readinessProbe: &v1.Probe{
 					Handler: v1.Handler{
@@ -263,7 +302,7 @@ func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmai
 				env: []v1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",
-						Value: watchNamespace,
+						Value: cfg.watchNamespace,
 					},
 					{
 						Name: "POD_NAME",
@@ -279,19 +318,27 @@ func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmai
 					},
 					{
 						Name:  "IOFOG_USER_EMAIL",
-						Value: iofogUserEmail,
+						Value: cfg.userEmail,
 					},
 					{
 						Name:  "IOFOG_USER_PASS",
-						Value: iofogUserPass,
+						Value: cfg.userPass,
 					},
 					{
 						Name:  "PROXY_IMAGE",
-						Value: proxyImage,
+						Value: cfg.proxyImage,
+					},
+					{
+						Name:  "PROXY_SERVICE_TYPE",
+						Value: cfg.proxyServiceType,
+					},
+					{
+						Name:  "PROXY_IP",
+						Value: cfg.proxyIP,
 					},
 					{
 						Name:  "ROUTER_ADDRESS",
-						Value: skupperName,
+						Value: routerName,
 					},
 				},
 			},
@@ -299,11 +346,29 @@ func newPortManagerMicroservice(image, proxyImage, watchNamespace, iofogUserEmai
 	}
 }
 
-func newSkupperMicroservice(image, volumeMountPath string) *microservice {
+type routerMicroserviceConfig struct {
+	image           string
+	serviceType     string
+	ip              string
+	volumeMountPath string
+}
+
+func filterRouterConfig(cfg routerMicroserviceConfig) routerMicroserviceConfig {
+	if cfg.image == "" {
+		cfg.image = util.GetRouterImage()
+	}
+	if cfg.serviceType == "" {
+		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
+	}
+	return cfg
+}
+
+func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
+	cfg = filterRouterConfig(cfg)
 	return &microservice{
-		name: skupperName,
+		name: routerName,
 		labels: map[string]string{
-			"name":                 skupperName,
+			"name":                 routerName,
 			"application":          "interior-router",
 			"skupper.io/component": "router",
 		},
@@ -312,14 +377,14 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 			"prometheus.io/scrape": "true",
 		},
 		ports: []int{
-			skupper.MessagePort,
-			skupper.HTTPPort,
-			skupper.InteriorPort,
-			skupper.EdgePort,
+			router.MessagePort,
+			router.HTTPPort,
+			router.InteriorPort,
+			router.EdgePort,
 		},
 		replicas:      1,
-		serviceType:   "LoadBalancer",
-		trafficPolicy: "Local",
+		serviceType:   cfg.serviceType,
+		trafficPolicy: getTrafficPolicy(cfg.serviceType),
 		rbacRules: []rbacv1.PolicyRule{
 			{
 				Verbs:     []string{"get", "list", "watch"},
@@ -329,26 +394,26 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 		},
 		volumes: []v1.Volume{
 			{
-				Name: "skupper-internal",
+				Name: routerName + "-internal",
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: "skupper-internal",
+						SecretName: "router-internal",
 					},
 				},
 			},
 			{
-				Name: "skupper-amqps",
+				Name: routerName + "-amqps",
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: "skupper-amqps",
+						SecretName: routerName + "-amqps",
 					},
 				},
 			},
 		},
 		containers: []container{
 			{
-				name:            skupperName,
-				image:           image,
+				name:            routerName,
+				image:           cfg.image,
 				imagePullPolicy: "Always",
 				livenessProbe: &corev1.Probe{
 					InitialDelaySeconds: 60,
@@ -362,7 +427,7 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 				env: []v1.EnvVar{
 					{
 						Name:  "APPLICATION_NAME",
-						Value: "skupper-router",
+						Value: routerName,
 					},
 					{
 						Name:  "QDROUTERD_AUTO_MESH_DISCOVERY",
@@ -370,7 +435,7 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 					},
 					{
 						Name:  "QDROUTERD_CONF",
-						Value: skupper.GetRouterConfig(),
+						Value: router.GetConfig(),
 					},
 					{
 						Name: "POD_NAMESPACE",
@@ -391,12 +456,12 @@ func newSkupperMicroservice(image, volumeMountPath string) *microservice {
 				},
 				volumeMounts: []v1.VolumeMount{
 					{
-						Name:      "skupper-internal",
-						MountPath: volumeMountPath + "/skupper-internal",
+						Name:      routerName + "-internal",
+						MountPath: cfg.volumeMountPath + "/router-internal",
 					},
 					{
-						Name:      "skupper-amqps",
-						MountPath: volumeMountPath + "/skupper-amqps",
+						Name:      routerName + "-amqps",
+						MountPath: cfg.volumeMountPath + "/" + routerName + "-amqps",
 					},
 				},
 				resources: v1.ResourceRequirements{

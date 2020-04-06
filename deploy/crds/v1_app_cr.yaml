@@ -1,4 +1,4 @@
-apiVersion: iofog.org/v1
+apiVersion: iofog.org/v2
 kind: Application
 metadata:
   name: heart

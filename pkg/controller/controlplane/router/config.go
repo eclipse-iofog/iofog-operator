@@ -1,11 +1,11 @@
-package skupper
+package router
 
 import (
 	"strconv"
 	"strings"
 )
 
-func GetRouterConfig() string {
+func GetConfig() string {
 	replacer := strings.NewReplacer("<MESSAGE_PORT>", strconv.Itoa(MessagePort),
 		"<HTTP_PORT>", strconv.Itoa(HTTPPort),
 		"<INTERIOR_PORT>", strconv.Itoa(InteriorPort),
@@ -33,10 +33,10 @@ listener {
 }
 
 sslProfile {
-    name: skupper-amqps
-    certFile: /etc/qpid-dispatch-certs/skupper-amqps/tls.crt
-    privateKeyFile: /etc/qpid-dispatch-certs/skupper-amqps/tls.key
-    caCertFile: /etc/qpid-dispatch-certs/skupper-amqps/ca.crt
+    name: router-amqps
+    certFile: /etc/qpid-dispatch-certs/router-amqps/tls.crt
+    privateKeyFile: /etc/qpid-dispatch-certs/router-amqps/tls.key
+    caCertFile: /etc/qpid-dispatch-certs/router-amqps/ca.crt
 }
 
 listener {
@@ -51,19 +51,16 @@ listener {
 }
 
 sslProfile {
-    name: skupper-internal
-    certFile: /etc/qpid-dispatch-certs/skupper-internal/tls.crt
-    privateKeyFile: /etc/qpid-dispatch-certs/skupper-internal/tls.key
-    caCertFile: /etc/qpid-dispatch-certs/skupper-internal/ca.crt
+    name: router-internal
+    certFile: /etc/qpid-dispatch-certs/router-internal/tls.crt
+    privateKeyFile: /etc/qpid-dispatch-certs/router-internal/tls.key
+    caCertFile: /etc/qpid-dispatch-certs/router-internal/ca.crt
 }
 
 listener {
     role: inter-router
     host: 0.0.0.0
     port: <INTERIOR_PORT>
-    #sslProfile: skupper-internal
-    #saslMechanisms: EXTERNAL
-    #authenticatePeer: true
     saslMechanisms: ANONYMOUS
     authenticatePeer: no
 }
@@ -72,9 +69,6 @@ listener {
     role: edge
     host: 0.0.0.0
     port: <EDGE_PORT>
-    #sslProfile: skupper-internal
-    #saslMechanisms: EXTERNAL
-    #authenticatePeer: true
     saslMechanisms: ANONYMOUS
     authenticatePeer: no
 }
