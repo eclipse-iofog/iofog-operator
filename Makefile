@@ -23,7 +23,6 @@ MINOR ?= $(shell cat version | grep MINOR | sed 's/MINOR=//g')
 PATCH ?= $(shell cat version | grep PATCH | sed 's/PATCH=//g')
 SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
 VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
-MODULES_VERSION = $(shell [ $(SUFFIX) == "-dev" ] && echo develop || echo v$(VERSION))
 PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
 LDFLAGS += -X $(PREFIX).portManagerTag=develop
 LDFLAGS += -X $(PREFIX).kubeletTag=develop
@@ -31,6 +30,7 @@ LDFLAGS += -X $(PREFIX).proxyTag=develop
 LDFLAGS += -X $(PREFIX).routerTag=develop
 LDFLAGS += -X $(PREFIX).controllerTag=develop
 LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
+GO_SDK_MODULE = iofog-go-sdk/v2@develop
 
 .PHONY: clean
 clean: ## Clean the working area and the project
@@ -41,8 +41,8 @@ modules: get vendor ## Get modules and vendor them
 
 .PHONY: get
 get: ## Pull modules
-	@for module in iofog-go-sdk/v2; do \
-		go get github.com/eclipse-iofog/$$module@$(MODULES_VERSION); \
+	@for module in $(GO_SDK_MODULE); do \
+		go get github.com/eclipse-iofog/$$module; \
 	done
 
 .PHONY: vendor
