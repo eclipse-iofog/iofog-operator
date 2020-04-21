@@ -83,7 +83,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Get Router IP
-	routerIP, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 120)
+	routerIP, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
 	if err != nil {
 		return err
 	}

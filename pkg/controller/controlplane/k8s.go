@@ -361,7 +361,7 @@ func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Clie
 		},
 	}
 	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
-		return err
+		return
 	}
-	return nil
+	return
 }
