@@ -26,6 +26,8 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		replicas:        r.cp.Spec.Replicas.Controller,
 		image:           r.cp.Spec.Images.Controller,
 		imagePullSecret: r.cp.Spec.Images.PullSecret,
+		proxyImage:      r.cp.Spec.Images.Proxy,
+		routerImage:     r.cp.Spec.Images.Router,
 		db:              &r.cp.Spec.Database,
 		serviceType:     r.cp.Spec.Services.Controller.Type,
 		loadBalancerIP:  r.cp.Spec.Services.Controller.IP,
