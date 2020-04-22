@@ -3,11 +3,11 @@ module github.com/eclipse-iofog/iofog-operator/v2
 go 1.12
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2
+	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2.0.20200422223034-fc66de4f25ec
 	github.com/go-logr/logr v0.1.0
 	github.com/operator-framework/operator-sdk v0.10.0
 	github.com/skupperproject/skupper-cli v0.0.1-beta6.0.20191022215135-8088454e7fda
-	golang.org/x/tools v0.0.0-20191212203136-8facea2ecf42 // indirect
+	golang.org/x/tools/gopls v0.4.0 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apiextensions-apiserver v0.0.0-20190228180357-d002e88f6236
 	k8s.io/apimachinery v0.17.3
