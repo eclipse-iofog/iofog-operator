@@ -6,7 +6,7 @@ github.com/appscode/jsonpatch
 github.com/beorn7/perks/quantile
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2
+# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2.0.20200422223034-fc66de4f25ec
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/apps
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s

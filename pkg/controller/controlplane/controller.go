@@ -2,12 +2,15 @@ package controlplane
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -73,11 +76,10 @@ var _ reconcile.Reconciler = &ReconcileControlPlane{}
 type ReconcileControlPlane struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client      client.Client
-	scheme      *runtime.Scheme
-	logger      logr.Logger
-	apiEndpoint string
-	iofogClient *iofogclient.Client
+	client client.Client
+	scheme *runtime.Scheme
+	logger logr.Logger
+	cp     iofog.ControlPlane
 }
 
 // Reconcile reads that state of the cluster for a ControlPlane object and makes changes based on the state read
@@ -90,10 +92,9 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	r.logger.Info("Reconciling Control Plane")
 
 	// Fetch the ControlPlane control plane
-	cp := &iofog.ControlPlane{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, cp)
+	err := r.client.Get(context.TODO(), request.NamespacedName, &r.cp)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -103,28 +104,32 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// Decode credentials
-	if cp.Spec.User.Password, err = decode(cp.Spec.User.Password); err != nil {
-		return reconcile.Result{}, err
-	}
+	// Error chan for reconcile routines
+	reconcilerCount := 3
+	errCh := make(chan error, reconcilerCount)
 
 	// Reconcile Router
-	if err = r.reconcileRouter(cp); err != nil {
-		return reconcile.Result{}, err
-	}
+	go reconcileRoutine(r.reconcileRouter, errCh)
 
-	// Reconcile Iofog Controller
-	if err = r.reconcileIofogController(cp); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Reconcile Iofog Kubelet
-	if err = r.reconcileIofogKubelet(cp); err != nil {
-		return reconcile.Result{}, err
-	}
+	// Reconcile Iofog Controller and Kubelet
+	go reconcileRoutine(r.reconcileIofogController, errCh)
 
 	// Reconcile Port Manager
-	if err = r.reconcilePortManager(cp); err != nil {
+	go reconcileRoutine(r.reconcilePortManager, errCh)
+
+	for idx := 0; idx < reconcilerCount; idx++ {
+		routineErr := <-errCh
+		if routineErr != nil {
+			if err == nil {
+				// Create new err
+				err = routineErr
+			} else {
+				// Append
+				err = errors.New(fmt.Sprintf("%s\n%s", err.Error(), routineErr.Error()))
+			}
+		}
+	}
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -133,7 +138,7 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, nil
 }
 
-func decode(encoded string) (string, error) {
+func decodeBase64(encoded string) (string, error) {
 	decodedBytes, err := b64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return "", err

@@ -78,6 +78,8 @@ type controllerMicroserviceConfig struct {
 	serviceType     string
 	loadBalancerIP  string
 	db              *iofog.Database
+	proxyImage      string
+	routerImage     string
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -149,6 +151,22 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					{
 						Name:  "DB_PORT",
 						Value: strconv.Itoa(cfg.db.Port),
+					},
+					{
+						Name:  "SystemImages_Proxy_1",
+						Value: cfg.proxyImage,
+					},
+					{
+						Name:  "SystemImages_Proxy_2",
+						Value: util.TransformImageToARM(cfg.proxyImage),
+					},
+					{
+						Name:  "SystemImages_Router_1",
+						Value: cfg.routerImage,
+					},
+					{
+						Name:  "SystemImages_Router_2",
+						Value: util.TransformImageToARM(cfg.routerImage),
 					},
 				},
 				resources: v1.ResourceRequirements{
@@ -415,6 +433,9 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 				name:            routerName,
 				image:           cfg.image,
 				imagePullPolicy: "Always",
+				command: []string{
+					"/qpid-dispatch/launch.sh",
+				},
 				livenessProbe: &corev1.Probe{
 					InitialDelaySeconds: 60,
 					Handler: corev1.Handler{

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,10 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *ReconcileControlPlane) createDeployment(cp *iofog.ControlPlane, ms *microservice) error {
-	dep := newDeployment(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createDeployment(ms *microservice) error {
+	dep := newDeployment(r.cp.ObjectMeta.Namespace, ms)
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, dep, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, dep, r.scheme); err != nil {
 		return err
 	}
 
@@ -51,7 +50,7 @@ func (r *ReconcileControlPlane) createDeployment(cp *iofog.ControlPlane, ms *mic
 	return nil
 }
 
-func (r *ReconcileControlPlane) createPersistentVolumeClaims(cp *iofog.ControlPlane, ms *microservice) error {
+func (r *ReconcileControlPlane) createPersistentVolumeClaims(ms *microservice) error {
 	for _, vol := range ms.volumes {
 		if vol.VolumeSource.PersistentVolumeClaim == nil {
 			continue
@@ -73,9 +72,9 @@ func (r *ReconcileControlPlane) createPersistentVolumeClaims(cp *iofog.ControlPl
 			},
 		}
 		pvc.ObjectMeta.Name = vol.Name
-		pvc.ObjectMeta.Namespace = cp.Namespace
+		pvc.ObjectMeta.Namespace = r.cp.Namespace
 		// Set ControlPlane instance as the owner and controller
-		if err := controllerutil.SetControllerReference(cp, &pvc, r.scheme); err != nil {
+		if err := controllerutil.SetControllerReference(&r.cp, &pvc, r.scheme); err != nil {
 			return err
 		}
 
@@ -101,10 +100,10 @@ func (r *ReconcileControlPlane) createPersistentVolumeClaims(cp *iofog.ControlPl
 	return nil
 }
 
-func (r *ReconcileControlPlane) createSecrets(cp *iofog.ControlPlane, ms *microservice) error {
+func (r *ReconcileControlPlane) createSecrets(ms *microservice) error {
 	for _, secret := range ms.secrets {
 		// Set ControlPlane instance as the owner and controller
-		if err := controllerutil.SetControllerReference(cp, &secret, r.scheme); err != nil {
+		if err := controllerutil.SetControllerReference(&r.cp, &secret, r.scheme); err != nil {
 			return err
 		}
 
@@ -130,10 +129,10 @@ func (r *ReconcileControlPlane) createSecrets(cp *iofog.ControlPlane, ms *micros
 	return nil
 }
 
-func (r *ReconcileControlPlane) createService(cp *iofog.ControlPlane, ms *microservice) error {
-	svc := newService(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createService(ms *microservice) error {
+	svc := newService(r.cp.ObjectMeta.Namespace, ms)
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, svc, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, svc, r.scheme); err != nil {
 		return err
 	}
 
@@ -158,8 +157,8 @@ func (r *ReconcileControlPlane) createService(cp *iofog.ControlPlane, ms *micros
 	return nil
 }
 
-func (r *ReconcileControlPlane) createServiceAccount(cp *iofog.ControlPlane, ms *microservice) error {
-	svcAcc := newServiceAccount(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createServiceAccount(ms *microservice) error {
+	svcAcc := newServiceAccount(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
 	if ms.imagePullSecret != "" {
@@ -181,7 +180,7 @@ func (r *ReconcileControlPlane) createServiceAccount(cp *iofog.ControlPlane, ms 
 	}
 
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, svcAcc, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, svcAcc, r.scheme); err != nil {
 		return err
 	}
 
@@ -206,11 +205,11 @@ func (r *ReconcileControlPlane) createServiceAccount(cp *iofog.ControlPlane, ms 
 	return nil
 }
 
-func (r *ReconcileControlPlane) createRole(cp *iofog.ControlPlane, ms *microservice) error {
-	role := newRole(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createRole(ms *microservice) error {
+	role := newRole(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, role, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, role, r.scheme); err != nil {
 		return err
 	}
 
@@ -236,11 +235,11 @@ func (r *ReconcileControlPlane) createRole(cp *iofog.ControlPlane, ms *microserv
 	return nil
 }
 
-func (r *ReconcileControlPlane) createRoleBinding(cp *iofog.ControlPlane, ms *microservice) error {
-	crb := newRoleBinding(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createRoleBinding(ms *microservice) error {
+	crb := newRoleBinding(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, crb, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, crb, r.scheme); err != nil {
 		return err
 	}
 
@@ -265,11 +264,11 @@ func (r *ReconcileControlPlane) createRoleBinding(cp *iofog.ControlPlane, ms *mi
 	return nil
 }
 
-func (r *ReconcileControlPlane) createClusterRoleBinding(cp *iofog.ControlPlane, ms *microservice) error {
-	crb := newClusterRoleBinding(cp.ObjectMeta.Namespace, ms)
+func (r *ReconcileControlPlane) createClusterRoleBinding(ms *microservice) error {
+	crb := newClusterRoleBinding(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cp, crb, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(&r.cp, crb, r.scheme); err != nil {
 		return err
 	}
 
@@ -294,7 +293,7 @@ func (r *ReconcileControlPlane) createClusterRoleBinding(cp *iofog.ControlPlane,
 	return nil
 }
 
-func (r *ReconcileControlPlane) waitForControllerAPI() (err error) {
+func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient iofogclient.Client) (err error) {
 	connected := false
 	iter := 0
 	const timeoutSeconds = 120
@@ -305,7 +304,7 @@ func (r *ReconcileControlPlane) waitForControllerAPI() (err error) {
 			return
 		}
 		// Check the status endpoint
-		if _, err = r.iofogClient.GetStatus(); err != nil {
+		if _, err = iofogClient.GetStatus(); err != nil {
 			// Retry if connection is refused, this is usually only necessary on K8s Controller
 			if strings.Contains(err.Error(), "connection refused") {
 				time.Sleep(time.Millisecond * 1000)
@@ -323,30 +322,36 @@ func (r *ReconcileControlPlane) waitForControllerAPI() (err error) {
 	return
 }
 
-func (r *ReconcileControlPlane) createIofogUser(user *iofog.User) (err error) {
-	if err = r.iofogClient.CreateUser(iofogclient.User(*user)); err != nil {
+func (r *ReconcileControlPlane) createIofogUser(iofogClient iofogclient.Client) (iofogclient.Client, error) {
+	user := iofogclient.User(r.cp.Spec.User)
+	password, err := decodeBase64(user.Password)
+	if err == nil {
+		user.Password = password
+	}
+
+	if err := iofogClient.CreateUser(user); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
-			return err
+			return iofogClient, err
 		}
 	}
 
 	// Try to log in
-	if err = r.iofogClient.Login(iofogclient.LoginRequest{
+	if err := iofogClient.Login(iofogclient.LoginRequest{
 		Email:    user.Email,
 		Password: user.Password,
 	}); err != nil {
-		return err
+		return iofogClient, err
 	}
 
-	return nil
+	return iofogClient, nil
 }
 
 func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileControlPlane) createDefaultRouter(user *iofog.User, routerIP string) (err error) {
+func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, routerIP string) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: routerIP,
 		RouterConfig: iofogclient.RouterConfig{
@@ -355,8 +360,8 @@ func (r *ReconcileControlPlane) createDefaultRouter(user *iofog.User, routerIP s
 			MessagingPort:   newInt(router.MessagePort),
 		},
 	}
-	if err = r.iofogClient.PutDefaultRouter(routerConfig); err != nil {
-		return err
+	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
+		return
 	}
-	return nil
+	return
 }
