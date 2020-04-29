@@ -24,13 +24,13 @@ PATCH ?= $(shell cat version | grep PATCH | sed 's/PATCH=//g')
 SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
 VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
 PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
-LDFLAGS += -X $(PREFIX).portManagerTag=2.0.0-beta3
-LDFLAGS += -X $(PREFIX).kubeletTag=2.0.0-beta
-LDFLAGS += -X $(PREFIX).proxyTag=2.0.0-beta
-LDFLAGS += -X $(PREFIX).routerTag=2.0.0-beta
-LDFLAGS += -X $(PREFIX).controllerTag=2.0.0-beta2
+LDFLAGS += -X $(PREFIX).portManagerTag=2.0.0-rc1
+LDFLAGS += -X $(PREFIX).kubeletTag=2.0.0-rc1
+LDFLAGS += -X $(PREFIX).proxyTag=2.0.0-rc1
+LDFLAGS += -X $(PREFIX).routerTag=2.0.0-rc1
+LDFLAGS += -X $(PREFIX).controllerTag=2.0.0-rc1
 LDFLAGS += -X $(PREFIX).repo=iofog
-GO_SDK_MODULE = iofog-go-sdk/v2@v2.0.0-beta3
+GO_SDK_MODULE = iofog-go-sdk/v2@v2.0.0-rc1
 
 .PHONY: clean
 clean: ## Clean the working area and the project

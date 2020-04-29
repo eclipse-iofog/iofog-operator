@@ -126,6 +126,8 @@ github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2.0.20200422223034-fc66de4f2
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta2.0.20200422223034-fc66de4f25ec/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3 h1:Xsxh5AdA2i3BwFb0OH7zA4C4KVZizdFvJXMi/gAThd8=
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
+github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc1 h1:t+jyi0SrEcYzckAmlP/rNsWBywCYTOb6ZH5fRsG+svk=
+github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc1/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
 github.com/eclipse-iofog/iofog-operator v1.3.0 h1:F1SXsBOVjhzFLElDQMgK7WBNJfnE0XjfpnUJ94lZMKU=
 github.com/eclipse-iofog/iofog-operator v1.3.0/go.mod h1:r/bGkjLr59ORotQDHTC8+ybksdr9wBoJ2iOSxfBHTQc=
 github.com/elazarl/go-bindata-assetfs v1.0.0/go.mod h1:v+YaWX3bdea5J/mo8dSETolEo7R71Vk1u8bnjau5yw4=
@@ -606,6 +608,7 @@ golang.org/x/tools v0.0.0-20191212203136-8facea2ecf42/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.0.0-20200407041343-bf15fae40dea h1:DUwLyMDMUauGMd9kSLIlhhYJNELm06HuxeBdkFkeax4=
 golang.org/x/tools v0.0.0-20200407041343-bf15fae40dea/go.mod h1:EkVYQZoAsY45+roYkvgYkIh4xh/qjgUK9TdY2XT94GE=
 golang.org/x/tools v0.0.0-20200422205258-72e4a01eba43 h1:Lcsc5ErIWemp8qAbYffG5vPrqjJ0zk82RTFGifeS1Pc=
+golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 h1:Xvf3ZQTm5bjXPxhI7g+dwqsCqadK1rcNtwtszuatetk=
 golang.org/x/tools/gopls v0.4.0 h1:G4+YP9kaV4dJb79J5MobyApxX493Qa6VoiTceUmxqik=
 golang.org/x/tools/gopls v0.4.0/go.mod h1:fdOZ8zb6nqlePvfek79JCskQXI4W+i2e1xT+xOPKMcY=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7 h1:9zdDQZ7Thm29KFXgAX/+yaf3eVbP7djjWp/dXAppNCc=
