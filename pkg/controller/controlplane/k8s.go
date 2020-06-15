@@ -2,7 +2,7 @@ package controlplane
 
 import (
 	"context"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"strings"
 	"time"
 
@@ -350,22 +350,13 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, routerIP string, interiorPort int, edgePort int, messagePort int) (err error) {
-	if interiorPort == 0 {
-		interiorPort = router.InteriorPort
-	}
-	if edgePort == 0 {
-		edgePort = router.EdgePort
-	}
-	if messagePort == 0 {
-		messagePort = router.MessagePort
-	}
+func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, proxy iofog.RouterProxy) (err error) {
 	routerConfig := iofogclient.Router{
-		Host: routerIP,
+		Host: proxy.Address,
 		RouterConfig: iofogclient.RouterConfig{
-			InterRouterPort: newInt(interiorPort),
-			EdgeRouterPort:  newInt(edgePort),
-			MessagingPort:   newInt(messagePort),
+			InterRouterPort: newInt(proxy.InteriorPort),
+			EdgeRouterPort:  newInt(proxy.EdgePort),
+			MessagingPort:   newInt(proxy.MessagePort),
 		},
 	}
 	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
