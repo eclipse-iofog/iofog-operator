@@ -169,7 +169,6 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 	ms := newRouterMicroservice(routerMicroserviceConfig{
 		image:           r.cp.Spec.Images.Router,
 		serviceType:     r.cp.Spec.Services.Router.Type,
-		address:         r.cp.Spec.Services.Router.Address,
 		volumeMountPath: volumeMountPath,
 	})
 

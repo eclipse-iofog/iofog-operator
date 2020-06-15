@@ -35,12 +35,11 @@ type Service struct {
 }
 
 type RouterService struct {
-	Type         string `json:"type,omitempty"`
-	Address      string `json:"address,omitempty"`
-	HttpPort     int    `json:"httpPort,omitempty"`
-	NormalPort   int    `json:"normalPort,omitempty"`
-	InteriorPort int    `json:"interiorPort,omitempty"`
-	EdgePort     int    `json:"edgePort,omitempty"`
+	Service
+	HttpPort     int `json:"httpPort,omitempty"`
+	NormalPort   int `json:"normalPort,omitempty"`
+	InteriorPort int `json:"interiorPort,omitempty"`
+	EdgePort     int `json:"edgePort,omitempty"`
 }
 
 type Images struct {

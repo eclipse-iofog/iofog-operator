@@ -262,7 +262,7 @@ type portManagerConfig struct {
 	image            string
 	proxyImage       string
 	proxyServiceType string
-	proxyIP          string
+	proxyAddress     string
 	watchNamespace   string
 	userEmail        string
 	userPass         string
@@ -351,8 +351,8 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 						Value: cfg.proxyServiceType,
 					},
 					{
-						Name:  "PROXY_IP",
-						Value: cfg.proxyIP,
+						Name:  "PROXY_ADDRESS",
+						Value: cfg.proxyAddress,
 					},
 					{
 						Name:  "ROUTER_ADDRESS",
@@ -367,7 +367,6 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 type routerMicroserviceConfig struct {
 	image           string
 	serviceType     string
-	address         string
 	volumeMountPath string
 }
 
