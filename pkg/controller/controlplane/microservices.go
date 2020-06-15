@@ -503,5 +503,5 @@ func getTrafficPolicy(serviceType string) string {
 	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
-	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
+	return ""
 }

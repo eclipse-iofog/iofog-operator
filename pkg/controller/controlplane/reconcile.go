@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
@@ -85,12 +86,22 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Get Router IP
-	routerIP, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
-	if err != nil {
-		return err
+	routerIP := ""
+	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+		routerIP, err = k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
+		if err != nil {
+			return err
+		}
+	} else {
+		//routerService, err := k8sClient.CoreV1().Services(r.cp.ObjectMeta.Namespace).Get(routerName, v1.GetOptions{})
+		routerService, err := k8sClient.CoreV1().Services("router-proxy").Get("router-proxy-nginx-ingress-controller", v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		routerIP = routerService.Spec.LoadBalancerIP
 	}
 	// Create default router
-	if err = r.createDefaultRouter(iofogClient, routerIP); err != nil {
+	if err = r.createDefaultRouter(iofogClient, routerIP, r.cp.Spec.Services.Router.InteriorPort, r.cp.Spec.Services.Router.EdgePort, r.cp.Spec.Services.Router.NormalPort); err != nil {
 		return err
 	}
 
@@ -200,9 +211,20 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 		return err
 	}
 
-	ip, err := k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 120)
-	if err != nil {
-		return err
+	// Wait for external IP of LB Service
+	ip := ""
+	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+		ip, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 120)
+		if err != nil {
+			return err
+		}
+	} else {
+		//routerService, err := k8sClient.CoreV1().Services(r.cp.ObjectMeta.Namespace).Get(routerName, v1.GetOptions{})
+		routerService, err := k8sClient.CoreV1().Services("router-proxy").Get("router-proxy-nginx-ingress-controller", v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		ip = routerService.Spec.LoadBalancerIP
 	}
 
 	// Secrets
