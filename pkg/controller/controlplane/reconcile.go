@@ -99,11 +99,13 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 
 func (r *ReconcileControlPlane) reconcilePortManager() error {
 	ms := newPortManagerMicroservice(portManagerConfig{
-		image:          r.cp.Spec.Images.PortManager,
-		proxyImage:     r.cp.Spec.Images.Proxy,
-		watchNamespace: r.cp.ObjectMeta.Namespace,
-		userEmail:      r.cp.Spec.User.Email,
-		userPass:       r.cp.Spec.User.Password,
+		image:            r.cp.Spec.Images.PortManager,
+		proxyImage:       r.cp.Spec.Images.Proxy,
+		proxyAddress:     r.cp.Spec.Services.Proxy.Address,
+		proxyServiceType: r.cp.Spec.Services.Proxy.Type,
+		watchNamespace:   r.cp.ObjectMeta.Namespace,
+		userEmail:        r.cp.Spec.User.Email,
+		userPass:         r.cp.Spec.User.Password,
 	})
 
 	// Service Account
