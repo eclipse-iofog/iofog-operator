@@ -42,19 +42,19 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name            string
-	loadBalancerIP  string
-	serviceType     string
-	trafficPolicy   string
-	imagePullSecret string
-	ports           []int
-	replicas        int32
-	containers      []container
-	labels          map[string]string
-	annotations     map[string]string
-	secrets         []v1.Secret
-	volumes         []v1.Volume
-	rbacRules       []rbacv1.PolicyRule
+	name             string
+	loadBalancerAddr string
+	serviceType      string
+	trafficPolicy    string
+	imagePullSecret  string
+	ports            []int
+	replicas         int32
+	containers       []container
+	labels           map[string]string
+	annotations      map[string]string
+	secrets          []v1.Secret
+	volumes          []v1.Volume
+	rbacRules        []rbacv1.PolicyRule
 }
 
 type container struct {
@@ -72,14 +72,14 @@ type container struct {
 }
 
 type controllerMicroserviceConfig struct {
-	replicas        int32
-	image           string
-	imagePullSecret string
-	serviceType     string
-	loadBalancerIP  string
-	db              *iofog.Database
-	proxyImage      string
-	routerImage     string
+	replicas         int32
+	image            string
+	imagePullSecret  string
+	serviceType      string
+	loadBalancerAddr string
+	db               *iofog.Database
+	proxyImage       string
+	routerImage      string
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -106,11 +106,11 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 			51121,
 			80,
 		},
-		imagePullSecret: cfg.imagePullSecret,
-		replicas:        cfg.replicas,
-		serviceType:     cfg.serviceType,
-		trafficPolicy:   getTrafficPolicy(cfg.serviceType),
-		loadBalancerIP:  cfg.loadBalancerIP,
+		imagePullSecret:  cfg.imagePullSecret,
+		replicas:         cfg.replicas,
+		serviceType:      cfg.serviceType,
+		trafficPolicy:    getTrafficPolicy(cfg.serviceType),
+		loadBalancerAddr: cfg.loadBalancerAddr,
 		containers: []container{
 			{
 				name:            "controller",
@@ -367,7 +367,7 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 type routerMicroserviceConfig struct {
 	image           string
 	serviceType     string
-	ip              string
+	address         string
 	volumeMountPath string
 }
 

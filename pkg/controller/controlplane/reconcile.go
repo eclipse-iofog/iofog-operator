@@ -23,14 +23,14 @@ func reconcileRoutine(recon func() error, errCh chan error) {
 func (r *ReconcileControlPlane) reconcileIofogController() error {
 	// Configure
 	ms := newControllerMicroservice(controllerMicroserviceConfig{
-		replicas:        r.cp.Spec.Replicas.Controller,
-		image:           r.cp.Spec.Images.Controller,
-		imagePullSecret: r.cp.Spec.Images.PullSecret,
-		proxyImage:      r.cp.Spec.Images.Proxy,
-		routerImage:     r.cp.Spec.Images.Router,
-		db:              &r.cp.Spec.Database,
-		serviceType:     r.cp.Spec.Services.Controller.Type,
-		loadBalancerIP:  r.cp.Spec.Services.Controller.IP,
+		replicas:         r.cp.Spec.Replicas.Controller,
+		image:            r.cp.Spec.Images.Controller,
+		imagePullSecret:  r.cp.Spec.Images.PullSecret,
+		proxyImage:       r.cp.Spec.Images.Proxy,
+		routerImage:      r.cp.Spec.Images.Router,
+		db:               &r.cp.Spec.Database,
+		serviceType:      r.cp.Spec.Services.Controller.Type,
+		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
 	})
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
@@ -169,7 +169,7 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 	ms := newRouterMicroservice(routerMicroserviceConfig{
 		image:           r.cp.Spec.Images.Router,
 		serviceType:     r.cp.Spec.Services.Router.Type,
-		ip:              r.cp.Spec.Services.Router.IP,
+		address:         r.cp.Spec.Services.Router.Address,
 		volumeMountPath: volumeMountPath,
 	})
 

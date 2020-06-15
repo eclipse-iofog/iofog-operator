@@ -30,13 +30,13 @@ type Services struct {
 }
 
 type Service struct {
-	Type string `json:"type,omitempty"`
-	IP   string `json:"ip,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Address string `json:"address,omitempty"`
 }
 
 type RouterService struct {
 	Type         string `json:"type,omitempty"`
-	IP           string `json:"ip,omitempty"`
+	Address      string `json:"address,omitempty"`
 	HttpPort     int    `json:"httpPort,omitempty"`
 	NormalPort   int    `json:"normalPort,omitempty"`
 	InteriorPort int    `json:"interiorPort,omitempty"`
