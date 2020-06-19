@@ -88,21 +88,23 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Get Router or Router Proxy
-	var routerProxy iofog.RouterProxy
+	var routerProxy iofog.RouterIngress
 	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
 		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
 		if err != nil {
 			return err
 		}
-		routerProxy = iofog.RouterProxy{
-			Address:      ipAddress,
+		routerProxy = iofog.RouterIngress{
+			Ingress: iofog.Ingress{
+				Address: ipAddress,
+			},
 			HttpPort:     router.HTTPPort,
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
 			EdgePort:     router.EdgePort,
 		}
-	} else if r.cp.Spec.Proxies.Router.Address != "" {
-		routerProxy = r.cp.Spec.Proxies.Router
+	} else if r.cp.Spec.Ingresses.Router.Address != "" {
+		routerProxy = r.cp.Spec.Ingresses.Router
 	} else {
 		return errors.New(fmt.Sprintf("Reconcile Controller failed: Missing Proxy.Router data for non LoadBalancer Router service"))
 	}
@@ -117,8 +119,8 @@ func (r *ReconcileControlPlane) reconcilePortManager() error {
 	ms := newPortManagerMicroservice(portManagerConfig{
 		image:            r.cp.Spec.Images.PortManager,
 		proxyImage:       r.cp.Spec.Images.Proxy,
-		proxyAddress:     r.cp.Spec.Services.Proxy.Address,
-		proxyServiceType: r.cp.Spec.Services.Proxy.Type,
+		httpProxyAddress: r.cp.Spec.Ingresses.HttpProxy.Address,
+		tcpProxyAddress:  r.cp.Spec.Ingresses.TcpProxy.Address,
 		watchNamespace:   r.cp.ObjectMeta.Namespace,
 		userEmail:        r.cp.Spec.User.Email,
 		userPass:         r.cp.Spec.User.Password,
@@ -223,8 +225,8 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 		if err != nil {
 			return err
 		}
-	} else if r.cp.Spec.Proxies.Router.Address != "" {
-		address = r.cp.Spec.Proxies.Router.Address
+	} else if r.cp.Spec.Ingresses.Router.Address != "" {
+		address = r.cp.Spec.Ingresses.Router.Address
 	} else {
 		return errors.New(fmt.Sprintf("Reconcile Router failed: Missing Proxy.Router data for non LoadBalancer Router service"))
 	}

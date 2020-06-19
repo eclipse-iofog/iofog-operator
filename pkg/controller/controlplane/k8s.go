@@ -350,7 +350,7 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, proxy iofog.RouterProxy) (err error) {
+func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, proxy iofog.RouterIngress) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: proxy.Address,
 		RouterConfig: iofogclient.RouterConfig{
