@@ -94,7 +94,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		return err
 	}
 
-	return r.reconcileIofogKubelet(iofogClient)
+	return nil
 }
 
 func (r *ReconcileControlPlane) reconcilePortManager() error {
