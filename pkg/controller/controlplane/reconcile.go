@@ -112,6 +112,17 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		return err
 	}
 
+	// Set HTTP/TCP Public Port Host
+	if r.cp.Spec.Ingresses.HttpProxy.Address != "" {
+		if err = iofogClient.PutPublicPortHost(iofogclient.HTTP, r.cp.Spec.Ingresses.HttpProxy.Address); err != nil {
+			return err
+		}
+	}
+	if r.cp.Spec.Ingresses.TcpProxy.Address != "" {
+		if err = iofogClient.PutPublicPortHost(iofogclient.TCP, r.cp.Spec.Ingresses.TcpProxy.Address); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
