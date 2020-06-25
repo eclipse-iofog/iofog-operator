@@ -24,7 +24,7 @@ func reconcileRoutine(recon func() error, errCh chan error) {
 }
 
 func (r *ReconcileControlPlane) reconcileIofogController() error {
-	// Configure
+	// Configure Controller
 	ms := newControllerMicroservice(controllerMicroserviceConfig{
 		replicas:         r.cp.Spec.Replicas.Controller,
 		image:            r.cp.Spec.Images.Controller,
@@ -34,6 +34,8 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		db:               &r.cp.Spec.Database,
 		serviceType:      r.cp.Spec.Services.Controller.Type,
 		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
+		httpPortAddr:     r.cp.Spec.Ingresses.HttpProxy.Address,
+		tcpPortAddr:      r.cp.Spec.Ingresses.TcpProxy.Address,
 	})
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
@@ -112,17 +114,6 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		return err
 	}
 
-	// Set HTTP/TCP Public Port Host
-	if r.cp.Spec.Ingresses.HttpProxy.Address != "" {
-		if err = iofogClient.PutPublicPortHost(iofogclient.HTTP, r.cp.Spec.Ingresses.HttpProxy.Address); err != nil {
-			return err
-		}
-	}
-	if r.cp.Spec.Ingresses.TcpProxy.Address != "" {
-		if err = iofogClient.PutPublicPortHost(iofogclient.TCP, r.cp.Spec.Ingresses.TcpProxy.Address); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

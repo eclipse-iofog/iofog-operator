@@ -80,6 +80,9 @@ type controllerMicroserviceConfig struct {
 	db               *iofog.Database
 	proxyImage       string
 	routerImage      string
+	portProvider     string
+	httpPortAddr     string
+	tcpPortAddr      string
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -91,6 +94,9 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 	}
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
+	}
+	if cfg.httpPortAddr != "" && cfg.tcpPortAddr != "" {
+		cfg.portProvider = "caas"
 	}
 	return cfg
 }
@@ -151,6 +157,18 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					{
 						Name:  "DB_PORT",
 						Value: strconv.Itoa(cfg.db.Port),
+					},
+					{
+						Name:  "MSVC_PORT_PROVIDER",
+						Value: cfg.portProvider,
+					},
+					{
+						Name:  "TCP_PORT_ADDR",
+						Value: cfg.tcpPortAddr,
+					},
+					{
+						Name:  "HTTP_PORT_ADDR",
+						Value: cfg.httpPortAddr,
 					},
 					{
 						Name:  "SystemImages_Proxy_1",
