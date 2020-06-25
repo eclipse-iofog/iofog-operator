@@ -130,8 +130,9 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						},
 					},
 					InitialDelaySeconds: 1,
-					PeriodSeconds:       4,
-					FailureThreshold:    3,
+					TimeoutSeconds:      10,
+					PeriodSeconds:       5,
+					FailureThreshold:    2,
 				},
 				env: []v1.EnvVar{
 					{
