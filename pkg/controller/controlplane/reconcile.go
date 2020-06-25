@@ -2,14 +2,17 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -21,16 +24,18 @@ func reconcileRoutine(recon func() error, errCh chan error) {
 }
 
 func (r *ReconcileControlPlane) reconcileIofogController() error {
-	// Configure
+	// Configure Controller
 	ms := newControllerMicroservice(controllerMicroserviceConfig{
-		replicas:        r.cp.Spec.Replicas.Controller,
-		image:           r.cp.Spec.Images.Controller,
-		imagePullSecret: r.cp.Spec.Images.PullSecret,
-		proxyImage:      r.cp.Spec.Images.Proxy,
-		routerImage:     r.cp.Spec.Images.Router,
-		db:              &r.cp.Spec.Database,
-		serviceType:     r.cp.Spec.Services.Controller.Type,
-		loadBalancerIP:  r.cp.Spec.Services.Controller.IP,
+		replicas:         r.cp.Spec.Replicas.Controller,
+		image:            r.cp.Spec.Images.Controller,
+		imagePullSecret:  r.cp.Spec.Images.PullSecret,
+		proxyImage:       r.cp.Spec.Images.Proxy,
+		routerImage:      r.cp.Spec.Images.Router,
+		db:               &r.cp.Spec.Database,
+		serviceType:      r.cp.Spec.Services.Controller.Type,
+		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
+		httpPortAddr:     r.cp.Spec.Ingresses.HttpProxy.Address,
+		tcpPortAddr:      r.cp.Spec.Ingresses.TcpProxy.Address,
 	})
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
@@ -84,26 +89,43 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		return err
 	}
 
-	// Get Router IP
-	routerIP, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
-	if err != nil {
-		return err
+	// Get Router or Router Proxy
+	var routerProxy iofog.RouterIngress
+	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
+		if err != nil {
+			return err
+		}
+		routerProxy = iofog.RouterIngress{
+			Ingress: iofog.Ingress{
+				Address: ipAddress,
+			},
+			HttpPort:     router.HTTPPort,
+			MessagePort:  router.MessagePort,
+			InteriorPort: router.InteriorPort,
+			EdgePort:     router.EdgePort,
+		}
+	} else if r.cp.Spec.Ingresses.Router.Address != "" {
+		routerProxy = r.cp.Spec.Ingresses.Router
+	} else {
+		return errors.New(fmt.Sprintf("Reconcile Controller failed: Missing Proxy.Router data for non LoadBalancer Router service"))
 	}
-	// Create default router
-	if err = r.createDefaultRouter(iofogClient, routerIP); err != nil {
+	if err = r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		return err
 	}
 
-	return r.reconcileIofogKubelet(iofogClient)
+	return nil
 }
 
 func (r *ReconcileControlPlane) reconcilePortManager() error {
 	ms := newPortManagerMicroservice(portManagerConfig{
-		image:          r.cp.Spec.Images.PortManager,
-		proxyImage:     r.cp.Spec.Images.Proxy,
-		watchNamespace: r.cp.ObjectMeta.Namespace,
-		userEmail:      r.cp.Spec.User.Email,
-		userPass:       r.cp.Spec.User.Password,
+		image:            r.cp.Spec.Images.PortManager,
+		proxyImage:       r.cp.Spec.Images.Proxy,
+		httpProxyAddress: r.cp.Spec.Ingresses.HttpProxy.Address,
+		tcpProxyAddress:  r.cp.Spec.Ingresses.TcpProxy.Address,
+		watchNamespace:   r.cp.ObjectMeta.Namespace,
+		userEmail:        r.cp.Spec.User.Email,
+		userPass:         r.cp.Spec.User.Password,
 	})
 
 	// Service Account
@@ -131,7 +153,7 @@ func (r *ReconcileControlPlane) reconcileIofogKubelet(iofogClient iofogclient.Cl
 	}
 	dep := appsv1.Deployment{}
 	if err := r.client.Get(context.TODO(), kubeletKey, &dep); err != nil {
-		if !errors.IsNotFound(err) {
+		if !k8serrors.IsNotFound(err) {
 			return err
 		}
 		// Not found, generate new token
@@ -169,7 +191,6 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 	ms := newRouterMicroservice(routerMicroserviceConfig{
 		image:           r.cp.Spec.Images.Router,
 		serviceType:     r.cp.Spec.Services.Router.Type,
-		ip:              r.cp.Spec.Services.Router.IP,
 		volumeMountPath: volumeMountPath,
 	})
 
@@ -199,9 +220,17 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 		return err
 	}
 
-	ip, err := k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 120)
-	if err != nil {
-		return err
+	// Wait for external IP of LB Service
+	address := ""
+	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 120)
+		if err != nil {
+			return err
+		}
+	} else if r.cp.Spec.Ingresses.Router.Address != "" {
+		address = r.cp.Spec.Ingresses.Router.Address
+	} else {
+		return errors.New(fmt.Sprintf("Reconcile Router failed: Missing Proxy.Router data for non LoadBalancer Router service"))
 	}
 
 	// Secrets
@@ -213,7 +242,7 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 
 	// AMQPS and Internal
 	for _, suffix := range []string{"amqps", "internal"} {
-		secret := certs.GenerateSecret("router-"+suffix, ip, ip, &caSecret)
+		secret := certs.GenerateSecret("router-"+suffix, address, address, &caSecret)
 		secret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
 		ms.secrets = append(ms.secrets, secret)
 	}

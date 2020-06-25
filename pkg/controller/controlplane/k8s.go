@@ -2,12 +2,11 @@ package controlplane
 
 import (
 	"context"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"strings"
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -351,13 +350,13 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, routerIP string) (err error) {
+func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, proxy iofog.RouterIngress) (err error) {
 	routerConfig := iofogclient.Router{
-		Host: routerIP,
+		Host: proxy.Address,
 		RouterConfig: iofogclient.RouterConfig{
-			InterRouterPort: newInt(router.InteriorPort),
-			EdgeRouterPort:  newInt(router.EdgePort),
-			MessagingPort:   newInt(router.MessagePort),
+			InterRouterPort: newInt(proxy.InteriorPort),
+			EdgeRouterPort:  newInt(proxy.EdgePort),
+			MessagingPort:   newInt(proxy.MessagePort),
 		},
 	}
 	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {

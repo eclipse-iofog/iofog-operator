@@ -42,19 +42,19 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name            string
-	loadBalancerIP  string
-	serviceType     string
-	trafficPolicy   string
-	imagePullSecret string
-	ports           []int
-	replicas        int32
-	containers      []container
-	labels          map[string]string
-	annotations     map[string]string
-	secrets         []v1.Secret
-	volumes         []v1.Volume
-	rbacRules       []rbacv1.PolicyRule
+	name             string
+	loadBalancerAddr string
+	serviceType      string
+	trafficPolicy    string
+	imagePullSecret  string
+	ports            []int
+	replicas         int32
+	containers       []container
+	labels           map[string]string
+	annotations      map[string]string
+	secrets          []v1.Secret
+	volumes          []v1.Volume
+	rbacRules        []rbacv1.PolicyRule
 }
 
 type container struct {
@@ -72,14 +72,17 @@ type container struct {
 }
 
 type controllerMicroserviceConfig struct {
-	replicas        int32
-	image           string
-	imagePullSecret string
-	serviceType     string
-	loadBalancerIP  string
-	db              *iofog.Database
-	proxyImage      string
-	routerImage     string
+	replicas         int32
+	image            string
+	imagePullSecret  string
+	serviceType      string
+	loadBalancerAddr string
+	db               *iofog.Database
+	proxyImage       string
+	routerImage      string
+	portProvider     string
+	httpPortAddr     string
+	tcpPortAddr      string
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -91,6 +94,9 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 	}
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
+	}
+	if cfg.httpPortAddr != "" && cfg.tcpPortAddr != "" {
+		cfg.portProvider = "caas"
 	}
 	return cfg
 }
@@ -106,11 +112,11 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 			51121,
 			80,
 		},
-		imagePullSecret: cfg.imagePullSecret,
-		replicas:        cfg.replicas,
-		serviceType:     cfg.serviceType,
-		trafficPolicy:   getTrafficPolicy(cfg.serviceType),
-		loadBalancerIP:  cfg.loadBalancerIP,
+		imagePullSecret:  cfg.imagePullSecret,
+		replicas:         cfg.replicas,
+		serviceType:      cfg.serviceType,
+		trafficPolicy:    getTrafficPolicy(cfg.serviceType),
+		loadBalancerAddr: cfg.loadBalancerAddr,
 		containers: []container{
 			{
 				name:            "controller",
@@ -124,8 +130,9 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						},
 					},
 					InitialDelaySeconds: 1,
-					PeriodSeconds:       4,
-					FailureThreshold:    3,
+					TimeoutSeconds:      10,
+					PeriodSeconds:       5,
+					FailureThreshold:    2,
 				},
 				env: []v1.EnvVar{
 					{
@@ -151,6 +158,18 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					{
 						Name:  "DB_PORT",
 						Value: strconv.Itoa(cfg.db.Port),
+					},
+					{
+						Name:  "MSVC_PORT_PROVIDER",
+						Value: cfg.portProvider,
+					},
+					{
+						Name:  "TCP_PORT_ADDR",
+						Value: cfg.tcpPortAddr,
+					},
+					{
+						Name:  "HTTP_PORT_ADDR",
+						Value: cfg.httpPortAddr,
 					},
 					{
 						Name:  "SystemImages_Proxy_1",
@@ -261,8 +280,8 @@ func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) 
 type portManagerConfig struct {
 	image            string
 	proxyImage       string
-	proxyServiceType string
-	proxyIP          string
+	httpProxyAddress string
+	tcpProxyAddress  string
 	watchNamespace   string
 	userEmail        string
 	userPass         string
@@ -274,9 +293,6 @@ func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
 	}
 	if cfg.proxyImage == "" {
 		cfg.proxyImage = util.GetProxyImage()
-	}
-	if cfg.proxyServiceType == "" {
-		cfg.proxyServiceType = string(corev1.ServiceTypeLoadBalancer)
 	}
 	return cfg
 }
@@ -347,12 +363,12 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 						Value: cfg.proxyImage,
 					},
 					{
-						Name:  "PROXY_SERVICE_TYPE",
-						Value: cfg.proxyServiceType,
+						Name:  "HTTP_PROXY_ADDRESS",
+						Value: cfg.httpProxyAddress,
 					},
 					{
-						Name:  "PROXY_IP",
-						Value: cfg.proxyIP,
+						Name:  "TCP_PROXY_ADDRESS",
+						Value: cfg.tcpProxyAddress,
 					},
 					{
 						Name:  "ROUTER_ADDRESS",
@@ -367,7 +383,6 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 type routerMicroserviceConfig struct {
 	image           string
 	serviceType     string
-	ip              string
 	volumeMountPath string
 }
 
@@ -504,5 +519,5 @@ func getTrafficPolicy(serviceType string) string {
 	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
-	return string(corev1.ServiceExternalTrafficPolicyTypeCluster)
+	return ""
 }
