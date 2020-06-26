@@ -83,6 +83,9 @@ type controllerMicroserviceConfig struct {
 	portProvider     string
 	httpPortAddr     string
 	tcpPortAddr      string
+	tcpAllocatorHost string
+	tcpAllocatorPort int
+	ecnId            int
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -186,6 +189,14 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					{
 						Name:  "SystemImages_Router_2",
 						Value: util.TransformImageToARM(cfg.routerImage),
+					},
+					{
+						Name:  "TCP_ALLOC_ADDRESS",
+						Value: fmt.Sprintf("%s:%d", cfg.tcpAllocatorHost, cfg.tcpAllocatorPort),
+					},
+					{
+						Name:  "ECN_ID",
+						Value: strconv.Itoa(cfg.ecnId),
 					},
 				},
 				resources: v1.ResourceRequirements{

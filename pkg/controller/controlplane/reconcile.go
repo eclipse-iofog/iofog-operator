@@ -36,7 +36,11 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
 		httpPortAddr:     r.cp.Spec.Ingresses.HttpProxy.Address,
 		tcpPortAddr:      r.cp.Spec.Ingresses.TcpProxy.Address,
+		tcpAllocatorHost: r.cp.Spec.Ingresses.TcpProxy.TcpAllocatorHost,
+		tcpAllocatorPort: r.cp.Spec.Ingresses.TcpProxy.TcpAllocatorPort,
+		ecnId:            r.cp.Spec.Ingresses.TcpProxy.EcnId,
 	})
+
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
 		return err
