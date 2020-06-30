@@ -56,6 +56,7 @@ type microservice struct {
 	volumes          []v1.Volume
 	rbacRules        []rbacv1.PolicyRule
 	isLeaderElected  bool
+	availableDelay int32
 }
 
 type container struct {
@@ -108,6 +109,7 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	cfg = filterControllerConfig(cfg)
 	msvc := &microservice{
+		availableDelay: 5,
 		name: "controller",
 		labels: map[string]string{
 			"name": "controller",

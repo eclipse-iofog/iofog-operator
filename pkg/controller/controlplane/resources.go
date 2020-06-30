@@ -71,6 +71,7 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			Labels:    ms.labels,
 		},
 		Spec: appsv1.DeploymentSpec{
+			MinReadySeconds: ms.availableDelay,
 			Replicas: &ms.replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: ms.labels,
