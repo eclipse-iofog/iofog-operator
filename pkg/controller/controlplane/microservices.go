@@ -55,6 +55,7 @@ type microservice struct {
 	secrets          []v1.Secret
 	volumes          []v1.Volume
 	rbacRules        []rbacv1.PolicyRule
+	isLeaderElected  bool
 }
 
 type container struct {
@@ -311,7 +312,8 @@ func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
 func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 	cfg = filterPortManagerConfig(cfg)
 	return &microservice{
-		name: "port-manager",
+		isLeaderElected: true,
+		name:            "port-manager",
 		labels: map[string]string{
 			"name": "port-manager",
 		},
