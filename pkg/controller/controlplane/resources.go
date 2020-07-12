@@ -59,7 +59,7 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			MaxSurge:       &maxSurge,
 		},
 	}
-	if ms.isLeaderElected {
+	if ms.mustRecreateOnRollout {
 		strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}

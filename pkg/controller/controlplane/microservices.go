@@ -42,21 +42,21 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name             string
-	loadBalancerAddr string
-	serviceType      string
-	trafficPolicy    string
-	imagePullSecret  string
-	ports            []int
-	replicas         int32
-	containers       []container
-	labels           map[string]string
-	annotations      map[string]string
-	secrets          []v1.Secret
-	volumes          []v1.Volume
-	rbacRules        []rbacv1.PolicyRule
-	isLeaderElected  bool
-	availableDelay   int32
+	name                  string
+	loadBalancerAddr      string
+	serviceType           string
+	trafficPolicy         string
+	imagePullSecret       string
+	ports                 []int
+	replicas              int32
+	containers            []container
+	labels                map[string]string
+	annotations           map[string]string
+	secrets               []v1.Secret
+	volumes               []v1.Volume
+	rbacRules             []rbacv1.PolicyRule
+	mustRecreateOnRollout bool
+	availableDelay        int32
 }
 
 type container struct {
@@ -217,6 +217,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	}
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
+		msvc.mustRecreateOnRollout = true
 		msvc.volumes = []corev1.Volume{
 			{
 				Name: "controller-sqlite",
@@ -314,8 +315,8 @@ func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
 func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 	cfg = filterPortManagerConfig(cfg)
 	return &microservice{
-		isLeaderElected: true,
-		name:            "port-manager",
+		mustRecreateOnRollout: true,
+		name:                  "port-manager",
 		labels: map[string]string{
 			"name": "port-manager",
 		},
@@ -441,6 +442,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 			},
 		},
 		volumes: []v1.Volume{
+
 			{
 				Name: routerName + "-internal",
 				VolumeSource: corev1.VolumeSource{
