@@ -30,7 +30,7 @@ LDFLAGS += -X $(PREFIX).proxyTag=2.0.0-rc1
 LDFLAGS += -X $(PREFIX).routerTag=2.0.0-rc1
 LDFLAGS += -X $(PREFIX).controllerTag=2.0.0-rc1
 LDFLAGS += -X $(PREFIX).repo=iofog
-GO_SDK_MODULE = iofog-go-sdk/v2@v2.0.0-rc1
+GO_SDK_MODULE = iofog-go-sdk/v2@v2.0.0-rc2
 
 .PHONY: clean
 clean: ## Clean the working area and the project
