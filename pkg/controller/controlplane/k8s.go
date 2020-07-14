@@ -188,8 +188,8 @@ func (r *ReconcileControlPlane) createServiceAccount(ms *microservice) error {
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		r.logger.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
-		err = r.client.Create(context.TODO(), svcAcc)
-		if err != nil {
+		// TODO: Find out why the IsAlreadyExists() check is necessary here. Happens when CP redeployed
+		if err = r.client.Create(context.TODO(), svcAcc); err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
 
