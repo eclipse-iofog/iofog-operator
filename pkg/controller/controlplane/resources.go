@@ -50,6 +50,20 @@ func newService(namespace string, ms *microservice) *v1.Service {
 }
 
 func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
+	maxUnavailable := intstr.FromInt(0)
+	maxSurge := intstr.FromInt(1)
+	strategy := appsv1.DeploymentStrategy{
+		Type: appsv1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateDeployment{
+			MaxUnavailable: &maxUnavailable,
+			MaxSurge:       &maxSurge,
+		},
+	}
+	if ms.mustRecreateOnRollout {
+		strategy = appsv1.DeploymentStrategy{
+			Type: appsv1.RecreateDeploymentStrategyType,
+		}
+	}
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
@@ -57,10 +71,12 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			Labels:    ms.labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &ms.replicas,
+			MinReadySeconds: ms.availableDelay,
+			Replicas:        &ms.replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: ms.labels,
 			},
+			Strategy: strategy,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: ms.labels,

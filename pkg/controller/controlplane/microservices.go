@@ -42,19 +42,21 @@ func removeConnectorNamePrefix(name string) string {
 }
 
 type microservice struct {
-	name             string
-	loadBalancerAddr string
-	serviceType      string
-	trafficPolicy    string
-	imagePullSecret  string
-	ports            []int
-	replicas         int32
-	containers       []container
-	labels           map[string]string
-	annotations      map[string]string
-	secrets          []v1.Secret
-	volumes          []v1.Volume
-	rbacRules        []rbacv1.PolicyRule
+	name                  string
+	loadBalancerAddr      string
+	serviceType           string
+	trafficPolicy         string
+	imagePullSecret       string
+	ports                 []int
+	replicas              int32
+	containers            []container
+	labels                map[string]string
+	annotations           map[string]string
+	secrets               []v1.Secret
+	volumes               []v1.Volume
+	rbacRules             []rbacv1.PolicyRule
+	mustRecreateOnRollout bool
+	availableDelay        int32
 }
 
 type container struct {
@@ -83,6 +85,9 @@ type controllerMicroserviceConfig struct {
 	portProvider     string
 	httpPortAddr     string
 	tcpPortAddr      string
+	tcpAllocatorHost string
+	tcpAllocatorPort int
+	ecnId            int
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -104,7 +109,8 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	cfg = filterControllerConfig(cfg)
 	msvc := &microservice{
-		name: "controller",
+		availableDelay: 5,
+		name:           "controller",
 		labels: map[string]string{
 			"name": "controller",
 		},
@@ -187,6 +193,14 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						Name:  "SystemImages_Router_2",
 						Value: util.TransformImageToARM(cfg.routerImage),
 					},
+					{
+						Name:  "TCP_ALLOC_ADDRESS",
+						Value: fmt.Sprintf("%s:%d", cfg.tcpAllocatorHost, cfg.tcpAllocatorPort),
+					},
+					{
+						Name:  "ECN_ID",
+						Value: strconv.Itoa(cfg.ecnId),
+					},
 				},
 				resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
@@ -203,6 +217,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	}
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
+		msvc.mustRecreateOnRollout = true
 		msvc.volumes = []corev1.Volume{
 			{
 				Name: "controller-sqlite",
@@ -300,7 +315,8 @@ func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
 func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 	cfg = filterPortManagerConfig(cfg)
 	return &microservice{
-		name: "port-manager",
+		mustRecreateOnRollout: true,
+		name:                  "port-manager",
 		labels: map[string]string{
 			"name": "port-manager",
 		},
@@ -426,6 +442,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 			},
 		},
 		volumes: []v1.Volume{
+
 			{
 				Name: routerName + "-internal",
 				VolumeSource: corev1.VolumeSource{
