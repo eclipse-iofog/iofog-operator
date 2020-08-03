@@ -19,6 +19,10 @@ import (
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 )
 
+const (
+	loadBalancerTimeout = 360
+)
+
 func reconcileRoutine(recon func() error, errCh chan error) {
 	errCh <- recon()
 }
@@ -74,7 +78,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 
 	// Wait for external IP of LB Service
 	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
-		_, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 240)
+		_, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
 			return err
 		}
@@ -96,7 +100,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	// Get Router or Router Proxy
 	var routerProxy iofog.RouterIngress
 	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
-		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, 240)
+		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			return err
 		}
@@ -227,7 +231,7 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 	// Wait for external IP of LB Service
 	address := ""
 	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
-		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, 120)
+		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
 			return err
 		}
