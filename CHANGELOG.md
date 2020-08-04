@@ -1,8 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## [v2.0.0] - 2020-08-05
 
-## [v2.0.0-rc1] - 2020-04-29
+### Features
+
+* Remove Kubelet
+
+### Bugs
+
+* Increase LB timeouts
+* Increase Controller readiness probe delay
+* Change Router liveness probe to readiness
+* Service accounts creation failure
+* Fix rollout policies for all components
 
 ## [v2.0.0-beta3] - 2020-04-23
 
