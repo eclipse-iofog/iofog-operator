@@ -135,7 +135,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 							Port: intstr.FromInt(51121),
 						},
 					},
-					InitialDelaySeconds: 1,
+					InitialDelaySeconds: 10,
 					TimeoutSeconds:      10,
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
@@ -336,8 +336,9 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 						},
 					},
 					InitialDelaySeconds: 4,
-					PeriodSeconds:       10,
-					FailureThreshold:    1,
+					TimeoutSeconds:      10,
+					PeriodSeconds:       5,
+					FailureThreshold:    2,
 				},
 				resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
@@ -468,14 +469,17 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 				command: []string{
 					"/qpid-dispatch/launch.sh",
 				},
-				livenessProbe: &corev1.Probe{
-					InitialDelaySeconds: 60,
+				readinessProbe: &corev1.Probe{
 					Handler: corev1.Handler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Port: intstr.FromInt(9090),
 							Path: "/healthz",
 						},
 					},
+					InitialDelaySeconds: 10,
+					TimeoutSeconds:      10,
+					PeriodSeconds:       5,
+					FailureThreshold:    2,
 				},
 				env: []v1.EnvVar{
 					{
