@@ -130,6 +130,8 @@ github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc1 h1:t+jyi0SrEcYzckAmlP/rNsWBy
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc1/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc2 h1:EHNDszuEExQPU/hs9ISaD5QmzyApB73z1vdY/0py6II=
 github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-rc2/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
+github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0 h1:Yh9nwJMY2Qxwj6ZbtpFwLwm1CpBio5Fl0QETvdAApS4=
+github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0/go.mod h1:HcfRGiV2iyYKaqcXfypi+m++nz/dbA+XUeNyMzTm7GA=
 github.com/eclipse-iofog/iofog-operator v1.3.0 h1:F1SXsBOVjhzFLElDQMgK7WBNJfnE0XjfpnUJ94lZMKU=
 github.com/eclipse-iofog/iofog-operator v1.3.0/go.mod h1:r/bGkjLr59ORotQDHTC8+ybksdr9wBoJ2iOSxfBHTQc=
 github.com/elazarl/go-bindata-assetfs v1.0.0/go.mod h1:v+YaWX3bdea5J/mo8dSETolEo7R71Vk1u8bnjau5yw4=
