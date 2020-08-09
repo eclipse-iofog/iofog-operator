@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/eclipse-iofog/iofog-operator/pkg/apis"
-	"github.com/eclipse-iofog/iofog-operator/pkg/controller"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/ready"

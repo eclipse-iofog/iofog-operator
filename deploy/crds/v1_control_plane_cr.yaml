@@ -1,0 +1,35 @@
+apiVersion: iofog.org/v2
+kind: ControlPlane
+metadata:
+  name: iokog
+  namespace: default
+spec:
+  controlPlane:
+    user:
+      name: "Ihff"
+      surname: "Jghiog"
+      email: "user@domain.com"
+      password: "FDJLhu98buisdkj"
+    database:
+      provider: ""
+      host: ""
+      port: 0
+      user: ""
+      password: ""
+      databaseName: ""
+    services:
+      controller:
+        type: ""
+        ip: ""
+      router:
+        type: ""
+        ip: ""
+    replicas:
+      controller: 0
+    images:
+      pullSecret: ""
+      kubelet: ""
+      controller: ""
+      router: ""
+      portManager: ""
+      proxy: ""

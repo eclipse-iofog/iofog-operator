@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
-	iofogv1 "github.com/eclipse-iofog/iofog-operator/pkg/apis/iofog/v1"
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,14 +41,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &iofogv1.Application{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &iofog.Application{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &iofogv1.Application{},
+		OwnerType:    &iofog.Application{},
 	})
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling App")
 
-	instance := &iofogv1.Application{}
+	instance := &iofog.Application{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -144,7 +144,7 @@ func labelsForIOFog(name string) map[string]string {
 	}
 }
 
-func (r *ReconcileApp) deploymentForApp(app *iofogv1.Application) *appsv1.Deployment {
+func (r *ReconcileApp) deploymentForApp(app *iofog.Application) *appsv1.Deployment {
 	labels := labelsForIOFog(app.Name)
 
 	microservices, _ := json.Marshal(app.Spec.Microservices)
