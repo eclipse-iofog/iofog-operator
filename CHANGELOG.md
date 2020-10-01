@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2.0.1] - 2020-10-02
+
+* Remove Router HTTP Port from Load Balancer
+
 ## [v2.0.0] - 2020-08-05
 
 ### Features
