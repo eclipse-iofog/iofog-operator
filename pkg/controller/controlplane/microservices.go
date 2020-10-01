@@ -33,6 +33,7 @@ const (
 )
 
 type service struct {
+	name             string
 	loadBalancerAddr string
 	trafficPolicy    string
 	serviceType      string
@@ -120,6 +121,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 		replicas:        cfg.replicas,
 		services: []service{
 			{
+				name:             "controller",
 				serviceType:      cfg.serviceType,
 				trafficPolicy:    getTrafficPolicy(cfg.serviceType),
 				loadBalancerAddr: cfg.loadBalancerAddr,
@@ -395,6 +397,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 		},
 		services: []service{
 			{
+				name:          "router",
 				serviceType:   cfg.serviceType,
 				trafficPolicy: getTrafficPolicy(cfg.serviceType),
 				ports: []int{
@@ -403,13 +406,14 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					router.EdgePort,
 				},
 			},
-			{
-				serviceType:   string(corev1.ServiceTypeClusterIP),
-				trafficPolicy: getTrafficPolicy(string(corev1.ServiceTypeClusterIP)),
-				ports: []int{
-					router.HTTPPort,
-				},
-			},
+			//{
+			//	name:          "router-healthz",
+			//	serviceType:   string(corev1.ServiceTypeClusterIP),
+			//	trafficPolicy: getTrafficPolicy(string(corev1.ServiceTypeClusterIP)),
+			//	ports: []int{
+			//		router.HTTPPort,
+			//	},
+			//},
 		},
 		replicas: 1,
 		rbacRules: []rbacv1.PolicyRule{

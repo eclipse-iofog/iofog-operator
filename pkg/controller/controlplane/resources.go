@@ -26,7 +26,7 @@ func newServices(namespace string, ms *microservice) (svcs []*v1.Service) {
 	for idx := range ms.services {
 		svc := &v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      ms.name,
+				Name:      ms.services[idx].name,
 				Namespace: namespace,
 				Labels:    ms.labels,
 			},
@@ -40,7 +40,7 @@ func newServices(namespace string, ms *microservice) (svcs []*v1.Service) {
 		// Add ports
 		for idx, port := range ms.services[idx].ports {
 			svcPort := v1.ServicePort{
-				Name:       ms.name + strconv.Itoa(idx),
+				Name:       ms.services[idx].name + strconv.Itoa(idx),
 				Port:       int32(port),
 				TargetPort: intstr.FromInt(port),
 				Protocol:   v1.Protocol("TCP"),
