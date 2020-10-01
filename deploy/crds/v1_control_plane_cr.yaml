@@ -6,9 +6,9 @@ metadata:
 spec:
   controlPlane:
     user:
-      name: "Ihff"
-      surname: "Jghiog"
-      email: "user@domain.com"
+      name: "Serge
+      surname: "Radinovich"
+      email: "serge@edgeworx.io"
       password: "FDJLhu98buisdkj"
     database:
       provider: ""
@@ -20,10 +20,13 @@ spec:
     services:
       controller:
         type: ""
-        ip: ""
+        address: ""
       router:
         type: ""
-        ip: ""
+        address: ""
+      proxy:
+        type: ""
+        address: ""
     replicas:
       controller: 0
     images:
@@ -33,3 +36,17 @@ spec:
       router: ""
       portManager: ""
       proxy: ""
+    ingresses:
+      router:
+        address: ""
+        httpPort: 0
+        messagePort: 0
+        interiorPort: 0
+        edgePort: 0
+      httpProxy:
+        address: ""
+      tcpProxy:
+        address: ""
+        tcpAllocatorPort: 0
+        tcpAllocatorHost: ""
+        ecnId: 0

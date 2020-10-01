@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
@@ -33,21 +32,18 @@ const (
 	routerName = "router"
 )
 
-func removeConnectorNamePrefix(name string) string {
-	pos := strings.Index(name, "-")
-	if pos == -1 || pos >= len(name)-1 {
-		return name
-	}
-	return name[pos+1:]
+type service struct {
+	name             string
+	loadBalancerAddr string
+	trafficPolicy    string
+	serviceType      string
+	ports            []int
 }
 
 type microservice struct {
 	name                  string
-	loadBalancerAddr      string
-	serviceType           string
-	trafficPolicy         string
+	services              []service
 	imagePullSecret       string
-	ports                 []int
 	replicas              int32
 	containers            []container
 	labels                map[string]string
@@ -106,6 +102,13 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 	return cfg
 }
 
+func getControllerPort(msvc *microservice) (int, error) {
+	if len(msvc.services) == 0 || len(msvc.services[0].ports) == 0 {
+		return 0, errors.New("Controller microservice does not have requisite ports")
+	}
+	return msvc.services[0].ports[0], nil
+}
+
 func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	cfg = filterControllerConfig(cfg)
 	msvc := &microservice{
@@ -114,15 +117,20 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 		labels: map[string]string{
 			"name": "controller",
 		},
-		ports: []int{
-			51121,
-			80,
+		imagePullSecret: cfg.imagePullSecret,
+		replicas:        cfg.replicas,
+		services: []service{
+			{
+				name:             "controller",
+				serviceType:      cfg.serviceType,
+				trafficPolicy:    getTrafficPolicy(cfg.serviceType),
+				loadBalancerAddr: cfg.loadBalancerAddr,
+				ports: []int{
+					51121,
+					80,
+				},
+			},
 		},
-		imagePullSecret:  cfg.imagePullSecret,
-		replicas:         cfg.replicas,
-		serviceType:      cfg.serviceType,
-		trafficPolicy:    getTrafficPolicy(cfg.serviceType),
-		loadBalancerAddr: cfg.loadBalancerAddr,
 		containers: []container{
 			{
 				name:            "controller",
@@ -251,45 +259,6 @@ func getKubeletToken(containers []corev1.Container) (token string, err error) {
 	}
 	token = containers[0].Args[3]
 	return
-}
-
-func newKubeletMicroservice(image, namespace, token, controllerEndpoint string) *microservice {
-	if image == "" {
-		image = util.GetKubeletImage()
-	}
-	return &microservice{
-		name: "kubelet",
-		labels: map[string]string{
-			"name": "kubelet",
-		},
-		ports:    []int{60000},
-		replicas: 1,
-		containers: []container{
-			{
-				name:            "kubelet",
-				image:           image,
-				imagePullPolicy: "Always",
-				args: []string{
-					"--namespace",
-					namespace,
-					"--iofog-token",
-					token,
-					"--iofog-url",
-					fmt.Sprintf("http://%s", controllerEndpoint),
-				},
-				resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						"cpu":    resource.MustParse("200m"),
-						"memory": resource.MustParse("1Gi"),
-					},
-					Requests: v1.ResourceList{
-						"cpu":    resource.MustParse("50m"),
-						"memory": resource.MustParse("200Mi"),
-					},
-				},
-			},
-		},
-	}
 }
 
 type portManagerConfig struct {
@@ -426,15 +395,27 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 			"prometheus.io/port":   "9090",
 			"prometheus.io/scrape": "true",
 		},
-		ports: []int{
-			router.MessagePort,
-			router.HTTPPort,
-			router.InteriorPort,
-			router.EdgePort,
+		services: []service{
+			{
+				name:          "router",
+				serviceType:   cfg.serviceType,
+				trafficPolicy: getTrafficPolicy(cfg.serviceType),
+				ports: []int{
+					router.MessagePort,
+					router.InteriorPort,
+					router.EdgePort,
+				},
+			},
+			//{
+			//	name:          "router-healthz",
+			//	serviceType:   string(corev1.ServiceTypeClusterIP),
+			//	trafficPolicy: getTrafficPolicy(string(corev1.ServiceTypeClusterIP)),
+			//	ports: []int{
+			//		router.HTTPPort,
+			//	},
+			//},
 		},
-		replicas:      1,
-		serviceType:   cfg.serviceType,
-		trafficPolicy: getTrafficPolicy(cfg.serviceType),
+		replicas: 1,
 		rbacRules: []rbacv1.PolicyRule{
 			{
 				Verbs:     []string{"get", "list", "watch"},

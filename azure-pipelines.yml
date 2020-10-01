@@ -43,7 +43,7 @@ jobs:
       containerRegistry: 'Edgeworx GCP'
       repository: $(repository)
       command: 'buildAndPush'
-      Dockerfile: 'build/Dockerfile'
+      Dockerfile: './Dockerfile'
       buildContext: './'
       tags: |
         $(version)

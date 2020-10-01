@@ -1,7 +1,6 @@
 package controlplane
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
@@ -10,11 +9,7 @@ import (
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 )
@@ -85,7 +80,11 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Instantiate Controller client
-	iofogClient := *iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ms.ports[0])})
+	ctrlPort, err := getControllerPort(ms)
+	if err != nil {
+		return err
+	}
+	iofogClient := *iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ctrlPort)})
 
 	// Wait for Controller REST API
 	if err = r.waitForControllerAPI(iofogClient); err != nil {
@@ -108,7 +107,6 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 			Ingress: iofog.Ingress{
 				Address: ipAddress,
 			},
-			HttpPort:     router.HTTPPort,
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
 			EdgePort:     router.EdgePort,
@@ -149,47 +147,6 @@ func (r *ReconcileControlPlane) reconcilePortManager() error {
 	if err := r.createDeployment(ms); err != nil {
 		return err
 	}
-	return nil
-}
-
-func (r *ReconcileControlPlane) reconcileIofogKubelet(iofogClient iofogclient.Client) error {
-	// Generate new token if required
-	token := ""
-	kubeletKey := client.ObjectKey{
-		Name:      "kubelet",
-		Namespace: r.cp.ObjectMeta.Namespace,
-	}
-	dep := appsv1.Deployment{}
-	if err := r.client.Get(context.TODO(), kubeletKey, &dep); err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return err
-		}
-		// Not found, generate new token
-		token = iofogClient.GetAccessToken()
-	} else {
-		// Found, use existing token
-		token, err = getKubeletToken(dep.Spec.Template.Spec.Containers)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Configure
-	ms := newKubeletMicroservice(r.cp.Spec.Images.Kubelet, r.cp.ObjectMeta.Namespace, token, iofogClient.GetEndpoint())
-
-	// Service Account
-	if err := r.createServiceAccount(ms); err != nil {
-		return err
-	}
-	// ClusterRoleBinding
-	if err := r.createClusterRoleBinding(ms); err != nil {
-		return err
-	}
-	// Deployment
-	if err := r.createDeployment(ms); err != nil {
-		return err
-	}
-
 	return nil
 }
 
