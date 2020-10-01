@@ -129,30 +129,32 @@ func (r *ReconcileControlPlane) createSecrets(ms *microservice) error {
 }
 
 func (r *ReconcileControlPlane) createService(ms *microservice) error {
-	svc := newService(r.cp.ObjectMeta.Namespace, ms)
-	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(&r.cp, svc, r.scheme); err != nil {
-		return err
-	}
-
-	// Check if this resource already exists
-	found := &corev1.Service{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		r.logger.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
-		err = r.client.Create(context.TODO(), svc)
-		if err != nil {
+	svcs := newServices(r.cp.ObjectMeta.Namespace, ms)
+	for _, svc := range svcs {
+		// Set ControlPlane instance as the owner and controller
+		if err := controllerutil.SetControllerReference(&r.cp, svc, r.scheme); err != nil {
 			return err
 		}
 
-		// Resource created successfully - don't requeue
-		return nil
-	} else if err != nil {
-		return err
-	}
+		// Check if this resource already exists
+		found := &corev1.Service{}
+		err := r.client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			r.logger.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			err = r.client.Create(context.TODO(), svc)
+			if err != nil {
+				return err
+			}
 
-	// Resource already exists - don't requeue
-	r.logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+			// Resource created successfully - don't requeue
+			continue
+		} else if err != nil {
+			return err
+		}
+
+		// Resource already exists - don't requeue
+		r.logger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+	}
 	return nil
 }
 

@@ -22,31 +22,34 @@ import (
 	"strconv"
 )
 
-func newService(namespace string, ms *microservice) *v1.Service {
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ms.name,
-			Namespace: namespace,
-			Labels:    ms.labels,
-		},
-		Spec: v1.ServiceSpec{
-			Type:                  v1.ServiceType(ms.serviceType),
-			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(ms.trafficPolicy),
-			LoadBalancerIP:        ms.loadBalancerAddr,
-			Selector:              ms.labels,
-		},
-	}
-	// Add ports
-	for idx, port := range ms.ports {
-		svcPort := v1.ServicePort{
-			Name:       ms.name + strconv.Itoa(idx),
-			Port:       int32(port),
-			TargetPort: intstr.FromInt(port),
-			Protocol:   v1.Protocol("TCP"),
+func newServices(namespace string, ms *microservice) (svcs []*v1.Service) {
+	for idx := range ms.services {
+		svc := &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ms.name,
+				Namespace: namespace,
+				Labels:    ms.labels,
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceType(ms.services[idx].serviceType),
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(ms.services[idx].trafficPolicy),
+				LoadBalancerIP:        ms.services[idx].loadBalancerAddr,
+				Selector:              ms.labels,
+			},
 		}
-		svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
+		// Add ports
+		for idx, port := range ms.services[idx].ports {
+			svcPort := v1.ServicePort{
+				Name:       ms.name + strconv.Itoa(idx),
+				Port:       int32(port),
+				TargetPort: intstr.FromInt(port),
+				Protocol:   v1.Protocol("TCP"),
+			}
+			svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
+		}
+		svcs = append(svcs, svc)
 	}
-	return svc
+	return svcs
 }
 
 func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
