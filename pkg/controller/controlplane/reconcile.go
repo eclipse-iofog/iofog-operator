@@ -107,7 +107,6 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 			Ingress: iofog.Ingress{
 				Address: ipAddress,
 			},
-			HttpPort:     router.HTTPPort,
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
 			EdgePort:     router.EdgePort,
