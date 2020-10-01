@@ -23,24 +23,24 @@ import (
 )
 
 func newServices(namespace string, ms *microservice) (svcs []*v1.Service) {
-	for svcIdx := range ms.services {
+	for _, msvcSvc := range ms.services {
 		svc := &v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      ms.services[svcIdx].name,
+				Name:      msvcSvc.name,
 				Namespace: namespace,
 				Labels:    ms.labels,
 			},
 			Spec: v1.ServiceSpec{
-				Type:                  v1.ServiceType(ms.services[svcIdx].serviceType),
-				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(ms.services[svcIdx].trafficPolicy),
-				LoadBalancerIP:        ms.services[svcIdx].loadBalancerAddr,
+				Type:                  v1.ServiceType(msvcSvc.serviceType),
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(msvcSvc.trafficPolicy),
+				LoadBalancerIP:        msvcSvc.loadBalancerAddr,
 				Selector:              ms.labels,
 			},
 		}
 		// Add ports
-		for portIdx, port := range ms.services[svcIdx].ports {
+		for idx, port := range msvcSvc.ports {
 			svcPort := v1.ServicePort{
-				Name:       ms.services[portIdx].name + strconv.Itoa(portIdx),
+				Name:       msvcSvc.name + strconv.Itoa(idx),
 				Port:       int32(port),
 				TargetPort: intstr.FromInt(port),
 				Protocol:   v1.Protocol("TCP"),
