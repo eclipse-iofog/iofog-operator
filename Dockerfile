@@ -2,18 +2,18 @@ FROM golang:1.13-alpine as backend
 
 WORKDIR /operator
 
+RUN apk add --update --no-cache bash curl git make
+
 COPY ./go.* ./
+COPY ./vendor ./vendor
+COPY ./script ./script
+RUN ./script/bootstrap.sh
+
 COPY ./cmd ./cmd
 COPY ./internal ./internal
 COPY ./pkg ./pkg
 COPY ./Makefile ./
-COPY ./build ./build
-COPY ./script ./script
-COPY ./vendor ./vendor
 
-RUN apk add --update --no-cache bash curl git make
-
-RUN ./script/bootstrap.sh
 RUN make build
 RUN cp ./bin/iofog-operator /bin
 

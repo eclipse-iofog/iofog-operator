@@ -290,6 +290,13 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 			"name": "port-manager",
 		},
 		replicas: 1,
+		rbacRules: []rbacv1.PolicyRule{
+			{
+				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+				APIGroups: []string{"", "apps"},
+				Resources: []string{"deployments", "services", "pods", "configmaps"},
+			},
+		},
 		containers: []container{
 			{
 				name:            "port-manager",

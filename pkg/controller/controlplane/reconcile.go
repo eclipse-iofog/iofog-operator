@@ -138,9 +138,12 @@ func (r *ReconcileControlPlane) reconcilePortManager() error {
 	if err := r.createServiceAccount(ms); err != nil {
 		return err
 	}
-	// TODO: Use Role Binding instead
-	// ClusterRoleBinding
-	if err := r.createClusterRoleBinding(ms); err != nil {
+	// Role
+	if err := r.createRole(ms); err != nil {
+		return err
+	}
+	// RoleBinding
+	if err := r.createRoleBinding(ms); err != nil {
 		return err
 	}
 	// Deployment

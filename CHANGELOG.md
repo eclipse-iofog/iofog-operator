@@ -3,6 +3,7 @@
 ## Latest
 
 * Upgrade Operator SDK to 0.15.2 to avoid modules import error
+* Remove Cluster Role Binding from Port Manager
 
 ## [v2.0.1] - 2020-10-02
 
