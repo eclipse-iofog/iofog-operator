@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/labels"
 	"reflect"
 
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
@@ -109,9 +108,7 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 	}
 
 	podList := &corev1.PodList{}
-	labelSelector := labels.SelectorFromSet(labelsForIOFog(instance.Name))
-	listOps := &client.ListOptions{Namespace: instance.Namespace, LabelSelector: labelSelector}
-	err = r.client.List(context.TODO(), listOps, podList)
+	err = r.client.List(context.TODO(), podList)
 	if err != nil {
 		reqLogger.Error(err, "Failed to list pods", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
 		return reconcile.Result{}, err
