@@ -9,6 +9,7 @@ trigger:
   paths:
     exclude:
     - README.md
+    - CHANGELOG.md
 
 variables:
   repository: 'focal-freedom-236620/operator'
