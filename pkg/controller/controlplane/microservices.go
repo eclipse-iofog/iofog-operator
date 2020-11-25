@@ -209,6 +209,10 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						Name:  "ECN_ID",
 						Value: strconv.Itoa(cfg.ecnId),
 					},
+					{
+						Name:  "PID_BASE",
+						Value: "/tmp",
+					},
 				},
 				resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
