@@ -1,12 +1,12 @@
 apiVersion: iofog.org/v2
 kind: ControlPlane
 metadata:
-  name: iokog
+  name: iofog
   namespace: default
 spec:
   controlPlane:
     user:
-      name: "Serge
+      name: "Serge"
       surname: "Radinovich"
       email: "serge@edgeworx.io"
       password: "FDJLhu98buisdkj"
@@ -50,3 +50,6 @@ spec:
         tcpAllocatorPort: 0
         tcpAllocatorHost: ""
         ecnId: 0
+    controller:
+      pidBaseDir: ""
+      ecnViewerPort: 0
