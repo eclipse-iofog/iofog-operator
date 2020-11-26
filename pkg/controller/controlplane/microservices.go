@@ -84,6 +84,8 @@ type controllerMicroserviceConfig struct {
 	tcpAllocatorHost string
 	tcpAllocatorPort int
 	ecnId            int
+	pidBaseDir       string
+	ecnViewerPort    int
 }
 
 func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
@@ -98,6 +100,12 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 	}
 	if cfg.httpPortAddr != "" && cfg.tcpPortAddr != "" {
 		cfg.portProvider = "caas"
+	}
+	if cfg.ecnViewerPort == 0 {
+		cfg.ecnViewerPort = 80
+	}
+	if cfg.pidBaseDir == "" {
+		cfg.pidBaseDir = "/tmp"
 	}
 	return cfg
 }
@@ -208,6 +216,14 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					{
 						Name:  "ECN_ID",
 						Value: strconv.Itoa(cfg.ecnId),
+					},
+					{
+						Name:  "PID_BASE",
+						Value: cfg.pidBaseDir,
+					},
+					{
+						Name:  "VIEWER_PORT",
+						Value: strconv.Itoa(cfg.ecnViewerPort),
 					},
 				},
 				resources: v1.ResourceRequirements{
