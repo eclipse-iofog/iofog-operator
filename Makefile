@@ -2,7 +2,7 @@ SHELL = /bin/bash
 OS = $(shell uname -s)
 
 # Project variables
-PACKAGE = github.com/eclipse-iofog/iofog-operator
+PACKAGE = github.com/eclipse-iofog/iofog-operator/v2
 BINARY_NAME = iofog-operator
 IMAGE = iofog/iofog-operator
 
@@ -14,38 +14,55 @@ ifeq ($(VERBOSE), 1)
 	GOARGS += -v
 endif
 
-DEP_VERSION = 0.5.0
-GOLANG_VERSION = 1.11
+GOLANG_VERSION = 1.12
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
-BRANCH ?= $(TRAVIS_BRANCH)
-RELEASE_TAG ?= 0.0.0
-
+MAJOR ?= $(shell cat version | grep MAJOR | sed 's/MAJOR=//g')
+MINOR ?= $(shell cat version | grep MINOR | sed 's/MINOR=//g')
+PATCH ?= $(shell cat version | grep PATCH | sed 's/PATCH=//g')
+SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
+VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
+PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
+LDFLAGS += -X $(PREFIX).portManagerTag=2.0.0
+LDFLAGS += -X $(PREFIX).kubeletTag=2.0.0
+LDFLAGS += -X $(PREFIX).proxyTag=2.0.0
+LDFLAGS += -X $(PREFIX).routerTag=2.0.0
+LDFLAGS += -X $(PREFIX).controllerTag=2.0.0
+LDFLAGS += -X $(PREFIX).repo=iofog
+GO_SDK_MODULE = iofog-go-sdk/v2@v2.0.0
 
 .PHONY: clean
 clean: ## Clean the working area and the project
-	rm -rf $(BUILD_DIR)/ vendor/
+	rm -rf $(BUILD_DIR)/
 
-bin/dep: bin/dep-$(DEP_VERSION)
-	@ln -sf dep-$(DEP_VERSION) bin/dep
-bin/dep-$(DEP_VERSION):
-	@mkdir -p bin
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | INSTALL_DIRECTORY=bin DEP_RELEASE_TAG=v$(DEP_VERSION) sh
-	@mv bin/dep $@
+.PHONY: modules
+modules: get vendor ## Get modules and vendor them
+
+.PHONY: get
+get: ## Pull modules
+	@for module in $(GO_SDK_MODULE); do \
+		go get github.com/eclipse-iofog/$$module; \
+	done
 
 .PHONY: vendor
-vendor: bin/dep ## Install dependencies
-	bin/dep ensure -v -vendor-only
+vendor: # Vendor all deps
+	@go mod vendor
+	@for dep in golang.org/x/tools k8s.io/gengo; do \
+		git checkout -- vendor/$$dep; \
+	done \
 
 .PHONY: build
-build: GOARGS += -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
-build: fmt
+build: GOARGS += -mod=vendor -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
+build: fmt gen
 ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
 	@printf "$(GOLANG_VERSION)\n$$(go version | awk '{sub(/^go/, "", $$3);print $$3}')" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -g | head -1 | grep -q -E "^$(GOLANG_VERSION)$$" || (printf "Required Go version is $(GOLANG_VERSION)\nInstalled: `go version`" && exit 1)
 endif
-	operator-sdk generate k8s
 	go build $(GOARGS) $(BUILD_PACKAGE)
+
+.PHONY: gen
+gen: ## Generate code
+	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
 
 .PHONY: fmt
 fmt:
@@ -53,7 +70,11 @@ fmt:
 
 .PHONY: test
 test:
-	set -o pipefail; go list ./... | xargs -n1 go test $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
+	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
+
+.PHONY: build-img
+build-img:
+	docker build -t eclipse-iofog/operator:latest -f build/Dockerfile .
 
 .PHONY: list
 list: ## List all make targets
