@@ -16,8 +16,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log" // nolint:staticcheck // TODO: replace deprecated pkg
+	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"  // nolint:staticcheck // TODO: replace deprecated pkg
 )
 
 var log = logf.Log.WithName("cmd")
@@ -60,17 +60,10 @@ func main() {
 	}
 
 	r := ready.NewFileReady()
-	err = r.Set()
-	if err != nil {
+	if err := r.Set(); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-	defer func() {
-		if err = r.Unset(); err != nil {
-			log.Error(err, "")
-			os.Exit(1)
-		}
-	}()
 
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{Namespace: namespace})
@@ -98,6 +91,11 @@ func main() {
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")
+		os.Exit(1)
+	}
+
+	if err := r.Unset(); err != nil {
+		log.Error(err, "")
 		os.Exit(1)
 	}
 }

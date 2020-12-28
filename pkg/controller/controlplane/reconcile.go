@@ -1,17 +1,16 @@
 package controlplane
 
 import (
-	"errors"
 	"fmt"
+
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/skupperproject/skupper-cli/pkg/certs"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -24,7 +23,7 @@ func reconcileRoutine(recon func() error, errCh chan error) {
 
 func (r *ReconcileControlPlane) reconcileIofogController() error {
 	// Configure Controller
-	ms := newControllerMicroservice(controllerMicroserviceConfig{
+	ms := newControllerMicroservice(&controllerMicroserviceConfig{
 		replicas:         r.cp.Spec.Replicas.Controller,
 		image:            r.cp.Spec.Images.Controller,
 		imagePullSecret:  r.cp.Spec.Images.PullSecret,
@@ -33,11 +32,11 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 		db:               &r.cp.Spec.Database,
 		serviceType:      r.cp.Spec.Services.Controller.Type,
 		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
-		httpPortAddr:     r.cp.Spec.Ingresses.HttpProxy.Address,
-		tcpPortAddr:      r.cp.Spec.Ingresses.TcpProxy.Address,
-		tcpAllocatorHost: r.cp.Spec.Ingresses.TcpProxy.TcpAllocatorHost,
-		tcpAllocatorPort: r.cp.Spec.Ingresses.TcpProxy.TcpAllocatorPort,
-		ecnId:            r.cp.Spec.Ingresses.TcpProxy.EcnId,
+		httpPortAddr:     r.cp.Spec.Ingresses.HTTPProxy.Address,
+		tcpPortAddr:      r.cp.Spec.Ingresses.TCPProxy.Address,
+		tcpAllocatorHost: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorHost,
+		tcpAllocatorPort: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorPort,
+		ecnID:            r.cp.Spec.Ingresses.TCPProxy.EcnID,
 		pidBaseDir:       r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:    r.cp.Spec.Controller.EcnViewerPort,
 	})
@@ -69,7 +68,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Wait for Pods
-	if err = k8sClient.WaitForPod(r.cp.ObjectMeta.Namespace, ms.name, 120); err != nil {
+	if err := k8sClient.WaitForPod(r.cp.ObjectMeta.Namespace, ms.name, 120); err != nil {
 		return err
 	}
 
@@ -89,7 +88,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	iofogClient := *iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ctrlPort)})
 
 	// Wait for Controller REST API
-	if err = r.waitForControllerAPI(iofogClient); err != nil {
+	if err := r.waitForControllerAPI(iofogClient); err != nil {
 		return err
 	}
 
@@ -116,9 +115,9 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		routerProxy = r.cp.Spec.Ingresses.Router
 	} else {
-		return errors.New(fmt.Sprintf("Reconcile Controller failed: Missing Proxy.Router data for non LoadBalancer Router service"))
+		return fmt.Errorf("reconcile Controller failed: missing Proxy.Router data for non LoadBalancer Router service")
 	}
-	if err = r.createDefaultRouter(iofogClient, routerProxy); err != nil {
+	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		return err
 	}
 
@@ -126,11 +125,11 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 }
 
 func (r *ReconcileControlPlane) reconcilePortManager() error {
-	ms := newPortManagerMicroservice(portManagerConfig{
+	ms := newPortManagerMicroservice(&portManagerConfig{
 		image:            r.cp.Spec.Images.PortManager,
 		proxyImage:       r.cp.Spec.Images.Proxy,
-		httpProxyAddress: r.cp.Spec.Ingresses.HttpProxy.Address,
-		tcpProxyAddress:  r.cp.Spec.Ingresses.TcpProxy.Address,
+		httpProxyAddress: r.cp.Spec.Ingresses.HTTPProxy.Address,
+		tcpProxyAddress:  r.cp.Spec.Ingresses.TCPProxy.Address,
 		watchNamespace:   r.cp.ObjectMeta.Namespace,
 		userEmail:        r.cp.Spec.User.Email,
 		userPass:         r.cp.Spec.User.Password,
@@ -200,7 +199,7 @@ func (r *ReconcileControlPlane) reconcileRouter() error {
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		address = r.cp.Spec.Ingresses.Router.Address
 	} else {
-		return errors.New(fmt.Sprintf("Reconcile Router failed: Missing Proxy.Router data for non LoadBalancer Router service"))
+		return fmt.Errorf("reconcile Router failed: missing Proxy.Router data for non LoadBalancer Router service")
 	}
 
 	// Secrets

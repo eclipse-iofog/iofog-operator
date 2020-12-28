@@ -68,6 +68,10 @@ gen: ## Generate code
 fmt:
 	@gofmt -s -w $(GOFILES_NOVENDOR)
 
+.PHONY: lint
+lint: fmt ## Lint the source
+	@golangci-lint run --timeout 5m0s
+
 .PHONY: test
 test:
 	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt

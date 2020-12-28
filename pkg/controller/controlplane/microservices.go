@@ -21,7 +21,7 @@ import (
 	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"github.com/eclipse-iofog/iofog-operator/v2/pkg/controller/controlplane/router"
-	"k8s.io/api/core/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -48,8 +48,8 @@ type microservice struct {
 	containers            []container
 	labels                map[string]string
 	annotations           map[string]string
-	secrets               []v1.Secret
-	volumes               []v1.Volume
+	secrets               []corev1.Secret
+	volumes               []corev1.Volume
 	rbacRules             []rbacv1.PolicyRule
 	mustRecreateOnRollout bool
 	availableDelay        int32
@@ -60,13 +60,12 @@ type container struct {
 	image           string
 	imagePullPolicy string
 	args            []string
-	livenessProbe   *v1.Probe
-	readinessProbe  *v1.Probe
-	env             []v1.EnvVar
+	readinessProbe  *corev1.Probe
+	env             []corev1.EnvVar
 	command         []string
-	ports           []v1.ContainerPort
-	resources       v1.ResourceRequirements
-	volumeMounts    []v1.VolumeMount
+	ports           []corev1.ContainerPort
+	resources       corev1.ResourceRequirements
+	volumeMounts    []corev1.VolumeMount
 }
 
 type controllerMicroserviceConfig struct {
@@ -83,12 +82,12 @@ type controllerMicroserviceConfig struct {
 	tcpPortAddr      string
 	tcpAllocatorHost string
 	tcpAllocatorPort int
-	ecnId            int
+	ecnID            int
 	pidBaseDir       string
 	ecnViewerPort    int
 }
 
-func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroserviceConfig {
+func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 	if cfg.replicas == 0 {
 		cfg.replicas = 1
 	}
@@ -107,18 +106,17 @@ func filterControllerConfig(cfg controllerMicroserviceConfig) controllerMicroser
 	if cfg.pidBaseDir == "" {
 		cfg.pidBaseDir = "/tmp"
 	}
-	return cfg
 }
 
 func getControllerPort(msvc *microservice) (int, error) {
 	if len(msvc.services) == 0 || len(msvc.services[0].ports) == 0 {
-		return 0, errors.New("Controller microservice does not have requisite ports")
+		return 0, errors.New("controller microservice does not have requisite ports")
 	}
 	return msvc.services[0].ports[0], nil
 }
 
-func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
-	cfg = filterControllerConfig(cfg)
+func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice {
+	filterControllerConfig(cfg)
 	msvc := &microservice{
 		availableDelay: 5,
 		name:           "controller",
@@ -144,9 +142,9 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 				name:            "controller",
 				image:           cfg.image,
 				imagePullPolicy: "Always",
-				readinessProbe: &v1.Probe{
-					Handler: v1.Handler{
-						HTTPGet: &v1.HTTPGetAction{
+				readinessProbe: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/api/v3/status",
 							Port: intstr.FromInt(51121),
 						},
@@ -156,7 +154,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
-				env: []v1.EnvVar{
+				env: []corev1.EnvVar{
 					{
 						Name:  "DB_PROVIDER",
 						Value: cfg.db.Provider,
@@ -215,7 +213,7 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 					},
 					{
 						Name:  "ECN_ID",
-						Value: strconv.Itoa(cfg.ecnId),
+						Value: strconv.Itoa(cfg.ecnID),
 					},
 					{
 						Name:  "PID_BASE",
@@ -226,12 +224,12 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 						Value: strconv.Itoa(cfg.ecnViewerPort),
 					},
 				},
-				resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
+				resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
 						"cpu":    resource.MustParse("1800m"),
 						"memory": resource.MustParse("3Gi"),
 					},
-					Requests: v1.ResourceList{
+					Requests: corev1.ResourceList{
 						"cpu":    resource.MustParse("400m"),
 						"memory": resource.MustParse("1Gi"),
 					},
@@ -264,19 +262,6 @@ func newControllerMicroservice(cfg controllerMicroserviceConfig) *microservice {
 	return msvc
 }
 
-func getKubeletToken(containers []corev1.Container) (token string, err error) {
-	if len(containers) != 1 {
-		err = errors.New(fmt.Sprintf("Expected 1 container in Kubelet deployment config. Found %d", len(containers)))
-		return
-	}
-	if len(containers[0].Args) != 6 {
-		err = errors.New(fmt.Sprintf("Expected 6 args in Kubelet deployment config. Found %d", len(containers[0].Args)))
-		return
-	}
-	token = containers[0].Args[3]
-	return
-}
-
 type portManagerConfig struct {
 	image            string
 	proxyImage       string
@@ -287,18 +272,17 @@ type portManagerConfig struct {
 	userPass         string
 }
 
-func filterPortManagerConfig(cfg portManagerConfig) portManagerConfig {
+func filterPortManagerConfig(cfg *portManagerConfig) {
 	if cfg.image == "" {
 		cfg.image = util.GetPortManagerImage()
 	}
 	if cfg.proxyImage == "" {
 		cfg.proxyImage = util.GetProxyImage()
 	}
-	return cfg
 }
 
-func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
-	cfg = filterPortManagerConfig(cfg)
+func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
+	filterPortManagerConfig(cfg)
 	return &microservice{
 		mustRecreateOnRollout: true,
 		name:                  "port-manager",
@@ -318,9 +302,9 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 				name:            "port-manager",
 				image:           cfg.image,
 				imagePullPolicy: "Always",
-				readinessProbe: &v1.Probe{
-					Handler: v1.Handler{
-						Exec: &v1.ExecAction{
+				readinessProbe: &corev1.Probe{
+					Handler: corev1.Handler{
+						Exec: &corev1.ExecAction{
 							Command: []string{
 								"stat",
 								"/tmp/operator-sdk-ready",
@@ -332,25 +316,25 @@ func newPortManagerMicroservice(cfg portManagerConfig) *microservice {
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
-				resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
+				resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
 						"cpu":    resource.MustParse("200m"),
 						"memory": resource.MustParse("1Gi"),
 					},
-					Requests: v1.ResourceList{
+					Requests: corev1.ResourceList{
 						"cpu":    resource.MustParse("50m"),
 						"memory": resource.MustParse("200Mi"),
 					},
 				},
-				env: []v1.EnvVar{
+				env: []corev1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",
 						Value: cfg.watchNamespace,
 					},
 					{
 						Name: "POD_NAME",
-						ValueFrom: &v1.EnvVarSource{
-							FieldRef: &v1.ObjectFieldSelector{
+						ValueFrom: &corev1.EnvVarSource{
+							FieldRef: &corev1.ObjectFieldSelector{
 								FieldPath: "metadata.name",
 							},
 						},
@@ -429,14 +413,6 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					router.EdgePort,
 				},
 			},
-			//{
-			//	name:          "router-healthz",
-			//	serviceType:   string(corev1.ServiceTypeClusterIP),
-			//	trafficPolicy: getTrafficPolicy(string(corev1.ServiceTypeClusterIP)),
-			//	ports: []int{
-			//		router.HTTPPort,
-			//	},
-			//},
 		},
 		replicas: 1,
 		rbacRules: []rbacv1.PolicyRule{
@@ -446,7 +422,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 				Resources: []string{"pods"},
 			},
 		},
-		volumes: []v1.Volume{
+		volumes: []corev1.Volume{
 
 			{
 				Name: routerName + "-internal",
@@ -485,7 +461,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
-				env: []v1.EnvVar{
+				env: []corev1.EnvVar{
 					{
 						Name:  "APPLICATION_NAME",
 						Value: routerName,
@@ -500,7 +476,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					},
 					{
 						Name: "POD_NAMESPACE",
-						ValueFrom: &v1.EnvVarSource{
+						ValueFrom: &corev1.EnvVarSource{
 							FieldRef: &corev1.ObjectFieldSelector{
 								FieldPath: "metadata.namespace",
 							},
@@ -508,14 +484,14 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					},
 					{
 						Name: "POD_IP",
-						ValueFrom: &v1.EnvVarSource{
+						ValueFrom: &corev1.EnvVarSource{
 							FieldRef: &corev1.ObjectFieldSelector{
 								FieldPath: "status.podIP",
 							},
 						},
 					},
 				},
-				volumeMounts: []v1.VolumeMount{
+				volumeMounts: []corev1.VolumeMount{
 					{
 						Name:      routerName + "-internal",
 						MountPath: cfg.volumeMountPath + "/router-internal",
@@ -525,12 +501,12 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 						MountPath: cfg.volumeMountPath + "/" + routerName + "-amqps",
 					},
 				},
-				resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
+				resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
 						"cpu":    resource.MustParse("200m"),
 						"memory": resource.MustParse("1Gi"),
 					},
-					Requests: v1.ResourceList{
+					Requests: corev1.ResourceList{
 						"cpu":    resource.MustParse("50m"),
 						"memory": resource.MustParse("200Mi"),
 					},

@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log" // nolint:staticcheck // TODO: replace deprecated pkg
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -128,9 +128,9 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 }
 
 func getPodNames(pods []corev1.Pod) []string {
-	var podNames []string
-	for _, pod := range pods {
-		podNames = append(podNames, pod.Name)
+	podNames := make([]string, len(pods))
+	for idx := range pods {
+		podNames[idx] = pods[idx].Name
 	}
 	return podNames
 }
@@ -151,13 +151,14 @@ func (r *ReconcileApp) deploymentForApp(app *iofog.Application) *appsv1.Deployme
 		"routes":        string(routes),
 	}
 
-	var containers []corev1.Container
-	for _, microservice := range app.Spec.Microservices {
+	containers := make([]corev1.Container, len(app.Spec.Microservices))
+	for idx := range app.Spec.Microservices {
+		microservice := &app.Spec.Microservices[idx]
 		container := corev1.Container{
 			Name:  microservice.Name,
 			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
 		}
-		containers = append(containers, container)
+		containers[idx] = container
 	}
 
 	dep := &appsv1.Deployment{
@@ -227,6 +228,8 @@ func (r *ReconcileApp) deploymentForApp(app *iofog.Application) *appsv1.Deployme
 		},
 	}
 
-	controllerutil.SetControllerReference(app, dep, r.scheme)
+	if err := controllerutil.SetControllerReference(app, dep, r.scheme); err != nil {
+		log.Error(err, "Failed to set Controller reference")
+	}
 	return dep
 }

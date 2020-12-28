@@ -2,7 +2,6 @@ package controlplane
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
@@ -17,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log" // nolint:staticcheck // TODO: replace deprecated pkg
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	b64 "encoding/base64"
@@ -125,7 +124,7 @@ func (r *ReconcileControlPlane) Reconcile(request reconcile.Request) (reconcile.
 				err = routineErr
 			} else {
 				// Append
-				err = errors.New(fmt.Sprintf("%s\n%s", err.Error(), routineErr.Error()))
+				err = fmt.Errorf("%s\n%s", err.Error(), routineErr.Error())
 			}
 		}
 	}
