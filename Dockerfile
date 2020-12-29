@@ -6,8 +6,7 @@ RUN apk add --update --no-cache bash curl git make
 
 COPY ./go.* ./
 COPY ./vendor ./vendor
-COPY ./script ./script
-RUN ./script/bootstrap.sh
+RUN go install -mod=vendor k8s.io/gengo/examples/deepcopy-gen/
 
 COPY ./cmd ./cmd
 COPY ./internal ./internal

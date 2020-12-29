@@ -14,36 +14,37 @@
 package controlplane
 
 import (
+	"strconv"
+
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strconv"
 )
 
-func newServices(namespace string, ms *microservice) (svcs []*v1.Service) {
+func newServices(namespace string, ms *microservice) (svcs []*corev1.Service) {
 	for _, msvcSvc := range ms.services {
-		svc := &v1.Service{
+		svc := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      msvcSvc.name,
 				Namespace: namespace,
 				Labels:    ms.labels,
 			},
-			Spec: v1.ServiceSpec{
-				Type:                  v1.ServiceType(msvcSvc.serviceType),
-				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyType(msvcSvc.trafficPolicy),
+			Spec: corev1.ServiceSpec{
+				Type:                  corev1.ServiceType(msvcSvc.serviceType),
+				ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyType(msvcSvc.trafficPolicy),
 				LoadBalancerIP:        msvcSvc.loadBalancerAddr,
 				Selector:              ms.labels,
 			},
 		}
 		// Add ports
 		for idx, port := range msvcSvc.ports {
-			svcPort := v1.ServicePort{
+			svcPort := corev1.ServicePort{
 				Name:       msvcSvc.name + strconv.Itoa(idx),
 				Port:       int32(port),
 				TargetPort: intstr.FromInt(port),
-				Protocol:   v1.Protocol("TCP"),
+				Protocol:   corev1.Protocol("TCP"),
 			}
 			svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
 		}
@@ -80,11 +81,11 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 				MatchLabels: ms.labels,
 			},
 			Strategy: strategy,
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: ms.labels,
 				},
-				Spec: v1.PodSpec{
+				Spec: corev1.PodSpec{
 					ServiceAccountName: ms.name,
 					Volumes:            ms.volumes,
 				},
@@ -92,8 +93,9 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 		},
 	}
 	containers := &dep.Spec.Template.Spec.Containers
-	for _, msCont := range ms.containers {
-		cont := v1.Container{
+	for idx := range ms.containers {
+		msCont := &ms.containers[idx]
+		cont := corev1.Container{
 			Name:            msCont.name,
 			Image:           msCont.image,
 			Command:         msCont.command,
@@ -103,42 +105,18 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			Resources:       msCont.resources,
 			ReadinessProbe:  msCont.readinessProbe,
 			VolumeMounts:    msCont.volumeMounts,
-			ImagePullPolicy: v1.PullPolicy(msCont.imagePullPolicy),
+			ImagePullPolicy: corev1.PullPolicy(msCont.imagePullPolicy),
 		}
 		*containers = append(*containers, cont)
 	}
 	return dep
 }
 
-func newServiceAccount(namespace string, ms *microservice) *v1.ServiceAccount {
-	return &v1.ServiceAccount{
+func newServiceAccount(namespace string, ms *microservice) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
 			Namespace: namespace,
-		},
-	}
-}
-
-func getClusterRoleBindingName(namespace, resourceName string) string {
-	return namespace + "-" + resourceName
-}
-
-func newClusterRoleBinding(namespace string, ms *microservice) *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: getClusterRoleBindingName(namespace, ms.name),
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      ms.name,
-				Namespace: namespace,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			Name:     "cluster-admin",
-			APIGroup: "rbac.authorization.k8s.io",
 		},
 	}
 }

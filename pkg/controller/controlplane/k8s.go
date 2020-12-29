@@ -2,9 +2,10 @@ package controlplane
 
 import (
 	"context"
-	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 	"strings"
 	"time"
+
+	"github.com/eclipse-iofog/iofog-operator/v2/pkg/apis/iofog"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	appsv1 "k8s.io/api/apps/v1"
@@ -13,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
-
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -42,7 +42,7 @@ func (r *ReconcileControlPlane) createDeployment(ms *microservice) error {
 
 	// Resource already exists - update it
 	r.logger.Info("Updating existing Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
-	if err = r.client.Update(context.TODO(), dep); err != nil {
+	if err := r.client.Update(context.TODO(), dep); err != nil {
 		return err
 	}
 
@@ -50,8 +50,8 @@ func (r *ReconcileControlPlane) createDeployment(ms *microservice) error {
 }
 
 func (r *ReconcileControlPlane) createPersistentVolumeClaims(ms *microservice) error {
-	for _, vol := range ms.volumes {
-		if vol.VolumeSource.PersistentVolumeClaim == nil {
+	for idx := range ms.volumes {
+		if ms.volumes[idx].VolumeSource.PersistentVolumeClaim == nil {
 			continue
 		}
 		storageSize, err := resource.ParseQuantity("1Gi")
@@ -70,7 +70,7 @@ func (r *ReconcileControlPlane) createPersistentVolumeClaims(ms *microservice) e
 				},
 			},
 		}
-		pvc.ObjectMeta.Name = vol.Name
+		pvc.ObjectMeta.Name = ms.volumes[idx].Name
 		pvc.ObjectMeta.Namespace = r.cp.Namespace
 		// Set ControlPlane instance as the owner and controller
 		if err := controllerutil.SetControllerReference(&r.cp, &pvc, r.scheme); err != nil {
@@ -100,9 +100,10 @@ func (r *ReconcileControlPlane) createPersistentVolumeClaims(ms *microservice) e
 }
 
 func (r *ReconcileControlPlane) createSecrets(ms *microservice) error {
-	for _, secret := range ms.secrets {
+	for idx := range ms.secrets {
+		secret := &ms.secrets[idx]
 		// Set ControlPlane instance as the owner and controller
-		if err := controllerutil.SetControllerReference(&r.cp, &secret, r.scheme); err != nil {
+		if err := controllerutil.SetControllerReference(&r.cp, secret, r.scheme); err != nil {
 			return err
 		}
 
@@ -111,7 +112,7 @@ func (r *ReconcileControlPlane) createSecrets(ms *microservice) error {
 		err := r.client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			r.logger.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
-			err = r.client.Create(context.TODO(), &secret)
+			err = r.client.Create(context.TODO(), secret)
 			if err != nil {
 				return err
 			}
@@ -265,35 +266,6 @@ func (r *ReconcileControlPlane) createRoleBinding(ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileControlPlane) createClusterRoleBinding(ms *microservice) error {
-	crb := newClusterRoleBinding(r.cp.ObjectMeta.Namespace, ms)
-
-	// Set ControlPlane instance as the owner and controller
-	if err := controllerutil.SetControllerReference(&r.cp, crb, r.scheme); err != nil {
-		return err
-	}
-
-	// Check if this resource already exists
-	found := &rbacv1.ClusterRoleBinding{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		r.logger.Info("Creating a new Cluster Role Binding", "ClusterRoleBinding.Namespace", crb.Namespace, "ClusterRoleBinding.Name", crb.Name)
-		err = r.client.Create(context.TODO(), crb)
-		if err != nil {
-			return err
-		}
-
-		// Resource created successfully - don't requeue
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Resource already exists - don't requeue
-	r.logger.Info("Skip reconcile: Cluster Role Binding already exists", "ClusterRoleBinding.Namespace", found.Namespace, "ClusterRoleBinding.Name", found.Name)
-	return nil
-}
-
 func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient iofogclient.Client) (err error) {
 	connected := false
 	iter := 0
@@ -309,7 +281,7 @@ func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient iofogclient.Cli
 			// Retry if connection is refused, this is usually only necessary on K8s Controller
 			if strings.Contains(err.Error(), "connection refused") {
 				time.Sleep(time.Millisecond * 1000)
-				iter = iter + 1
+				iter++
 				continue
 			}
 			// Return the error otherwise
