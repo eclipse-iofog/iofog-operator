@@ -6,10 +6,11 @@ github.com/beorn7/perks/quantile
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20200624014839-eabf7f9dbb1f
+# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20201229204532-79a813505ed9
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/apps
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s
+github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/util
 # github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
 # github.com/go-logr/logr v0.1.0

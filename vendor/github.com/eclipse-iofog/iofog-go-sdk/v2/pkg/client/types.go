@@ -13,7 +13,7 @@
 
 package client
 
-// Flows
+// Flows - Keep for legacy
 type FlowInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -44,8 +44,92 @@ type FlowListResponse struct {
 	Flows []FlowInfo `json:"flows"`
 }
 
-// Registries
+// Applications
+type ApplicationInfo struct {
+	Name          string             `json:"name"`
+	Description   string             `json:"description"`
+	IsActivated   bool               `json:"isActivated"`
+	IsSystem      bool               `json:"isSystem"`
+	UserID        int                `json:"userId"`
+	ID            int                `json:"id"`
+	Microservices []MicroserviceInfo `json:"microservices"`
+	Routes        []Route            `json:"routes"`
+}
 
+type ApplicationCreateRequest struct {
+	Name          string                           `json:"name"`
+	Description   string                           `json:"description,omitempty"`
+	Microservices []MicroserviceCreateRequest      `json:"microservices"`
+	Routes        *[]ApplicationRouteCreateRequest `json:"routes"`
+	Template      *ApplicationTemplate             `json:"template,omitempty" yaml:"template,omitempty" `
+}
+
+type ApplicationCreateResponse struct {
+	ID int `json:"id"`
+}
+
+type ApplicationUpdateRequest struct {
+	Name          *string                          `json:"name,omitempty"`
+	Description   *string                          `json:"description,omitempty"`
+	IsActivated   *bool                            `json:"isActivated,omitempty"`
+	IsSystem      *bool                            `json:"isSystem,omitempty"`
+	Microservices *[]MicroserviceCreateRequest     `json:"microservices,omitempty"`
+	Routes        *[]ApplicationRouteCreateRequest `json:"routes,omitempty"`
+	Template      *ApplicationTemplate             `json:"template,omitempty"`
+}
+
+type ApplicationPatchRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	IsActivated *bool   `json:"isActivated,omitempty"`
+	IsSystem    *bool   `json:"isSystem,omitempty"`
+}
+
+type ApplicationListResponse struct {
+	Applications []ApplicationInfo `json:"applications"`
+}
+
+// Application Templates
+type ApplicationTemplate struct {
+	Name        string                   `json:"name,omitempty"`
+	Description string                   `json:"description,omitempty"`
+	Variables   []TemplateVariable       `json:"variables,omitempty"`
+	Application *ApplicationTemplateInfo `json:"application,omitempty"`
+}
+
+type ApplicationTemplateCreateRequest = ApplicationTemplate
+
+type TemplateVariable struct {
+	Key          string      `json:"key" yaml:"key,omitempty"`
+	Description  string      `json:"description" yaml:"description,omitempty"`
+	DefaultValue interface{} `json:"defaultValue,omitempty" yaml:"defaultValue,omitempty"`
+	Value        interface{} `json:"value,omitempty" yaml:"value,omitempty"`
+}
+
+type ApplicationTemplateInfo struct {
+	Microservices []MicroserviceCreateRequest     `json:"microservices"`
+	Routes        []ApplicationRouteCreateRequest `json:"routes"`
+}
+
+type ApplicationTemplateCreateResponse struct {
+	Name string `json:"name"`
+	ID   int    `json:"id"`
+}
+
+type ApplicationTemplateUpdateRequest = ApplicationTemplate
+
+type ApplicationTemplateUpdateResponse = ApplicationTemplateCreateResponse
+
+type ApplicationTemplateMetadataUpdateRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+type ApplicationTemplateListResponse struct {
+	ApplicationTemplates []ApplicationTemplate
+}
+
+// Registries
 type RegistryInfo struct {
 	ID           int    `json:"id"`
 	URL          string `json:"url"`
@@ -128,12 +212,12 @@ type CatalogListResponse struct {
 // Microservices
 
 type MicroservicePortMapping struct {
-	Internal   int    `json:"internal"`
-	External   int    `json:"external"`
-	Public     int    `json:"publicPort,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Protocol   string `json:"protocol,omitempty"`
-	PublicLink string `json:"publicLink,omitempty"`
+	Internal   interface{} `json:"internal"`
+	External   interface{} `json:"external"`
+	Public     interface{} `json:"publicPort,omitempty"`
+	Host       string      `json:"host,omitempty"`
+	Protocol   string      `json:"protocol,omitempty"`
+	PublicLink string      `json:"publicLink,omitempty"`
 }
 
 type MicroserviceVolumeMapping struct {
@@ -153,8 +237,10 @@ type MicroserviceStatus struct {
 	StartTimne        int64   `json:"startTime"`
 	OperatingDuration int64   `json:"operatingDuration"`
 	MemoryUsage       float64 `json:"memoryUsage"`
-	CpuUsage          float64 `json:"cpuUsage"`
-	ContainerId       string  `json:"containerId"`
+	CPUUsage          float64 `json:"cpuUsage"`
+	ContainerID       string  `json:"containerId"`
+	Percentage        float64 `json:"percentage"`
+	ErrorMessage      string  `json:"errorMessage"`
 }
 
 type MicroserviceInfo struct {
@@ -166,6 +252,8 @@ type MicroserviceInfo struct {
 	Delete            bool                        `json:"delete"`
 	DeleteWithCleanup bool                        `json:"deleteWithCleanup"`
 	FlowID            int                         `json:"flowId"`
+	ApplicationID     int                         `json:"applicationID"`
+	Application       string                      `json:"application"`
 	CatalogItemID     int                         `json:"catalogItemId"`
 	AgentUUID         string                      `json:"iofogUuid"`
 	UserID            int                         `json:"userId"`
@@ -188,11 +276,13 @@ type MicroserviceExtraHost struct {
 type MicroserviceCreateRequest struct {
 	Config         string                      `json:"config"`
 	Name           string                      `json:"name"`
-	RootHostAccess bool                        `json:"rootHostAccess"`
+	RootHostAccess interface{}                 `json:"rootHostAccess"`
 	LogSize        int                         `json:"logSize"`
 	FlowID         int                         `json:"flowId"`
+	Application    string                      `json:"application"`
 	CatalogItemID  int                         `json:"catalogItemId,omitempty"`
-	AgentUUID      string                      `json:"iofogUuid"`
+	AgentUUID      string                      `json:"iofogUuid,omitempty"`
+	AgentName      string                      `json:"agentName,omitempty"`
 	RegistryID     int                         `json:"registryId"`
 	Ports          []MicroservicePortMapping   `json:"ports"`
 	Volumes        []MicroserviceVolumeMapping `json:"volumeMappings"`
@@ -206,12 +296,14 @@ type MicroserviceUpdateRequest struct {
 	UUID              string                       `json:"-"`
 	Config            *string                      `json:"config,omitempty"`
 	Name              *string                      `json:"name,omitempty"`
-	RootHostAccess    *bool                        `json:"rootHostAccess,omitempty"`
+	RootHostAccess    interface{}                  `json:"rootHostAccess,omitempty"`
 	LogSize           *int                         `json:"logSize,omitempty"`
 	Delete            *bool                        `json:"delete,omitempty"`
 	DeleteWithCleanup *bool                        `json:"deleteWithCleanup,omitempty"`
 	FlowID            *int                         `json:"flowId,omitempty"`
+	Application       *string                      `json:"application,omitempty"`
 	AgentUUID         *string                      `json:"iofogUuid,omitempty"`
+	AgentName         *string                      `json:"agentName,omitempty"`
 	UserID            *int                         `json:"userId,omitempty"`
 	RegistryID        *int                         `json:"registryId,omitempty"`
 	CatalogItemID     int                          `json:"catalogItemId,omitempty"`
@@ -221,7 +313,7 @@ type MicroserviceUpdateRequest struct {
 	Env               *[]MicroserviceEnvironment   `json:"env,omitempty"`
 	ExtraHosts        *[]MicroserviceExtraHost     `json:"extraHosts,omitempty"`
 	Images            []CatalogImage               `json:"images,omitempty"`
-	Rebuild           bool                         `json:"rebuild"`
+	Rebuild           interface{}                  `json:"rebuild,omitempty"`
 }
 
 type MicroserviceCreateResponse struct {
@@ -256,9 +348,15 @@ type User struct {
 	Password string `json:"password"`
 }
 
+type ControllerVersions struct {
+	Controller string `json:"controller"`
+	EcnViewer  string `json:"ecnViewer"`
+}
+
 type ControllerStatus struct {
-	Status        string  `json:"status"`
-	UptimeSeconds float64 `json:"uptimeSec"`
+	Status        string             `json:"status"`
+	UptimeSeconds float64            `json:"uptimeSec"`
+	Versions      ControllerVersions `json:"versions"`
 }
 
 type LoginRequest struct {
@@ -310,8 +408,8 @@ type AgentInfo struct {
 	BluetoothEnabled          bool      `json:"bluetoothEnabled" yaml:"bluetoothEnabled"`
 	WatchdogEnabled           bool      `json:"watchdogEnabled" yaml:"watchdogEnabled"`
 	AbstractedHardwareEnabled bool      `json:"abstractedHardwareEnabled" yaml:"abstractedHardwareEnabled"`
-	CreatedTimeRFC3339        string    `json:"created_at" yaml:"created"`
-	UpdatedTimeRFC3339        string    `json:"updated_at" yaml:"updated"`
+	CreatedTimeRFC3339        string    `json:"createdAt" yaml:"created"`
+	UpdatedTimeRFC3339        string    `json:"updatedAt" yaml:"updated"`
 	LastActive                int64     `json:"lastActive" yaml:"lastActive"`
 	DaemonStatus              string    `json:"daemonStatus" yaml:"daemonStatus"`
 	UptimeMs                  int64     `json:"daemonOperatingDuration" yaml:"uptime"`
@@ -346,6 +444,7 @@ type AgentInfo struct {
 	LogLevel                  *string   `json:"logLevel" yaml:"logLevel"`
 	DockerPruningFrequency    *float64  `json:"dockerPruningFrequency" yaml:"dockerPruningFrequency"`
 	AvailableDiskThreshold    *float64  `json:"availableDiskThreshold" yaml:"availableDiskThreshold"`
+	Tags                      *[]string `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 type RouterConfig struct {
@@ -381,13 +480,14 @@ type AgentConfiguration struct {
 }
 
 type AgentUpdateRequest struct {
-	UUID        string  `json:"-"`
-	Name        string  `json:"name,omitempty" yaml:"name"`
-	Location    string  `json:"location,omitempty" yaml:"location"`
-	Latitude    float64 `json:"latitude,omitempty" yaml:"latitude"`
-	Longitude   float64 `json:"longitude,omitempty" yaml:"longitude"`
-	Description string  `json:"description,omitempty" yaml:"description"`
-	FogType     *int64  `json:"fogType,omitempty" yaml:"agentType"`
+	UUID        string    `json:"-"`
+	Name        string    `json:"name,omitempty" yaml:"name"`
+	Location    string    `json:"location,omitempty" yaml:"location"`
+	Latitude    float64   `json:"latitude,omitempty" yaml:"latitude"`
+	Longitude   float64   `json:"longitude,omitempty" yaml:"longitude"`
+	Description string    `json:"description,omitempty" yaml:"description"`
+	FogType     *int64    `json:"fogType,omitempty" yaml:"agentType"`
+	Tags        *[]string `json:"tags,omitempty" yaml:"tags"`
 	AgentConfiguration
 }
 
@@ -420,7 +520,7 @@ func newDefaultProxyRequest(address string) *UpdateConfigRequest {
 
 func newPublicPortHostRequest(protocol Protocol, host string) *UpdateConfigRequest {
 	return &UpdateConfigRequest{
-		Key:   string(protocol) + "-public-port-host",
+		Key:   protocol + "-public-port-host",
 		Value: host,
 	}
 }
@@ -431,6 +531,49 @@ type RouteListResponse struct {
 
 type Route struct {
 	Name                   string `json:"name"`
+	Application            string `json:"application"`
 	SourceMicroserviceUUID string `json:"sourceMicroserviceUuid"`
 	DestMicroserviceUUID   string `json:"destMicroserviceUuid"`
+}
+
+type ApplicationRouteCreateRequest struct {
+	Name string `json:"name"`
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+type EdgeResourceDisplay struct {
+	Name  string `json:"name,omitempty"`
+	Icon  string `json:"icon,omitempty"`
+	Color string `json:"color,omitempty"`
+}
+
+type EdgeResourceMetadata struct {
+	Name              string               `json:"name,omitempty"`
+	Description       string               `json:"description,omitempty"`
+	Version           string               `json:"version,omitempty"`
+	InterfaceProtocol string               `json:"interfaceProtocol,omitempty"`
+	Display           *EdgeResourceDisplay `json:"display,omitempty"`
+	Interface         HTTPEdgeResource     `json:"interface,omitempty"` // TODO: Make this generic
+	OrchestrationTags []string             `json:"orchestrationTags,omitempty"`
+}
+
+type HTTPEdgeResource struct {
+	Endpoints []HTTPEndpoint `json:"endpoints,omitempty"`
+}
+
+type HTTPEndpoint struct {
+	Name   string `json:"name,omitempty"`
+	Method string `json:"method,omitempty"`
+	URL    string `json:"url,omitempty"`
+}
+
+type LinkEdgeResourceRequest struct {
+	AgentUUID           string `json:"uuid"`
+	EdgeResourceName    string `json:"-"`
+	EdgeResourceVersion string `json:"-"`
+}
+
+type ListEdgeResourceResponse struct {
+	EdgeResources []EdgeResourceMetadata `json:"edgeResources"`
 }

@@ -16,6 +16,9 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/util"
 )
 
 // GetMicroserviceByName retrieves a microservice information using Controller REST API
@@ -33,8 +36,8 @@ func (clt *Client) GetMicroserviceByName(name string) (response *MicroserviceInf
 }
 
 // GetMicroserviceByID retrieves a microservice information using Controller REST API
-func (clt *Client) GetMicroserviceByID(UUID string) (response *MicroserviceInfo, err error) {
-	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices/%s", UUID), nil)
+func (clt *Client) GetMicroserviceByID(uuid string) (response *MicroserviceInfo, err error) {
+	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices/%s", uuid), nil)
 	if err != nil {
 		return
 	}
@@ -47,7 +50,7 @@ func (clt *Client) GetMicroserviceByID(UUID string) (response *MicroserviceInfo,
 }
 
 // CreateMicroservice creates a microservice using Controller REST API
-func (clt *Client) CreateMicroservice(request MicroserviceCreateRequest) (*MicroserviceInfo, error) {
+func (clt *Client) CreateMicroservice(request *MicroserviceCreateRequest) (*MicroserviceInfo, error) {
 	// Init empty arrays
 	if request.Volumes == nil {
 		request.Volumes = []MicroserviceVolumeMapping{}
@@ -68,13 +71,13 @@ func (clt *Client) CreateMicroservice(request MicroserviceCreateRequest) (*Micro
 		return nil, err
 	}
 	response := &MicroserviceCreateResponse{}
-	if err = json.Unmarshal(body, response); err != nil {
+	if err := json.Unmarshal(body, response); err != nil {
 		return nil, err
 	}
 	return clt.GetMicroserviceByID(response.UUID)
 }
 
-// GetMicroservicesPerFlow returns a list of microservices in a specific flow using Controller REST API
+// GetMicroservicesPerFlow (DEPRECATED) returns a list of microservices in a specific flow using Controller REST API
 func (clt *Client) GetMicroservicesPerFlow(flowID int) (response *MicroserviceListResponse, err error) {
 	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices?flowId=%d", flowID), nil)
 	if err != nil {
@@ -85,9 +88,20 @@ func (clt *Client) GetMicroservicesPerFlow(flowID int) (response *MicroserviceLi
 	return
 }
 
+// GetMicroservicesByApplication returns a list of microservices in a specific application using Controller REST API
+func (clt *Client) GetMicroservicesByApplication(application string) (response *MicroserviceListResponse, err error) {
+	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices?application=%s", application), nil)
+	if err != nil {
+		return
+	}
+	response = new(MicroserviceListResponse)
+	err = json.Unmarshal(body, response)
+	return
+}
+
 // GetAllMicroservices returns all microservices on the Controller by listing all flows,
 // then getting a list of microservices per flow.
-func (clt *Client) GetAllMicroservices() (response *MicroserviceListResponse, err error) {
+func (clt *Client) getAllMicroservicesDeprecated() (response *MicroserviceListResponse, err error) {
 	flows, err := clt.GetAllFlows()
 	if err != nil {
 		return nil, err
@@ -104,9 +118,32 @@ func (clt *Client) GetAllMicroservices() (response *MicroserviceListResponse, er
 	return
 }
 
+// GetAllMicroservices returns all microservices on the Controller across all (non-system) flows
+func (clt *Client) getAllMicroservices() (response *MicroserviceListResponse, err error) {
+	body, err := clt.doRequest("GET", "/microservices", nil)
+	if err != nil {
+		return
+	}
+	response = new(MicroserviceListResponse)
+	err = json.Unmarshal(body, response)
+	return
+}
+
+func (clt *Client) GetAllMicroservices() (response *MicroserviceListResponse, err error) {
+	major, minor, patch, err := clt.GetVersionNumbers()
+	if err != nil {
+		return
+	}
+	isCapable := (major >= 2 && minor >= 0 && patch >= 2)
+	if strings.Contains(clt.status.version, "dev") || isCapable {
+		return clt.getAllMicroservices()
+	}
+	return clt.getAllMicroservicesDeprecated()
+}
+
 // GetMicroservicePortMapping retrieves a microservice port mappings using Controller REST API
-func (clt *Client) GetMicroservicePortMapping(UUID string) (response *MicroservicePortMappingListResponse, err error) {
-	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices/%s/port-mapping", UUID), nil)
+func (clt *Client) GetMicroservicePortMapping(uuid string) (response *MicroservicePortMappingListResponse, err error) {
+	body, err := clt.doRequest("GET", fmt.Sprintf("/microservices/%s/port-mapping", uuid), nil)
 	if err != nil {
 		return
 	}
@@ -117,26 +154,26 @@ func (clt *Client) GetMicroservicePortMapping(UUID string) (response *Microservi
 }
 
 // DeleteMicroservicePortMapping deletes a microservice port mapping using Controller REST API
-func (clt *Client) DeleteMicroservicePortMapping(UUID string, portMapping MicroservicePortMapping) (err error) {
-	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s/port-mapping/%d", UUID, portMapping.Internal), nil)
+func (clt *Client) DeleteMicroservicePortMapping(uuid string, portMapping *MicroservicePortMapping) (err error) {
+	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s/port-mapping/%v", uuid, portMapping.Internal), nil)
 	return
 }
 
 // CreateMicroservicePortMapping creates a microservice port mapping using Controller REST API
-func (clt *Client) CreateMicroservicePortMapping(UUID string, portMapping MicroservicePortMapping) (err error) {
-	_, err = clt.doRequest("POST", fmt.Sprintf("/microservices/%s/port-mapping", UUID), portMapping)
+func (clt *Client) CreateMicroservicePortMapping(uuid string, portMapping *MicroservicePortMapping) (err error) {
+	_, err = clt.doRequest("POST", fmt.Sprintf("/microservices/%s/port-mapping", uuid), portMapping)
 	return
 }
 
 func portMappingsToMap(mappings []MicroservicePortMapping) map[int]MicroservicePortMapping {
 	response := make(map[int]MicroservicePortMapping)
-	for _, port := range mappings {
-		response[port.Internal] = port
+	for _, mapping := range mappings {
+		response[util.AssertInt(mapping.Internal)] = mapping
 	}
 	return response
 }
 
-func samePortMapping(currentMapping, newMapping MicroservicePortMapping) bool {
+func samePortMapping(currentMapping, newMapping *MicroservicePortMapping) bool {
 	if newMapping.Host == "" {
 		newMapping.Host = DefaultRouterName
 	}
@@ -150,8 +187,8 @@ func samePortMapping(currentMapping, newMapping MicroservicePortMapping) bool {
 		currentMapping.Host == newMapping.Host)
 }
 
-func (clt *Client) updateMicroservicePortMapping(UUID string, newPortMappings []MicroservicePortMapping) (err error) {
-	currentPortMappings, err := clt.GetMicroservicePortMapping(UUID)
+func (clt *Client) updateMicroservicePortMapping(uuid string, newPortMappings []MicroservicePortMapping) (err error) {
+	currentPortMappings, err := clt.GetMicroservicePortMapping(uuid)
 	if err != nil {
 		return
 	}
@@ -160,18 +197,20 @@ func (clt *Client) updateMicroservicePortMapping(UUID string, newPortMappings []
 	newPortMappingMap := portMappingsToMap(newPortMappings)
 
 	// Remove outdated ports
-	for _, currentMapping := range currentPortMappings.PortMappings {
-		if newPortMapping, found := newPortMappingMap[currentMapping.Internal]; !found || (found && !samePortMapping(currentMapping, newPortMapping)) {
-			if err = clt.DeleteMicroservicePortMapping(UUID, currentMapping); err != nil {
+	for idx := range currentPortMappings.PortMappings {
+		currentMapping := &currentPortMappings.PortMappings[idx]
+		if newPortMapping, found := newPortMappingMap[util.AssertInt(currentMapping.Internal)]; !found || (found && !samePortMapping(currentMapping, &newPortMapping)) {
+			if err = clt.DeleteMicroservicePortMapping(uuid, currentMapping); err != nil {
 				return
 			}
 		}
 	}
 
 	// Create missing mappings
-	for _, newMapping := range newPortMappings {
-		if currentMapping, found := currentPortMappingMap[newMapping.Internal]; !found || (found && !samePortMapping(currentMapping, newMapping)) {
-			if err = clt.CreateMicroservicePortMapping(UUID, newMapping); err != nil {
+	for idx := range newPortMappings {
+		newMapping := &newPortMappings[idx]
+		if currentMapping, found := currentPortMappingMap[util.AssertInt(newMapping.Internal)]; !found || (found && !samePortMapping(&currentMapping, newMapping)) {
+			if err = clt.CreateMicroservicePortMapping(uuid, newMapping); err != nil {
 				return
 			}
 		}
@@ -200,18 +239,18 @@ func mapFromArray(arr []string) map[string]bool {
 }
 
 // CreateMicroserviceRoute creates a microservice route using Controller REST API
-func (clt *Client) CreateMicroserviceRoute(UUID, destUUID string) (err error) {
-	_, err = clt.doRequest("POST", fmt.Sprintf("/microservices/%s/routes/%s", UUID, destUUID), nil)
+func (clt *Client) CreateMicroserviceRoute(uuid, destUUID string) (err error) {
+	_, err = clt.doRequest("POST", fmt.Sprintf("/microservices/%s/routes/%s", uuid, destUUID), nil)
 	return
 }
 
 // DeleteMicroserviceRoute deletes a microservice route using Controller REST API
-func (clt *Client) DeleteMicroserviceRoute(UUID, destUUID string) (err error) {
-	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s/routes/%s", UUID, destUUID), nil)
+func (clt *Client) DeleteMicroserviceRoute(uuid, destUUID string) (err error) {
+	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s/routes/%s", uuid, destUUID), nil)
 	return
 }
 
-func (clt *Client) UpdateMicroserviceRoutes(UUID string, currentRoutes, newRoutes []string) (err error) {
+func (clt *Client) UpdateMicroserviceRoutes(uuid string, currentRoutes, newRoutes []string) (err error) {
 	currentRouteMap := mapFromArray(currentRoutes)
 	newRouteMap := mapFromArray(newRoutes)
 
@@ -219,7 +258,7 @@ func (clt *Client) UpdateMicroserviceRoutes(UUID string, currentRoutes, newRoute
 	for _, currentRouteDest := range currentRoutes {
 		_, found := newRouteMap[currentRouteDest]
 		if !found {
-			if err = clt.DeleteMicroserviceRoute(UUID, currentRouteDest); err != nil {
+			if err = clt.DeleteMicroserviceRoute(uuid, currentRouteDest); err != nil {
 				return
 			}
 		}
@@ -229,7 +268,7 @@ func (clt *Client) UpdateMicroserviceRoutes(UUID string, currentRoutes, newRoute
 	for _, newRouteDest := range newRoutes {
 		_, found := currentRouteMap[newRouteDest]
 		if !found {
-			if err = clt.CreateMicroserviceRoute(UUID, newRouteDest); err != nil {
+			if err = clt.CreateMicroserviceRoute(uuid, newRouteDest); err != nil {
 				return
 			}
 		}
@@ -238,7 +277,7 @@ func (clt *Client) UpdateMicroserviceRoutes(UUID string, currentRoutes, newRoute
 }
 
 // UpdateMicroservice patches a microservice using the Controller REST API
-func (clt *Client) UpdateMicroservice(request MicroserviceUpdateRequest) (*MicroserviceInfo, error) {
+func (clt *Client) UpdateMicroservice(request *MicroserviceUpdateRequest) (*MicroserviceInfo, error) {
 	// Update microservice
 	_, err := clt.doRequest("PATCH", fmt.Sprintf("/microservices/%s", request.UUID), request)
 	if err != nil {
@@ -246,7 +285,7 @@ func (clt *Client) UpdateMicroservice(request MicroserviceUpdateRequest) (*Micro
 	}
 
 	// Update Ports mapping
-	if err = clt.updateMicroservicePortMapping(request.UUID, request.Ports); err != nil {
+	if err := clt.updateMicroservicePortMapping(request.UUID, request.Ports); err != nil {
 		return nil, err
 	}
 
@@ -254,7 +293,7 @@ func (clt *Client) UpdateMicroservice(request MicroserviceUpdateRequest) (*Micro
 }
 
 // DeleteMicroservice deletes a microservice using Controller REST API
-func (clt *Client) DeleteMicroservice(UUID string) (err error) {
-	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s", UUID), nil)
+func (clt *Client) DeleteMicroservice(uuid string) (err error) {
+	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s", uuid), nil)
 	return
 }

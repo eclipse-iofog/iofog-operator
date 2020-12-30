@@ -20,11 +20,18 @@ import (
 	"time"
 )
 
+type controllerStatus struct {
+	version         string
+	versionNoSuffix string
+	versionNums     []string
+}
+
 type Client struct {
 	endpoint    string
 	baseURL     string
 	accessToken string
 	retries     Retries
+	status      controllerStatus
 }
 
 type Options struct {
@@ -35,6 +42,14 @@ type Options struct {
 var apiPrefix = "/api/v3"
 
 func New(opt Options) *Client {
+	// remember if we are using https
+	var protocol string
+	if strings.HasPrefix(opt.Endpoint, "https://") {
+		protocol = "https"
+	} else {
+		protocol = "http"
+	}
+
 	// Remove prefix
 	regex := regexp.MustCompile("https?://")
 	endpoint := regex.ReplaceAllString(opt.Endpoint, "")
@@ -48,11 +63,22 @@ func New(opt Options) *Client {
 	if opt.Retries != nil {
 		retries = *opt.Retries
 	}
-	return &Client{
+	client := &Client{
 		endpoint: endpoint,
 		retries:  retries,
-		baseURL:  fmt.Sprintf("http://%s%s", endpoint, apiPrefix),
+		baseURL:  fmt.Sprintf("%s://%s%s", protocol, endpoint, apiPrefix),
 	}
+	// Get Controller version
+	if status, err := client.GetStatus(); err == nil {
+		versionNoSuffix := before(status.Versions.Controller, "-")
+		versionNums := strings.Split(versionNoSuffix, ".")
+		client.status = controllerStatus{
+			version:         status.Versions.Controller,
+			versionNoSuffix: versionNoSuffix,
+			versionNums:     versionNums,
+		}
+	}
+	return client
 }
 
 func NewAndLogin(opt Options, email, password string) (clt *Client, err error) {
@@ -89,7 +115,7 @@ func (clt *Client) SetAccessToken(token string) {
 	clt.accessToken = token
 }
 
-func (clt *Client) makeRequestUrl(url string) string {
+func (clt *Client) makeRequestURL(url string) string {
 	if !strings.HasPrefix(url, "/") {
 		url = "/" + url
 	}
@@ -131,7 +157,7 @@ func (clt *Client) doRequestWithRetries(currentRetries Retries, method, requestU
 
 func (clt *Client) doRequest(method, url string, request interface{}) ([]byte, error) {
 	// Prepare request
-	requestURL := clt.makeRequestUrl(url)
+	requestURL := clt.makeRequestURL(url)
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": clt.accessToken,
