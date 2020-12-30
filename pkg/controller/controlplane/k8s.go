@@ -266,7 +266,7 @@ func (r *ReconcileControlPlane) createRoleBinding(ms *microservice) error {
 	return nil
 }
 
-func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient iofogclient.Client) (err error) {
+func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient *iofogclient.Client) (err error) {
 	connected := false
 	iter := 0
 	const timeoutSeconds = 120
@@ -295,7 +295,7 @@ func (r *ReconcileControlPlane) waitForControllerAPI(iofogClient iofogclient.Cli
 	return
 }
 
-func (r *ReconcileControlPlane) createIofogUser(iofogClient iofogclient.Client) (iofogclient.Client, error) {
+func (r *ReconcileControlPlane) createIofogUser(iofogClient *iofogclient.Client) error {
 	user := iofogclient.User(r.cp.Spec.User)
 	password, err := decodeBase64(user.Password)
 	if err == nil {
@@ -305,7 +305,7 @@ func (r *ReconcileControlPlane) createIofogUser(iofogClient iofogclient.Client) 
 	if err := iofogClient.CreateUser(user); err != nil {
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
-			return iofogClient, err
+			return err
 		}
 	}
 
@@ -314,17 +314,17 @@ func (r *ReconcileControlPlane) createIofogUser(iofogClient iofogclient.Client) 
 		Email:    user.Email,
 		Password: user.Password,
 	}); err != nil {
-		return iofogClient, err
+		return err
 	}
 
-	return iofogClient, nil
+	return nil
 }
 
 func newInt(val int) *int {
 	return &val
 }
 
-func (r *ReconcileControlPlane) createDefaultRouter(iofogClient iofogclient.Client, proxy iofog.RouterIngress) (err error) {
+func (r *ReconcileControlPlane) createDefaultRouter(iofogClient *iofogclient.Client, proxy iofog.RouterIngress) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: proxy.Address,
 		RouterConfig: iofogclient.RouterConfig{

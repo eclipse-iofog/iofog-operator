@@ -85,7 +85,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	if err != nil {
 		return err
 	}
-	iofogClient := *iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ctrlPort)})
+	iofogClient := iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ctrlPort)})
 
 	// Wait for Controller REST API
 	if err := r.waitForControllerAPI(iofogClient); err != nil {
@@ -93,7 +93,7 @@ func (r *ReconcileControlPlane) reconcileIofogController() error {
 	}
 
 	// Set up user
-	if iofogClient, err = r.createIofogUser(iofogClient); err != nil {
+	if err := r.createIofogUser(iofogClient); err != nil {
 		return err
 	}
 
