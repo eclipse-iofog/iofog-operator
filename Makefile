@@ -14,8 +14,6 @@ ifeq ($(VERBOSE), 1)
 	GOARGS += -v
 endif
 
-GOLANG_VERSION = 1.12
-
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
 
 MAJOR ?= $(shell cat version | grep MAJOR | sed 's/MAJOR=//g')
@@ -55,9 +53,6 @@ vendor: # Vendor all deps
 .PHONY: build
 build: GOARGS += -mod=vendor -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
 build: fmt gen
-ifneq ($(IGNORE_GOLANG_VERSION_REQ), 1)
-	@printf "$(GOLANG_VERSION)\n$$(go version | awk '{sub(/^go/, "", $$3);print $$3}')" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -g | head -1 | grep -q -E "^$(GOLANG_VERSION)$$" || (printf "Required Go version is $(GOLANG_VERSION)\nInstalled: `go version`" && exit 1)
-endif
 	go build $(GOARGS) $(BUILD_PACKAGE)
 
 .PHONY: gen
