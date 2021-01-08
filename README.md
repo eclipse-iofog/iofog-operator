@@ -1,6 +1,6 @@
 # ioFog Operator
 
-Operator is a component of the ioFog Kubernetes Control Plane. It is responsible for consuming Control Plane and Application CRDs for the purposes of deploying ioFog Control Planes to Kubernetes clusters and deploying Edge Applications, respectively.
+Operator is a component of the ioFog Kubernetes Control Plane. It is responsible for consuming Control Plane CRDs for the purposes of deploying ioFog Control Planes to Kubernetes clusters.
 
 ## Build from Source
 
