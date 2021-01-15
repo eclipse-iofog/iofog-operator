@@ -1,85 +1,123 @@
-SHELL = /bin/bash
-OS = $(shell uname -s)
+# Current Operator version
+VERSION ?= 0.0.1
+# Default bundle image tag
+BUNDLE_IMG ?= controller-bundle:$(VERSION)
+# Options for 'bundle-build'
+ifneq ($(origin CHANNELS), undefined)
+BUNDLE_CHANNELS := --channels=$(CHANNELS)
+endif
+ifneq ($(origin DEFAULT_CHANNEL), undefined)
+BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
+endif
+BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
-# Project variables
-PACKAGE = github.com/eclipse-iofog/iofog-operator/v2
-BINARY_NAME = iofog-operator
-IMAGE = iofog/iofog-operator
+# Image URL to use all building/pushing image targets
+IMG ?= controller:latest
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
 
-# Build variables
-BUILD_DIR ?= bin
-BUILD_PACKAGE = $(PACKAGE)/cmd/manager
-export CGO_ENABLED ?= 0
-ifeq ($(VERBOSE), 1)
-	GOARGS += -v
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
 endif
 
-GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./client/*")
+all: manager
 
-MAJOR ?= $(shell cat version | grep MAJOR | sed 's/MAJOR=//g')
-MINOR ?= $(shell cat version | grep MINOR | sed 's/MINOR=//g')
-PATCH ?= $(shell cat version | grep PATCH | sed 's/PATCH=//g')
-SUFFIX ?= $(shell cat version | grep SUFFIX | sed 's/SUFFIX=//g')
-VERSION = $(MAJOR).$(MINOR).$(PATCH)$(SUFFIX)
-PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
-LDFLAGS += -X $(PREFIX).portManagerTag=develop
-LDFLAGS += -X $(PREFIX).kubeletTag=develop
-LDFLAGS += -X $(PREFIX).proxyTag=develop
-LDFLAGS += -X $(PREFIX).routerTag=develop
-LDFLAGS += -X $(PREFIX).controllerTag=develop
-LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
-GO_SDK_MODULE = iofog-go-sdk/v2@develop
+# Run tests
+ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
+test: generate fmt vet manifests
+	mkdir -p $(ENVTEST_ASSETS_DIR)
+	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.6.3/hack/setup-envtest.sh
+	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
-.PHONY: clean
-clean: ## Clean the working area and the project
-	rm -rf $(BUILD_DIR)/
+# Build manager binary
+manager: generate fmt vet
+	go build -o bin/manager main.go
 
-.PHONY: modules
-modules: get vendor ## Get modules and vendor them
+# Run against the configured Kubernetes cluster in ~/.kube/config
+run: generate fmt vet manifests
+	go run ./main.go
 
-.PHONY: get
-get: ## Pull modules
-	@for module in $(GO_SDK_MODULE); do \
-		go get github.com/eclipse-iofog/$$module; \
-	done
+# Install CRDs into a cluster
+install: manifests kustomize
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
-.PHONY: vendor
-vendor: # Vendor all deps
-	@go mod vendor
-	@for dep in golang.org/x/tools k8s.io/gengo; do \
-		git checkout -- vendor/$$dep; \
-	done \
+# Uninstall CRDs from a cluster
+uninstall: manifests kustomize
+	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-.PHONY: build
-build: GOARGS += -mod=vendor -tags "$(GOTAGS)" -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)
-build: fmt gen
-	go build $(GOARGS) $(BUILD_PACKAGE)
+# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+deploy: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
-.PHONY: gen
-gen: ## Generate code
-	GOFLAGS=-mod=vendor deepcopy-gen -i ./pkg/apis/iofog -o . --go-header-file ./vendor/k8s.io/gengo/boilerplate/boilerplate.go.txt
+# Generate manifests e.g. CRD, RBAC etc.
+manifests: controller-gen
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-.PHONY: fmt
+# Run go fmt against code
 fmt:
-	@gofmt -s -w $(GOFILES_NOVENDOR)
+	go fmt ./...
 
-.PHONY: lint
-lint: fmt ## Lint the source
-	@golangci-lint run --timeout 5m0s
+# Run go vet against code
+vet:
+	go vet ./...
 
-.PHONY: test
-test:
-	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
+# Generate code
+generate: controller-gen
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-.PHONY: list
-list: ## List all make targets
-	@$(MAKE) -pRrn : -f $(MAKEFILE_LIST) 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | sort
+# Build the docker image
+docker-build: test
+	docker build . -t ${IMG}
 
-.PHONY: help
-.DEFAULT_GOAL := help
-help:
-	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+# Push the docker image
+docker-push:
+	docker push ${IMG}
 
-# Variable outputting/exporting rules
-var-%: ; @echo $($*)
-varexport-%: ; @echo $*=$($*)
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	@{ \
+	set -e ;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	}
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+kustomize:
+ifeq (, $(shell which kustomize))
+	@{ \
+	set -e ;\
+	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
+	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
+	}
+KUSTOMIZE=$(GOBIN)/kustomize
+else
+KUSTOMIZE=$(shell which kustomize)
+endif
+
+# Generate bundle manifests and metadata, then validate generated files.
+.PHONY: bundle
+bundle: manifests kustomize
+	operator-sdk generate kustomize manifests -q
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk bundle validate ./bundle
+
+# Build the bundle image.
+.PHONY: bundle-build
+bundle-build:
+	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
