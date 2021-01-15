@@ -26,10 +26,84 @@ import (
 // ControlPlaneSpec defines the desired state of ControlPlane
 type ControlPlaneSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	User       User       `json:"user"`
+	Database   Database   `json:"database,omitempty"`
+	Services   Services   `json:"services,omitempty"`
+	Replicas   Replicas   `json:"replicas,omitempty"`
+	Images     Images     `json:"images,omitempty"`
+	Ingresses  Ingresses  `json:"ingresses,omitempty"`
+	Controller Controller `json:"controller,omitempty"`
+}
 
-	// Foo is an example field of ControlPlane. Edit ControlPlane_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+type Replicas struct {
+	Controller int32 `json:"controller,omitempty"`
+}
+
+type Services struct {
+	Controller Service `json:"controller,omitempty"`
+	Router     Service `json:"router,omitempty"`
+	Proxy      Service `json:"proxy,omitempty"`
+}
+
+type Service struct {
+	Type    string `json:"type,omitempty"`
+	Address string `json:"address,omitempty"`
+}
+
+type Images struct {
+	PullSecret  string `json:"pullSecret,omitempty"`
+	Kubelet     string `json:"kubelet,omitempty"`
+	Controller  string `json:"controller,omitempty"`
+	Router      string `json:"router,omitempty"`
+	PortManager string `json:"portManager,omitempty"`
+	Proxy       string `json:"proxy,omitempty"`
+}
+
+type Database struct {
+	Provider     string `json:"provider"`
+	Host         string `json:"host"`
+	Port         int    `json:"port"`
+	User         string `json:"user"`
+	Password     string `json:"password"`
+	DatabaseName string `json:"databaseName"`
+}
+
+type User struct {
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type RouterIngress struct {
+	Ingress
+	MessagePort  int `json:"messagePort,omitempty"`
+	InteriorPort int `json:"interiorPort,omitempty"`
+	EdgePort     int `json:"edgePort,omitempty"`
+}
+
+type TCPIngress struct {
+	Ingress
+	TCPAllocatorHost string `json:"tcpAllocatorHost,omitempty"`
+	TCPAllocatorPort int    `json:"tcpAllocatorPort,omitempty"`
+	EcnID            int    `json:"ecnId,omitempty"`
+}
+
+type Ingress struct {
+	Address string `json:"address,omitempty"`
+}
+
+type Ingresses struct {
+	Router    RouterIngress `json:"router,omitempty"`
+	HTTPProxy Ingress       `json:"httpProxy,omitempty"`
+	TCPProxy  TCPIngress    `json:"tcpProxy,omitempty"`
+}
+
+type Controller struct {
+	PidBaseDir    string `json:"pidBaseDir,omitempty"`
+	EcnViewerPort int    `json:"ecnViewerPort,omitempty"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane
