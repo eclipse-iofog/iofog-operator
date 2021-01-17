@@ -1,18 +1,18 @@
-# Default bundle image tag
-BUNDLE_IMG ?= controller-bundle:$(VERSION)
-# Options for 'bundle-build'
-ifneq ($(origin CHANNELS), undefined)
-BUNDLE_CHANNELS := --channels=$(CHANNELS)
-endif
-ifneq ($(origin DEFAULT_CHANNEL), undefined)
-BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
-endif
-BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
+VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
+GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
+LDFLAGS += -X $(PREFIX).portManagerTag=develop
+LDFLAGS += -X $(PREFIX).kubeletTag=develop
+LDFLAGS += -X $(PREFIX).proxyTag=develop
+LDFLAGS += -X $(PREFIX).routerTag=develop
+LDFLAGS += -X $(PREFIX).controllerTag=develop
+LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
+GO_SDK_MODULE = iofog-go-sdk/v2@develop
 
 export CGO_ENABLED ?= 0
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -22,17 +22,6 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
-
-GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
-PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
-LDFLAGS += -X $(PREFIX).portManagerTag=develop
-LDFLAGS += -X $(PREFIX).kubeletTag=develop
-LDFLAGS += -X $(PREFIX).proxyTag=develop
-LDFLAGS += -X $(PREFIX).routerTag=develop
-LDFLAGS += -X $(PREFIX).controllerTag=develop
-LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
-GO_SDK_MODULE = iofog-go-sdk/v2@develop
 
 all: build
 
@@ -49,7 +38,7 @@ vendor:
 # Build manager binary
 .PHONY: build
 build: GOARGS += -mod=vendor -ldflags "$(LDFLAGS)"
-build: generate fmt
+build: fmt
 	go build $(GOARGS) -o bin/iofog-operator main.go
 
 # Install CRDs into a cluster
@@ -66,7 +55,7 @@ deploy: manifests kustomize
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests: gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Run go fmt against code
@@ -78,12 +67,17 @@ lint: fmt
 	@golangci-lint run --timeout 5m0s
 
 # Generate code
-generate: controller-gen
+generate: gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
+# Gen is not done in Docker to avoid downloading modules. controller-gen does not work with modules
+# https://github.com/kubernetes-sigs/controller-tools/issues/327
+docker: vendor gen
+	docker build -t iofog-operator .
 
 # find or download controller-gen
 # download controller-gen if necessary
-controller-gen:
+gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
@@ -93,7 +87,7 @@ ifeq (, $(shell which controller-gen))
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
 	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
-CONTROLLER_GEN=GOFLAGS=-mod=vendor $(GOBIN)/controller-gen
+CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
