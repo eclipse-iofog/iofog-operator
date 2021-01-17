@@ -38,7 +38,7 @@ vendor:
 # Build manager binary
 .PHONY: build
 build: GOARGS += -mod=vendor -ldflags "$(LDFLAGS)"
-build: fmt
+build: fmt gen
 	go build $(GOARGS) -o bin/iofog-operator main.go
 
 # Install CRDs into a cluster
@@ -55,6 +55,7 @@ deploy: manifests kustomize
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
+manifests: export GOFLAGS=-mod=vendor
 manifests: gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
@@ -67,17 +68,16 @@ lint: fmt
 	@golangci-lint run --timeout 5m0s
 
 # Generate code
-generate: gen
+gen: export GOFLAGS=-mod=vendor
+gen: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# Gen is not done in Docker to avoid downloading modules. controller-gen does not work with modules
-# https://github.com/kubernetes-sigs/controller-tools/issues/327
-docker: vendor gen
-	docker build -t iofog-operator .
+docker:
+	docker build -t $(IMG) .
 
 # find or download controller-gen
 # download controller-gen if necessary
-gen:
+controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
