@@ -9,6 +9,8 @@ BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
+export CGO_ENABLED ?= 0
+
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -43,9 +45,6 @@ modules: vendor
 # Vendor all modules
 vendor:
 	@go mod vendor
-	@for dep in sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ; do \
-		git checkout -- vendor/$$dep; \
-	done \
 
 # Build manager binary
 .PHONY: build
@@ -88,9 +87,13 @@ controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	go install -mod=vendor sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
+CONTROLLER_GEN=GOFLAGS=-mod=vendor $(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
@@ -99,7 +102,11 @@ kustomize:
 ifeq (, $(shell which kustomize))
 	@{ \
 	set -e ;\
-	go install -mod=vendor sigs.k8s.io/kustomize/kustomize/v3@v3.5.4;\
+	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
+	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
 	}
 KUSTOMIZE=$(GOBIN)/kustomize
 else

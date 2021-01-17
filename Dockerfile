@@ -1,4 +1,3 @@
-# Build the manager binary
 FROM golang:1.13-alpine as builder
 
 WORKDIR /operator
@@ -6,20 +5,20 @@ WORKDIR /operator
 RUN apk add --update --no-cache bash curl git make
 
 COPY ./go.* ./
-COPY ./main.go ./
+COPY ./vendor/ ./vendor/
 COPY ./Makefile ./
+
+COPY ./main.go ./
 COPY ./apis/ ./apis/
 COPY ./internal/ ./internal/
 COPY ./controllers/ ./controllers/
+COPY ./hack/ ./hack/
 
 RUN make build
 RUN cp ./bin/iofog-operator /bin
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM alpine:3.7
 WORKDIR /
-COPY --from=builder /operator/iofog-operator .
-USER nonroot:nonroot
+COPY --from=builder /bin/iofog-operator /
 
-ENTRYPOINT ["/bin/iofog-operator"]
+ENTRYPOINT ["/iofog-operator"]
