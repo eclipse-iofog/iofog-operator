@@ -10,6 +10,6 @@ resources:
 - group: controlplanes
   kind: ControlPlane
   version: v2
-version: 3-alpha
+version: 2.0.1
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
