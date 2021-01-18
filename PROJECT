@@ -4,12 +4,10 @@ multigroup: true
 projectName: iofog-operator
 repo: github.com/eclipse-iofog/iofog-operator
 resources:
-- group: apps
-  kind: Application
+- kind: Application
   version: v2
-- group: controlplanes
-  kind: ControlPlane
+- kind: ControlPlane
   version: v2
-version: 2.0.1
+version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}

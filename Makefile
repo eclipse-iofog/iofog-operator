@@ -55,8 +55,8 @@ manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
 fmt: ## Run go fmt against code
 	@gofmt -s -w $(GOFILES_NOVENDOR)
  
-lint: fmt ## Lint the source
-	@golangci-lint run --timeout 5m0s
+lint: golangci-lint fmt ## Lint the source
+	@$(GOLANGCI_LINT) run --timeout 5m0s
 
 gen: export GOFLAGS=-mod=vendor
 gen: controller-gen ## Generate code using controller-gen
@@ -64,6 +64,21 @@ gen: controller-gen ## Generate code using controller-gen
 
 docker:
 	docker build -t $(IMG) .
+
+golangci-lint: ## Install golangci	
+ifeq (, $(shell which golangci-lint))
+	@{ \
+	set -e ;\
+	GOLANGCI_TMP_DIR=$$(mktemp -d) ;\
+	cd $$GOLANGCI_TMP_DIR ;\
+	go mod init tmp ;\
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
+	rm -rf $$GOLANGCI_TMP_DIR ;\
+	}
+GOLANGCI_LINT=$(GOBIN)/golangci-lint
+else
+GOLANGCI_LINT=$(shell which golangci-lint)
+endif
 
 controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
