@@ -55,6 +55,7 @@ manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
 fmt: ## Run go fmt against code
 	@gofmt -s -w $(GOFILES_NOVENDOR)
  
+lint: export GOFLAGS=-mod=vendor
 lint: golangci-lint fmt ## Lint the source
 	@$(GOLANGCI_LINT) run --timeout 5m0s
 
