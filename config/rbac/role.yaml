@@ -27,7 +27,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes
   verbs:
@@ -39,7 +39,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes/status
   verbs:

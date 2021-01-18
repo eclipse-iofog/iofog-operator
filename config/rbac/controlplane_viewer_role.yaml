@@ -5,7 +5,7 @@ metadata:
   name: controlplane-viewer-role
 rules:
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes/status
   verbs:

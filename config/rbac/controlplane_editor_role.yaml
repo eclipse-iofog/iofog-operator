@@ -5,7 +5,7 @@ metadata:
   name: controlplane-editor-role
 rules:
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - controlplanes.iofog.org
+  - iofog.org
   resources:
   - controlplanes/status
   verbs:
