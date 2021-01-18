@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/apis/controlplanes/v2"
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 )
 
 // ControlPlaneReconciler reconciles a ControlPlane object

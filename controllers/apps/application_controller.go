@@ -34,7 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	appsv2 "github.com/eclipse-iofog/iofog-operator/apis/apps/v2"
+	appsv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/apps/v2"
 )
 
 // ApplicationReconciler reconciles a Application object

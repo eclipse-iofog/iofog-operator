@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/apis/controlplanes/v2"
-	"github.com/eclipse-iofog/iofog-operator/controllers/controlplanes/router"
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"

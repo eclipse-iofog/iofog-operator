@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"strconv"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/apis/controlplanes/v2"
-	"github.com/eclipse-iofog/iofog-operator/controllers/controlplanes/router"
-	"github.com/eclipse-iofog/iofog-operator/internal/util"
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"

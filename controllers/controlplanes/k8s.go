@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/apis/controlplanes/v2"
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	appsv1 "k8s.io/api/apps/v1"

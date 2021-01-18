@@ -27,10 +27,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appsv2 "github.com/eclipse-iofog/iofog-operator/apis/apps/v2"
-	controlplanesv2 "github.com/eclipse-iofog/iofog-operator/apis/controlplanes/v2"
-	appscontroller "github.com/eclipse-iofog/iofog-operator/controllers/apps"
-	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/controllers/controlplanes"
+	appsv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/apps/v2"
+	controlplanesv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	appscontroller "github.com/eclipse-iofog/iofog-operator/v2/controllers/apps"
+	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes"
 	// +kubebuilder:scaffold:imports
 )
 
