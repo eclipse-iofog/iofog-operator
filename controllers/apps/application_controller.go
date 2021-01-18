@@ -65,7 +65,6 @@ func (r *ApplicationReconciler) Reconcile(request ctrl.Request) (ctrl.Result, er
 	if err != nil && errors.IsNotFound(err) {
 		dep, err := r.deploymentForApp(instance)
 		if err != nil {
-
 			return ctrl.Result{}, err
 		}
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)

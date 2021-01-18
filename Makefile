@@ -25,59 +25,47 @@ endif
 
 all: build
 
-# Download modules and vendor them
-modules: vendor
+modules: vendor ## Download modules and vendor them
 	@for module in $(GO_SDK_MODULE); do \
 		go get github.com/eclipse-iofog/$$module; \
 	done
 
-# Vendor all modules
-vendor:
+vendor: ## Vendor all modules
 	@go mod vendor
 
-# Build manager binary
 .PHONY: build
 build: GOARGS += -mod=vendor -ldflags "$(LDFLAGS)"
-build: fmt gen
+build: fmt gen ## Build operator binary
 	go build $(GOARGS) -o bin/iofog-operator main.go
 
-# Install CRDs into a cluster
-install: manifests kustomize
+install: manifests kustomize ## Install CRDs into a cluster
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
-# Uninstall CRDs from a cluster
-uninstall: manifests kustomize
+uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests kustomize
+deploy: manifests kustomize ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
-# Generate manifests e.g. CRD, RBAC etc.
 manifests: export GOFLAGS=-mod=vendor
-manifests: gen
+manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-# Run go fmt against code
-fmt:
+fmt: ## Run go fmt against code
 	@gofmt -s -w $(GOFILES_NOVENDOR)
-
-## Lint the source
-lint: fmt
+ 
+lint: fmt ## Lint the source
 	@golangci-lint run --timeout 5m0s
 
-# Generate code
 gen: export GOFLAGS=-mod=vendor
-gen: controller-gen
+gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 docker:
 	docker build -t $(IMG) .
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
+controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
@@ -92,7 +80,7 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-kustomize:
+kustomize: ## Install kustomize
 ifeq (, $(shell which kustomize))
 	@{ \
 	set -e ;\
@@ -107,10 +95,12 @@ else
 KUSTOMIZE=$(shell which kustomize)
 endif
 
-# Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
-bundle: manifests kustomize
+bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+
+help:
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
