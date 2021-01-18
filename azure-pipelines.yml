@@ -12,7 +12,7 @@ trigger:
     - CHANGELOG.md
 
 variables:
-  GOROOT: '/usr/local/go1.12'
+  GOROOT: '/usr/local/go1.15'
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
   repository: 'focal-freedom-236620/operator'
@@ -37,12 +37,13 @@ jobs:
 
   - task: GoTool@0
     inputs:
-      version: '1.12'
+      version: '1.15'
       goPath: $(GOPATH)
       goBin: $(GOBIN)
     displayName: 'Install Golang'
 
   - script: |
+      set -e
       . version
       VERS=$MAJOR.$MINOR.$PATCH$SUFFIX
       if [[ $(ref) == refs/tags* ]]; then
@@ -58,14 +59,8 @@ jobs:
 
   - script: |
       set -e
-      script/bootstrap.sh
-      golangci-lint version
-    displayName: 'Bootstrap'
-
-  - script: |
-      set -e
-      make lint build
-    displayName: 'Lint and build'
+      make lint
+    displayName: 'Lint source'
 
   - task: Docker@2
     displayName: 'build docker'

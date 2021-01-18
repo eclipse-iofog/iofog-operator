@@ -1,7 +1,8 @@
 # Changelog
 
-## Latest
+## Develop
 
+* Reproduce entire project using Operator Framework v1.3.0
 * Upgrade Operator SDK to 0.15.2 to avoid modules import error
 * Remove Cluster Role Binding from Port Manager
 
