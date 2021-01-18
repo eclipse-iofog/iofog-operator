@@ -44,8 +44,8 @@ type ApplicationReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=apps.iofog.org,resources=applications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps.iofog.org,resources=applications/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=iofog.org,resources=applications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=iofog.org,resources=applications/status,verbs=get;update;patch
 
 func (r *ApplicationReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()

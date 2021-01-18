@@ -40,8 +40,8 @@ type ControlPlaneReconciler struct {
 	cp     cpv2.ControlPlane
 }
 
-// +kubebuilder:rbac:groups=controlplanes.iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=controlplanes.iofog.org,resources=controlplanes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes/status,verbs=get;update;patch
 
 func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
