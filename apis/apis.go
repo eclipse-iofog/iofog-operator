@@ -55,7 +55,7 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 			Name: "applications.apps.iofog.org",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
-			Group: "applications.iofog.org",
+			Group: "apps.iofog.org",
 			Names: extsv1.CustomResourceDefinitionNames{
 				Kind:     "Application",
 				ListKind: "ApplicationList",
