@@ -11,7 +11,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 # github.com/eapache/queue v1.1.0
 ## explicit
-# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210115035542-6a3c7233ad91
+# github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210118193249-3dadafe9b9dd
 ## explicit
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/apps
 github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client
