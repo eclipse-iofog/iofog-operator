@@ -22,7 +22,7 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 	versions[0].Storage = true
 	return &extsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "controlplanes.iofog.org",
+			Name: "controlplanes.iofog.org/v2",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
 			Group: "iofog.org",
@@ -52,7 +52,7 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 	}
 	return &extsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "apps.iofog.org",
+			Name: "apps.iofog.org/v2",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
 			Group: "iofog.org",
