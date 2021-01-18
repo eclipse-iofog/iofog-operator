@@ -59,8 +59,8 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 			Names: extsv1.CustomResourceDefinitionNames{
 				Kind:     "Application",
 				ListKind: "ApplicationList",
-				Plural:   "apps",
-				Singular: "app",
+				Plural:   "applications",
+				Singular: "application",
 			},
 			Scope:    extsv1.ResourceScope("Namespaced"),
 			Versions: versions,
