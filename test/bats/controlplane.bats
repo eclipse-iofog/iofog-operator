@@ -14,6 +14,10 @@
     testCreateNamespace
 }
 
+@test "Create crds" {
+    testCreateCRD
+}
+
 @test "Deploy operator" {
     testDeployOperator
 }
