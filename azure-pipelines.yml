@@ -12,6 +12,7 @@ trigger:
     - CHANGELOG.md
 
 variables:
+  jobuuid: $(Build.BuildId)$(Agent.Id)
   GOROOT: '/usr/local/go1.15'
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
@@ -98,6 +99,8 @@ jobs:
 
   - script: |
       set -e
+      cp test/conf/env.sh.tpl test/conf/env.sh
+      sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
       make feature
     displayName: 'Feature tests'
 

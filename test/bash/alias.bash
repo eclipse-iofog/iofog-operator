@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function kctl(){
-  KUBECONFIG="$TEST_KUBE_CONFIG" kubectl $@
+  kubectl -n "$NAMESPACE" $@
 }
 
 function print(){

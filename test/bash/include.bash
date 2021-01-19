@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-. test/func/test.bash
+. test/bash/alias.bash
+. test/bash/test.bash

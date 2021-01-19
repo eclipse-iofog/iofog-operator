@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. test/bash/alias.bash
-
 function testKubectl() {
   startTest
   kctl get ns
@@ -11,7 +9,7 @@ function testKubectl() {
 function testDeployOperator() {
     startTest
     kctl apply -f config/operator/
-    kctl wait --for=condition=Ready pod/iofog-operator
+    kctl wait --for=condition=available deployments iofog-operator -n default --timeout 1m
     kctl logs -l name=iofog-operator | grep "INFO	setup	starting manager"
     kctl logs -l name=iofog-operator | grep "successfully acquired lease"
     kctl logs -l name=iofog-operator | grep 'Starting Controller	{"reconcilerGroup": "iofog.org", "reconcilerKind": "Application", "controller": "application"}'
