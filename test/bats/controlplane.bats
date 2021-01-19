@@ -22,6 +22,10 @@
     testDeployOperator
 }
 
+@test "Create controlplane" {
+    testCreateControlplane
+}
+
 @test "Delete k8s namespace" {
     testDeleteNamespace
 }

@@ -13,15 +13,14 @@ function testCreateNamespace() {
 }
 
 function testDeleteNamespace() {
-  startTest
-  kctl delete ns "$NAMESPACE"
   stopTest
+  kctl delete ns "$NAMESPACE"
 }
 
 function testCreateCRD() {
   startTest
-  kctl apply -f config/crds/applications.yaml
-  kctl apply -f config/crds/controlplanes.yaml
+  kctl apply -f config/crd/applications.yaml
+  kctl apply -f config/crd/controlplanes.yaml
   kctl get crds | grep controlplane
   kctl get crds | grep application
   stopTest
@@ -32,10 +31,6 @@ function testDeployOperator() {
   kctl apply -f config/operator/rbac.yaml
   kctl apply -f config/operator/deployment.yaml
   kctl wait --for=condition=Ready pods -l name=iofog-operator --timeout 1m
-
-  local TIMEOUT=30
-  local SECS=0
-  local STATUS=1
   local TXTS=(
     "successfully acquired lease"
     'Starting Controller	{"reconcilerGroup": "iofog.org", "reconcilerKind": "Application", "controller": "application"}'
@@ -43,20 +38,20 @@ function testDeployOperator() {
     'Starting Controller	{"reconcilerGroup": "iofog.org", "reconcilerKind": "ControlPlane", "controller": "controlplane"}'
     'Starting workers	{"reconcilerGroup": "iofog.org", "reconcilerKind": "ControlPlane", "controller": "controlplane", "worker count": 1}'
   )
-  while [ "$SECS" -lt "$TIMEOUT" ] && [ "$STATUS" -ne 0 ]; do
-    STATUS=0
-    local LOGS=$(kctl logs -l name=iofog-operator)
-    for TXT in "${TXTS[@]}"; do
-      local FOUND=$(echo "$LOGS" | grep "$TXT")
-      if [ -z "$FOUND" ]; then
-        STATUS=1
-      fi
-      log $STATUS
-    done
-    let "SECS=SECS+1"
-    sleep 1
-  done
-  [ "$STATUS" -eq 0 ]
-  [ "$SECS" -lt "$TIMEOUT" ]
+  waitCmdGrep 30 "kctl logs -l name=iofog-operator" ${TXTS[@]}
+  stopTest
+}
+
+function testCreateControlplane() {
+  startTest
+  kctl apply -f config/cr/controlplane.yaml
+  local TXTS=(
+    "Successfully Reconciled	{\"reconcilerGroup\": \"iofog.org\", \"reconcilerKind\": \"ControlPlane\", \"controller\": \"controlplane\", \"name\": \"iofog\", \"namespace\": \"$NAMESPACE\"}"
+  )
+  waitCmdGrep 60 "kctl logs -l name=iofog-operator" ${TXTS[@]}
+  kctl wait --for=condition=Ready pods -l name=controller --timeout 1m
+  kctl wait --for=condition=Ready pods -l name=port-manager --timeout 1m
+  kctl wait --for=condition=Ready pods -l name=router --timeout 1m
+  [ -z "$(kctl logs -l name=iofog-operator | grep "ERROR")" ]
   stopTest
 }

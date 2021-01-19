@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
@@ -15,6 +16,7 @@ import (
 
 const (
 	loadBalancerTimeout = 360
+	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
 )
 
 func reconcileRoutine(recon func() error, errCh chan error) {
@@ -73,7 +75,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	}
 
 	// Wait for external IP of LB Service
-	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		_, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
 			return err
@@ -99,7 +101,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 
 	// Get Router or Router Proxy
 	var routerProxy cpv2.RouterIngress
-	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			return err
@@ -115,7 +117,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		routerProxy = r.cp.Spec.Ingresses.Router
 	} else {
-		return fmt.Errorf("reconcile Controller failed: missing Proxy.Router data for non LoadBalancer Router service")
+		return fmt.Errorf("reconcile Controller failed: %s", errProxyRouterMissing)
 	}
 	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		return err
@@ -191,7 +193,7 @@ func (r *ControlPlaneReconciler) reconcileRouter() error {
 
 	// Wait for external IP of LB Service
 	address := ""
-	if r.cp.Spec.Services.Controller.Type == string(corev1.ServiceTypeLoadBalancer) {
+	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
 			return err
@@ -199,7 +201,7 @@ func (r *ControlPlaneReconciler) reconcileRouter() error {
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		address = r.cp.Spec.Ingresses.Router.Address
 	} else {
-		return fmt.Errorf("reconcile Router failed: missing Proxy.Router data for non LoadBalancer Router service")
+		return fmt.Errorf("reconcile Router failed: %s", errProxyRouterMissing)
 	}
 
 	// Secrets

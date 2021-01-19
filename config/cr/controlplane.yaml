@@ -1,0 +1,53 @@
+apiVersion: iofog.org/v2
+kind: ControlPlane
+metadata:
+  name: iofog
+spec:
+  user:
+    name: "Serge"
+    surname: "Radinovich"
+    email: "serge@edgeworx.io"
+    password: "FDJLhu98buisdkj"
+  services:
+    controller:
+      type: LoadBalancer
+      address: ""
+    router:
+      type: LoadBalancer
+      address: ""
+    proxy:
+      type: LoadBalancer
+      address: ""
+  replicas:
+    controller: 1
+  database:
+    provider: ""
+    host: ""
+    port: 0
+    user: ""
+    password: ""
+    databaseName: ""
+  images:
+    pullSecret: ""
+    kubelet: ""
+    controller: ""
+    router: ""
+    portManager: ""
+    proxy: ""
+  ingresses:
+    router:
+      address: ""
+      httpPort: 0
+      messagePort: 0
+      interiorPort: 0
+      edgePort: 0
+    httpProxy:
+      address: ""
+    tcpProxy:
+      address: ""
+      tcpAllocatorPort: 0
+      tcpAllocatorHost: ""
+      ecnId: 0
+  controller:
+    pidBaseDir: ""
+    ecnViewerPort: 0

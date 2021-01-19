@@ -62,6 +62,20 @@ jobs:
       set -e
       make lint
     displayName: 'Lint source'
+  
+  - task: Docker@2
+    displayName: 'build and push docker image'
+    inputs:
+      containerRegistry: 'Edgeworx GCP'
+      repository: $(repository)
+      command: 'buildAndPush'
+      Dockerfile: './Dockerfile'
+      buildContext: './'
+      tags: |
+        $(version)
+        $(branch)
+        $(branch)-$(build)
+        latest
 
   - script: |
       set -e
@@ -109,20 +123,6 @@ jobs:
       kubectl delete ns $(jobuuid)
     displayName: 'Cleanup tests'
     condition: failed()
-  
-  - task: Docker@2
-    displayName: 'build docker'
-    inputs:
-      containerRegistry: 'Edgeworx GCP'
-      repository: $(repository)
-      command: 'buildAndPush'
-      Dockerfile: './Dockerfile'
-      buildContext: './'
-      tags: |
-        $(version)
-        $(branch)
-        $(branch)-$(build)
-        latest
 
   - script: |
       set -e
