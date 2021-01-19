@@ -62,6 +62,45 @@ jobs:
       make lint
     displayName: 'Lint source'
 
+  - script: |
+      set -e
+      sudo make kubectl
+    displayName: 'Install kubectl'
+
+  - script: |
+      set -e
+      sudo make bats
+    displayName: 'Install bats'
+
+  - script: |
+      set -e
+      sudo make kustomize
+    displayName: 'Install kustomize'
+
+  - task: DownloadSecureFile@1
+    displayName: 'Download secure file'
+    inputs:
+      secureFile: 'azure-gcp.json'
+
+  - bash: |
+      set -e
+      keyFilePath="$(Agent.TempDirectory)/azure-gcp.json"
+      if [[ -z $(which gcloud) ]]; then
+        CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+        echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+      fi
+      gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
+      gcloud --quiet config set project $(gcp.project.name)
+      gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
+    displayName: 'Connect to cluster'
+
+  - script: |
+      set -e
+      make feature
+    displayName: 'Feature tests'
+
   - task: Docker@2
     displayName: 'build docker'
     inputs:
