@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iofog-operator
-  namespace: default
   labels:
     name: iofog-operator
 spec:

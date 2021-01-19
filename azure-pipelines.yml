@@ -104,6 +104,12 @@ jobs:
       make feature
     displayName: 'Feature tests'
 
+  - script: |
+      set -e
+      kubectl delete ns $(jobuuid)
+    displayName: 'Cleanup tests'
+    condition: always()
+  
   - task: Docker@2
     displayName: 'build docker'
     inputs:
