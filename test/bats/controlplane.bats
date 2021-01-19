@@ -10,6 +10,14 @@
     testKubectl
 }
 
+@test "Create k8s namespace" {
+    testCreateNamespace
+}
+
 @test "Deploy operator" {
     testDeployOperator
+}
+
+@test "Delete k8s namespace" {
+    testDeleteNamespace
 }

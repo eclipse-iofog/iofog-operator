@@ -6,6 +6,18 @@ function testKubectl() {
   stopTest
 }
 
+function testCreateNamespace() {
+  startTest
+  kctl create ns "$NAMESPACE"
+  stopTest
+}
+
+function testDeleteNamespace() {
+  startTest
+  kctl delete ns "$NAMESPACE"
+  stopTest
+}
+
 function testDeployOperator() {
     startTest
     kctl apply -f config/operator/
