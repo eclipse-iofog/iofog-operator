@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
@@ -517,7 +518,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 }
 
 func getTrafficPolicy(serviceType string) string {
-	if serviceType == string(corev1.ServiceTypeLoadBalancer) {
+	if strings.EqualFold(serviceType, string(corev1.ServiceTypeLoadBalancer)) {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
 	return ""

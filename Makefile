@@ -1,3 +1,5 @@
+OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
+
 VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
@@ -66,7 +68,40 @@ gen: controller-gen ## Generate code using controller-gen
 docker:
 	docker build -t $(IMG) .
 
-golangci-lint: ## Install golangci	
+unit: ## Run unit tests
+	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
+
+feature: bats kubectl kustomize ## Run feature tests
+	test/run.bash
+
+bats: ## Install bats
+ifeq (, $(shell which bats))
+	@{ \
+	set -e ;\
+	BATS_TMP_DIR=$$(mktemp -d) ;\
+	cd $$BATS_TMP_DIR ;\
+	git clone https://github.com/bats-core/bats-core.git ;\
+	cd bats-core ;\
+	git checkout tags/v1.1.0 ;\
+	./install.sh /usr/local ;\
+	rm -rf $$BATS_TMP_DIR ;\
+	}
+endif
+
+kubectl: ## Install kubectl
+ifeq (, $(shell which kubectl))
+	@{ \
+	set -e ;\
+	KCTL_TMP_DIR=$$(mktemp -d) ;\
+	cd $$KCTL_TMP_DIR ;\
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.4/bin/"$(OS)"/amd64/kubectl ;\
+	chmod +x kubectl ;\
+	mv kubectl /usr/local/bin/ ;\
+	rm -rf $$KCTL_TMP_DIR ;\
+	}
+endif
+
+golangci-lint: ## Install golangci
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
@@ -117,9 +152,6 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
-
-test: ## Run unit tests
-	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
 
 help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

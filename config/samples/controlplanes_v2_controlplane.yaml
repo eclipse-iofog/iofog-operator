@@ -1,7 +1,0 @@
-apiVersion: controlplanes.iofog.org/v2
-kind: ControlPlane
-metadata:
-  name: controlplane-sample
-spec:
-  # Add fields here
-  foo: bar
