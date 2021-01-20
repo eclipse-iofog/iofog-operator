@@ -31,6 +31,7 @@ function testDeployOperator() {
   kctl apply -f config/operator/rbac.yaml
   kctl apply -f config/operator/deployment.yaml
   kctl wait --for=condition=Ready pods -l name=iofog-operator --timeout 1m
+  kctl describe pods -l name=iofog-operator | grep "$OP_VERSION"
   local TXTS=(
     "successfully acquired lease"
     'Starting Controller	{"reconcilerGroup": "iofog.org", "reconcilerKind": "Application", "controller": "application"}'
