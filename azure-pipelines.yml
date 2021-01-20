@@ -113,6 +113,15 @@ jobs:
 
   - script: |
       set -e
+      IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
+      cd config/operator
+      kustomize edit set image "$IMAGE"
+      kustomize build .
+      cat ./kustomization.yaml | grep "image: $IMAGE"
+    displayName: 'Kustomize'
+
+  - script: |
+      set -e
       cp test/conf/env.sh.tpl test/conf/env.sh
       sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
       make feature
