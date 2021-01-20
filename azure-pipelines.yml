@@ -116,7 +116,8 @@ jobs:
       IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
       cd config/operator
       kustomize edit set image "$IMAGE"
-      kustomize build . > ./deployment.yaml
+      kustomize build . > /tmp/deployment.yaml
+      cp /tmp/deployment.yaml ./deployment.yaml
       cat ./deployment.yaml | grep "image: $IMAGE"
     displayName: 'Kustomize'
 
