@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,17 +48,12 @@ func init() {
 }
 
 // getWatchNamespace returns the Namespace the operator should be watching for changes
-func getWatchNamespace() (string, error) {
+func getWatchNamespace() (ns string) {
 	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
 	// which specifies the Namespace to watch.
 	// An empty value means the operator is running with cluster scope.
-	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
-
-	ns, found := os.LookupEnv(watchNamespaceEnvVar)
-	if !found {
-		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
-	}
-	return ns, nil
+	ns, _ = os.LookupEnv("WATCH_NAMESPACE")
+	return
 }
 
 func main() {
@@ -73,18 +67,13 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	ns, err := getWatchNamespace()
-	if err != nil {
-		setupLog.Error(err, "unable to get watch namespace")
-		os.Exit(1)
-	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "44586fd0.iofog.org",
-		Namespace:          ns,
+		Namespace:          getWatchNamespace(),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

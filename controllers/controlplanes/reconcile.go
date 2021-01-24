@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	loadBalancerTimeout = 360
+	loadBalancerTimeout   = 360
 	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
 )
 
