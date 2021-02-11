@@ -98,9 +98,6 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
-	if cfg.httpPortAddr != "" && cfg.tcpPortAddr != "" {
-		cfg.portProvider = "caas"
-	}
 	if cfg.ecnViewerPort == 0 {
 		cfg.ecnViewerPort = 80
 	}

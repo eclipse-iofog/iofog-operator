@@ -104,6 +104,7 @@ type Ingresses struct {
 type Controller struct {
 	PidBaseDir    string `json:"pidBaseDir,omitempty"`
 	EcnViewerPort int    `json:"ecnViewerPort,omitempty"`
+	PortProvider  string `json:"portProvider,omitempty"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane

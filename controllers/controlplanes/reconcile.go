@@ -41,6 +41,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 		ecnID:            r.cp.Spec.Ingresses.TCPProxy.EcnID,
 		pidBaseDir:       r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:    r.cp.Spec.Controller.EcnViewerPort,
+		portProvider:     r.cp.Spec.Controller.PortProvider,
 	})
 
 	// Service Account
