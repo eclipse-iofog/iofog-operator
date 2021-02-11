@@ -26,22 +26,19 @@ func reconcileRoutine(recon func() error, errCh chan error) {
 func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	// Configure Controller
 	ms := newControllerMicroservice(&controllerMicroserviceConfig{
-		replicas:         r.cp.Spec.Replicas.Controller,
-		image:            r.cp.Spec.Images.Controller,
-		imagePullSecret:  r.cp.Spec.Images.PullSecret,
-		proxyImage:       r.cp.Spec.Images.Proxy,
-		routerImage:      r.cp.Spec.Images.Router,
-		db:               &r.cp.Spec.Database,
-		serviceType:      r.cp.Spec.Services.Controller.Type,
-		loadBalancerAddr: r.cp.Spec.Services.Controller.Address,
-		httpPortAddr:     r.cp.Spec.Ingresses.HTTPProxy.Address,
-		tcpPortAddr:      r.cp.Spec.Ingresses.TCPProxy.Address,
-		tcpAllocatorHost: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorHost,
-		tcpAllocatorPort: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorPort,
-		ecn:              r.cp.Spec.Controller.ECNName,
-		pidBaseDir:       r.cp.Spec.Controller.PidBaseDir,
-		ecnViewerPort:    r.cp.Spec.Controller.EcnViewerPort,
-		portProvider:     r.cp.Spec.Controller.PortProvider,
+		replicas:          r.cp.Spec.Replicas.Controller,
+		image:             r.cp.Spec.Images.Controller,
+		imagePullSecret:   r.cp.Spec.Images.PullSecret,
+		proxyImage:        r.cp.Spec.Images.Proxy,
+		routerImage:       r.cp.Spec.Images.Router,
+		db:                &r.cp.Spec.Database,
+		serviceType:       r.cp.Spec.Services.Controller.Type,
+		loadBalancerAddr:  r.cp.Spec.Services.Controller.Address,
+		portAllocatorHost: r.cp.Spec.Controller.PortAllocatorHost,
+		ecn:               r.cp.Spec.Controller.ECNName,
+		pidBaseDir:        r.cp.Spec.Controller.PidBaseDir,
+		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
+		portProvider:      r.cp.Spec.Controller.PortProvider,
 	})
 
 	// Service Account

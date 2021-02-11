@@ -15,7 +15,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -70,22 +69,19 @@ type container struct {
 }
 
 type controllerMicroserviceConfig struct {
-	replicas         int32
-	image            string
-	imagePullSecret  string
-	serviceType      string
-	loadBalancerAddr string
-	db               *cpv2.Database
-	proxyImage       string
-	routerImage      string
-	portProvider     string
-	httpPortAddr     string
-	tcpPortAddr      string
-	tcpAllocatorHost string
-	tcpAllocatorPort int
-	ecn              string
-	pidBaseDir       string
-	ecnViewerPort    int
+	replicas          int32
+	image             string
+	imagePullSecret   string
+	serviceType       string
+	loadBalancerAddr  string
+	db                *cpv2.Database
+	proxyImage        string
+	routerImage       string
+	portProvider      string
+	portAllocatorHost string
+	ecn               string
+	pidBaseDir        string
+	ecnViewerPort     int
 }
 
 func filterControllerConfig(cfg *controllerMicroserviceConfig) {
@@ -182,14 +178,6 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 						Value: cfg.portProvider,
 					},
 					{
-						Name:  "TCP_PORT_ADDR",
-						Value: cfg.tcpPortAddr,
-					},
-					{
-						Name:  "HTTP_PORT_ADDR",
-						Value: cfg.httpPortAddr,
-					},
-					{
 						Name:  "SystemImages_Proxy_1",
 						Value: cfg.proxyImage,
 					},
@@ -206,11 +194,11 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 						Value: util.TransformImageToARM(cfg.routerImage),
 					},
 					{
-						Name:  "TCP_ALLOC_ADDRESS",
-						Value: fmt.Sprintf("%s:%d", cfg.tcpAllocatorHost, cfg.tcpAllocatorPort),
+						Name:  "PORT_ALLOC_ADDRESS",
+						Value: cfg.portAllocatorHost,
 					},
 					{
-						Name:  "ECN_ID",
+						Name:  "ECN_NAME",
 						Value: cfg.ecn,
 					},
 					{
