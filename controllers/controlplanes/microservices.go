@@ -83,7 +83,7 @@ type controllerMicroserviceConfig struct {
 	tcpPortAddr      string
 	tcpAllocatorHost string
 	tcpAllocatorPort int
-	ecnID            int
+	ecn              string
 	pidBaseDir       string
 	ecnViewerPort    int
 }
@@ -211,7 +211,7 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 					},
 					{
 						Name:  "ECN_ID",
-						Value: strconv.Itoa(cfg.ecnID),
+						Value: cfg.ecn,
 					},
 					{
 						Name:  "PID_BASE",

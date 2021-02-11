@@ -105,6 +105,7 @@ type Controller struct {
 	PidBaseDir    string `json:"pidBaseDir,omitempty"`
 	EcnViewerPort int    `json:"ecnViewerPort,omitempty"`
 	PortProvider  string `json:"portProvider,omitempty"`
+	ECNName       string `json:"ecn:omitempty"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane

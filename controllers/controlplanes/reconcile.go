@@ -38,7 +38,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 		tcpPortAddr:      r.cp.Spec.Ingresses.TCPProxy.Address,
 		tcpAllocatorHost: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorHost,
 		tcpAllocatorPort: r.cp.Spec.Ingresses.TCPProxy.TCPAllocatorPort,
-		ecnID:            r.cp.Spec.Ingresses.TCPProxy.EcnID,
+		ecn:              r.cp.Spec.Controller.ECNName,
 		pidBaseDir:       r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:    r.cp.Spec.Controller.EcnViewerPort,
 		portProvider:     r.cp.Spec.Controller.PortProvider,
