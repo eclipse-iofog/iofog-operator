@@ -88,7 +88,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	if err != nil {
 		return err
 	}
-	iofogClient := iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", ms.name, ctrlPort)})
+	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
+	iofogClient := iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", host, ctrlPort)})
 
 	// Wait for Controller REST API
 	if err := r.waitForControllerAPI(iofogClient); err != nil {
