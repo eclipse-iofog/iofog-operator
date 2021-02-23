@@ -12,6 +12,10 @@ LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
 GO_SDK_MODULE = iofog-go-sdk/v2@develop
 
 export CGO_ENABLED ?= 0
+ifeq (${DEBUG},)
+else
+GOARGS=-gcflags="all=-N -l"
+endif
 
 # Image URL to use all building/pushing image targets
 IMG ?= operator:latest
