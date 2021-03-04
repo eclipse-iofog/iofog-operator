@@ -7,7 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.9.6 // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210118203455-fefcc397b550
+	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210304020236-bab3501368f7
 	github.com/go-logr/logr v0.3.0
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect

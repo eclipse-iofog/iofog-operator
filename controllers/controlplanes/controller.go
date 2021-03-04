@@ -20,15 +20,19 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
+	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	cond "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	ctrls "github.com/eclipse-iofog/iofog-operator/v2/controllers"
 )
 
 // ControlPlaneReconciler reconciles a ControlPlane object
@@ -54,51 +58,72 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			return ctrl.Result{}, nil
+			return ctrls.DoNotRequeue()
 		}
 		// Error reading the object - requeue the request.
-		return ctrl.Result{}, err
+		return ctrls.RequeueWithError(err)
 	}
 
 	// Error chan for reconcile routines
 	reconcilerCount := 3
-	errCh := make(chan error, reconcilerCount)
+	reconChan := make(chan ctrls.Reconciliation, reconcilerCount)
 
 	// Reconcile Router
-	go reconcileRoutine(r.reconcileRouter, errCh)
+	go reconcileRoutine(r.reconcileRouter, reconChan)
 
 	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(r.reconcileIofogController, errCh)
+	go reconcileRoutine(r.reconcileIofogController, reconChan)
 
 	// Reconcile Port Manager
-	go reconcileRoutine(r.reconcilePortManager, errCh)
+	go reconcileRoutine(r.reconcilePortManager, reconChan)
 
+	result := ctrl.Result{}
 	for idx := 0; idx < reconcilerCount; idx++ {
-		routineErr := <-errCh
-		if routineErr != nil {
+		recon := <-reconChan
+		if recon.Err != nil {
 			if err == nil {
 				// Create new err
-				err = routineErr
+				err = recon.Err
 			} else {
 				// Append
-				err = fmt.Errorf("%s\n%s", err.Error(), routineErr.Error())
+				err = fmt.Errorf("%s\n%s", err.Error(), recon.Err.Error())
 			}
 		}
+		// Use largest requeue
+		if recon.Result.RequeueAfter > result.RequeueAfter {
+			result = recon.Result
+		}
 	}
-	if err != nil {
-		return ctrl.Result{}, err
+	if err != nil || result.Requeue {
+		return result, err
+	}
+
+	conditionReady := "ready"
+	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
+		newCondition := metav1.Condition{
+			Type:               conditionReady,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		}
+		cond.SetStatusCondition(&r.cp.Status.Conditions, newCondition)
+		if err := r.Update(ctx, &r.cp); err != nil {
+			return ctrls.RequeueWithError(err)
+		}
+		// Update will trigger reconciliation again
+		return ctrls.DoNotRequeue()
 	}
 
 	r.log.Info("Completed Reconciliation")
 
-	return ctrl.Result{}, nil
+	return ctrls.DoNotRequeue()
 }
 
 func (r *ControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	iofogclient.SetGlobalRetries(iofogclient.Retries{
+		Timeout: 0,
 		CustomMessage: map[string]int{
-			"timeout": 10,
-			"refuse":  10,
+			"timeout": 0,
+			"refuse":  0,
 		},
 	})
 	return ctrl.NewControllerManagedBy(mgr).

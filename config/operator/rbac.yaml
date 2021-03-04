@@ -36,6 +36,7 @@ rules:
   - list
   - get
   - watch
+  - update
 - apiGroups:
   - apps
   resources:
