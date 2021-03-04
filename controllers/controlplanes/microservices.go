@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	routerName = "router"
+	routerName     = "router"
+	controllerName = "controller"
 )
 
 type service struct {

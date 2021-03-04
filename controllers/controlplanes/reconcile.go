@@ -128,7 +128,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 
 	// Wait for Controller LB to actually work
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		controllerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
+		controllerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
 		if err != nil {
 			recon.Err = err
 			return
