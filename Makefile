@@ -31,12 +31,14 @@ endif
 
 all: build
 
-modules: vendor ## Download modules and vendor them
+.PHONY: modules
+modules: ## Download modules
 	@for module in $(GO_SDK_MODULE); do \
 		go get github.com/eclipse-iofog/$$module; \
 	done
 
-vendor: ## Vendor all modules
+.PHONY: vendor
+vendor: modules ## Vendor all modules
 	@go mod vendor
 
 .PHONY: build

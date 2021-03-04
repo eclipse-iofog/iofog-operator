@@ -20,10 +20,13 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
+	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	cond "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,8 +94,23 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 			result = recon.Result
 		}
 	}
-	if err != nil {
+	if err != nil || result.Requeue {
 		return result, err
+	}
+
+	conditionReady := "ready"
+	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
+		newCondition := metav1.Condition{
+			Type:               conditionReady,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		}
+		cond.SetStatusCondition(&r.cp.Status.Conditions, newCondition)
+		if err := r.Update(ctx, &r.cp); err != nil {
+			return ctrls.RequeueWithError(err)
+		}
+		// Update will trigger reconciliation again
+		return ctrls.DoNotRequeue()
 	}
 
 	r.log.Info("Completed Reconciliation")
