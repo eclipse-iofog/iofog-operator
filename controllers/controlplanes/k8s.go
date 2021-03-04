@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"strings"
-	"time"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 
@@ -264,35 +263,6 @@ func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error {
 	// Resource already exists - don't requeue
 	r.log.Info("Skip reconcile: Role Binding already exists", "RoleBinding.Namespace", found.Namespace, "RoleBinding.Name", found.Name)
 	return nil
-}
-
-func (r *ControlPlaneReconciler) waitForControllerAPI(iofogClient *iofogclient.Client) (err error) {
-	connected := false
-	iter := 0
-	const timeoutSeconds = 120
-	for !connected {
-		// Time out
-		if iter > timeoutSeconds {
-			err = errors.NewTimeoutError("Timed out waiting for Controller API", iter)
-			return
-		}
-		// Check the status endpoint
-		if _, err = iofogClient.GetStatus(); err != nil {
-			// Retry if connection is refused, this is usually only necessary on K8s Controller
-			if strings.Contains(err.Error(), "connection refused") {
-				time.Sleep(time.Millisecond * 1000)
-				iter++
-				continue
-			}
-			// Return the error otherwise
-			return
-		}
-		// No error, connected
-		connected = true
-		continue
-	}
-
-	return
 }
 
 func (r *ControlPlaneReconciler) createIofogUser(iofogClient *iofogclient.Client) error {

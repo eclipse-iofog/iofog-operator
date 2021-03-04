@@ -2,16 +2,18 @@ package controllers
 
 import (
 	"fmt"
+	"os"
 	"strings"
-
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
+	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
-
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
+
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	ctrls "github.com/eclipse-iofog/iofog-operator/v2/controllers"
+	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
 )
 
 const (
@@ -19,11 +21,11 @@ const (
 	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
 )
 
-func reconcileRoutine(recon func() error, errCh chan error) {
-	errCh <- recon()
+func reconcileRoutine(recon func() ctrls.Reconciliation, reconChan chan ctrls.Reconciliation) {
+	reconChan <- recon()
 }
 
-func (r *ControlPlaneReconciler) reconcileIofogController() error {
+func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconciliation) {
 	// Configure Controller
 	ms := newControllerMicroservice(&controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,
@@ -43,59 +45,58 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Deployment
 	if err := r.createDeployment(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Service
 	if err := r.createService(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// PVC
 	if err := r.createPersistentVolumeClaims(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Connect to cluster
-	k8sClient, err := k8sclient.NewInCluster()
+	k8sClient, err := newK8sClient()
 	if err != nil {
-		return err
-	}
-
-	// Wait for Pods
-	if err := k8sClient.WaitForPod(r.cp.ObjectMeta.Namespace, ms.name, 120); err != nil {
-		return err
-	}
-
-	// Wait for external IP of LB Service
-	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		_, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
-		if err != nil {
-			return err
-		}
+		recon.Err = err
+		return
 	}
 
 	// Instantiate Controller client
 	ctrlPort, err := getControllerPort(ms)
 	if err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
 	iofogClient := iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", host, ctrlPort)})
 
 	// Wait for Controller REST API
-	if err := r.waitForControllerAPI(iofogClient); err != nil {
-		return err
+	if _, err = iofogClient.GetStatus(); err != nil {
+		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
+		recon.Result.Requeue = true
+		recon.Result.RequeueAfter = time.Second * 5
+		return
 	}
 
 	// Set up user
 	if err := r.createIofogUser(iofogClient); err != nil {
-		return err
+		r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
+		recon.Result.Requeue = true
+		recon.Result.RequeueAfter = time.Second * 5
+		return
 	}
 
 	// Get Router or Router Proxy
@@ -103,7 +104,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
-			return err
+			recon.Err = err
+			return
 		}
 		routerProxy = cpv2.RouterIngress{
 			Ingress: cpv2.Ingress{
@@ -116,16 +118,18 @@ func (r *ControlPlaneReconciler) reconcileIofogController() error {
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		routerProxy = r.cp.Spec.Ingresses.Router
 	} else {
-		return fmt.Errorf("reconcile Controller failed: %s", errProxyRouterMissing)
+		recon.Err = fmt.Errorf("reconcile Controller failed: %s", errProxyRouterMissing)
+		return
 	}
 	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
-	return nil
+	return recon
 }
 
-func (r *ControlPlaneReconciler) reconcilePortManager() error {
+func (r *ControlPlaneReconciler) reconcilePortManager() (recon ctrls.Reconciliation) {
 	ms := newPortManagerMicroservice(&portManagerConfig{
 		image:            r.cp.Spec.Images.PortManager,
 		proxyImage:       r.cp.Spec.Images.Proxy,
@@ -138,24 +142,28 @@ func (r *ControlPlaneReconciler) reconcilePortManager() error {
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 	// Role
 	if err := r.createRole(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 	// RoleBinding
 	if err := r.createRoleBinding(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 	// Deployment
 	if err := r.createDeployment(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
-	return nil
+	return recon
 }
 
-func (r *ControlPlaneReconciler) reconcileRouter() error {
+func (r *ControlPlaneReconciler) reconcileRouter() (recon ctrls.Reconciliation) {
 	// Configure
 	volumeMountPath := "/etc/qpid-dispatch-certs/"
 	ms := newRouterMicroservice(routerMicroserviceConfig{
@@ -166,28 +174,33 @@ func (r *ControlPlaneReconciler) reconcileRouter() error {
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Role
 	if err := r.createRole(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Role binding
 	if err := r.createRoleBinding(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Service
 	if err := r.createService(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Wait for IP
-	k8sClient, err := k8sclient.NewInCluster()
+	k8sClient, err := newK8sClient()
 	if err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Wait for external IP of LB Service
@@ -195,12 +208,14 @@ func (r *ControlPlaneReconciler) reconcileRouter() error {
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
-			return err
+			recon.Err = err
+			return
 		}
 	} else if r.cp.Spec.Ingresses.Router.Address != "" {
 		address = r.cp.Spec.Ingresses.Router.Address
 	} else {
-		return fmt.Errorf("reconcile Router failed: %s", errProxyRouterMissing)
+		recon.Err = fmt.Errorf("reconcile Router failed: %s", errProxyRouterMissing)
+		return
 	}
 
 	// Secrets
@@ -219,13 +234,23 @@ func (r *ControlPlaneReconciler) reconcileRouter() error {
 
 	// Create secrets
 	if err := r.createSecrets(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
 	// Deployment
 	if err := r.createDeployment(ms); err != nil {
-		return err
+		recon.Err = err
+		return
 	}
 
-	return nil
+	return recon
+}
+
+func newK8sClient() (*k8sclient.Client, error) {
+	kubeConf := os.Getenv("KUBECONFIG")
+	if kubeConf == "" {
+		return k8sclient.NewInCluster()
+	}
+	return k8sclient.New(kubeConf)
 }

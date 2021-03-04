@@ -22,3 +22,10 @@ Run project unit tests:
 ```
 make test
 ```
+
+## Running off-cluster
+
+```
+export KUBECONFIG=~/.kube/config
+bin/iofog-operator
+```
