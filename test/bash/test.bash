@@ -49,7 +49,7 @@ function testCreateControlplane() {
   local TXTS=(
     "Successfully Reconciled	{\"reconcilerGroup\": \"iofog.org\", \"reconcilerKind\": \"ControlPlane\", \"controller\": \"controlplane\", \"name\": \"iofog\", \"namespace\": \"$NAMESPACE\"}"
   )
-  waitCmdGrep 60 "kctl logs -l name=iofog-operator" ${TXTS[@]}
+  waitCmdGrep 180 "kctl logs -l name=iofog-operator" ${TXTS[@]}
   kctl wait --for=condition=Ready pods -l name=controller --timeout 1m
   kctl wait --for=condition=Ready pods -l name=port-manager --timeout 1m
   kctl wait --for=condition=Ready pods -l name=router --timeout 1m
