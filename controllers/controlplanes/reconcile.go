@@ -101,15 +101,16 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 
 	// Get Router or Router Proxy
 	var routerProxy cpv2.RouterIngress
+	lbAddr := ""
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		ipAddress, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
+		lbAddr, err = k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			recon.Err = err
 			return
 		}
 		routerProxy = cpv2.RouterIngress{
 			Ingress: cpv2.Ingress{
-				Address: ipAddress,
+				Address: lbAddr,
 			},
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
@@ -124,6 +125,17 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		recon.Err = err
 		return
+	}
+
+	// Wait for LB to actually work
+	if lbAddr != "" {
+		iofogClient = iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", lbAddr, ctrlPort)})
+		if _, err = iofogClient.GetStatus(); err != nil {
+			r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s via LoadBalancer: %s", r.cp.Name, err.Error()))
+			recon.Result.Requeue = true
+			recon.Result.RequeueAfter = time.Second * 5
+			return
+		}
 	}
 
 	return recon
