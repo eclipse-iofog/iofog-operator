@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
+	//"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
@@ -49,12 +49,6 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 		return
 	}
 
-	// Deployment
-	if err := r.createDeployment(ms); err != nil {
-		recon.Err = err
-		return
-	}
-
 	// Service
 	if err := r.createService(ms); err != nil {
 		recon.Err = err
@@ -67,13 +61,25 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 		return
 	}
 
-	// Connect to cluster
-	k8sClient, err := newK8sClient()
+	alreadyExists, err := r.deploymentExists(r.cp.Namespace, ms.name)
 	if err != nil {
 		recon.Err = err
 		return
 	}
 
+	// Deployment
+	if err := r.createDeployment(ms); err != nil {
+		recon.Err = err
+		return
+	}
+
+	// The deployment was just created, requeue to hide latency
+	if !alreadyExists {
+		println("SSS already exists " + r.cp.Namespace)
+		recon.Result.Requeue = true
+		//recon.Result.RequeueAfter = time.Second * 10
+		return
+	}
 	// Instantiate Controller client
 	ctrlPort, err := getControllerPort(ms)
 	if err != nil {
@@ -84,18 +90,27 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 	iofogClient := iofogclient.New(iofogclient.Options{Endpoint: fmt.Sprintf("%s:%d", host, ctrlPort)})
 
 	// Wait for Controller REST API
+	println("SSS wait for api " + r.cp.Namespace)
 	if _, err = iofogClient.GetStatus(); err != nil {
 		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
 		recon.Result.Requeue = true
-		recon.Result.RequeueAfter = time.Second * 5
+		//recon.Result.RequeueAfter = time.Second * 5
 		return
 	}
 
 	// Set up user
+	println("SSS create user " + r.cp.Namespace)
 	if err := r.createIofogUser(iofogClient); err != nil {
 		r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
 		recon.Result.Requeue = true
-		recon.Result.RequeueAfter = time.Second * 5
+		//recon.Result.RequeueAfter = time.Second * 5
+		return
+	}
+
+	// Connect to cluster
+	k8sClient, err := newK8sClient()
+	if err != nil {
+		recon.Err = err
 		return
 	}
 
@@ -121,6 +136,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 		recon.Err = fmt.Errorf("reconcile Controller failed: %s", errProxyRouterMissing)
 		return
 	}
+	println("SSS create router " + r.cp.Namespace)
 	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		recon.Err = err
 		return
@@ -137,10 +153,11 @@ func (r *ControlPlaneReconciler) reconcileIofogController() (recon ctrls.Reconci
 		if _, err = iofogClient.GetStatus(); err != nil {
 			r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s via LoadBalancer: %s", r.cp.Name, err.Error()))
 			recon.Result.Requeue = true
-			recon.Result.RequeueAfter = time.Second * 5
+			//recon.Result.RequeueAfter = time.Second * 5
 			return
 		}
 	}
+	println("SSS done " + r.cp.Namespace)
 
 	return recon
 }

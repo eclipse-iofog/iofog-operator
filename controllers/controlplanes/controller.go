@@ -35,6 +35,10 @@ import (
 	ctrls "github.com/eclipse-iofog/iofog-operator/v2/controllers"
 )
 
+const (
+	conditionReady = "ready"
+)
+
 // ControlPlaneReconciler reconciles a ControlPlane object
 type ControlPlaneReconciler struct {
 	client.Client
@@ -63,6 +67,11 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 		// Error reading the object - requeue the request.
 		return ctrls.RequeueWithError(err)
 	}
+	if cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
+		println("SSS complete " + r.cp.Namespace)
+		r.log.Info("Completed Reconciliation")
+		return ctrls.DoNotRequeue()
+	}
 
 	// Error chan for reconcile routines
 	reconcilerCount := 3
@@ -90,30 +99,33 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 			}
 		}
 		// Use largest requeue
-		if recon.Result.RequeueAfter > result.RequeueAfter {
+		if recon.Result.Requeue {
 			result = recon.Result
 		}
+		//if recon.Result.RequeueAfter > result.RequeueAfter {
+		//	result = recon.Result
+		//}
 	}
 	if err != nil || result.Requeue {
 		return result, err
 	}
 
-	conditionReady := "ready"
 	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
-		newCondition := metav1.Condition{
-			Type:               conditionReady,
-			Status:             metav1.ConditionTrue,
-			LastTransitionTime: metav1.NewTime(time.Now()),
+		// Overwrite
+		r.cp.Status.Conditions = []metav1.Condition{
+			{
+				Type:               conditionReady,
+				Status:             metav1.ConditionTrue,
+				LastTransitionTime: metav1.NewTime(time.Now()),
+			},
 		}
-		cond.SetStatusCondition(&r.cp.Status.Conditions, newCondition)
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return ctrls.RequeueWithError(err)
 		}
+		println("SSS ready " + r.cp.Namespace)
 		// Update will trigger reconciliation again
 		return ctrls.DoNotRequeue()
 	}
-
-	r.log.Info("Completed Reconciliation")
 
 	return ctrls.DoNotRequeue()
 }
