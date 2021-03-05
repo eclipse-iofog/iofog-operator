@@ -68,7 +68,6 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 		return ctrls.RequeueWithError(err)
 	}
 	if cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
-		println("SSS complete " + r.cp.Namespace)
 		r.log.Info("Completed Reconciliation")
 		return ctrls.DoNotRequeue()
 	}
@@ -98,13 +97,10 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 				err = fmt.Errorf("%s\n%s", err.Error(), recon.Err.Error())
 			}
 		}
-		// Use largest requeue
-		if recon.Result.Requeue {
+		// Requeue with largest delay
+		if recon.Result.RequeueAfter > result.RequeueAfter {
 			result = recon.Result
 		}
-		//if recon.Result.RequeueAfter > result.RequeueAfter {
-		//	result = recon.Result
-		//}
 	}
 	if err != nil || result.Requeue {
 		return result, err
@@ -122,7 +118,6 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return ctrls.RequeueWithError(err)
 		}
-		println("SSS ready " + r.cp.Namespace)
 		// Update will trigger reconciliation again
 		return ctrls.DoNotRequeue()
 	}

@@ -18,14 +18,14 @@ import (
 	"strconv"
 	"strings"
 
+	// "k8s.io/apimachinery/pkg/api/resource"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
 	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
-
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	//"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -211,16 +211,16 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 						Value: strconv.Itoa(cfg.ecnViewerPort),
 					},
 				},
-				//resources: corev1.ResourceRequirements{
-				//	Limits: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("1800m"),
-				//		"memory": resource.MustParse("3Gi"),
-				//	},
-				//	Requests: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("400m"),
-				//		"memory": resource.MustParse("1Gi"),
-				//	},
-				//},
+				// resources: corev1.ResourceRequirements{
+				// 	Limits: corev1.ResourceList{
+				// 		"cpu":    resource.MustParse("1800m"),
+				// 		"memory": resource.MustParse("3Gi"),
+				// 	},
+				// 	Requests: corev1.ResourceList{
+				// 		"cpu":    resource.MustParse("400m"),
+				// 		"memory": resource.MustParse("1Gi"),
+				// 	},
+				// },
 			},
 		},
 	}
@@ -303,16 +303,16 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
-				//resources: corev1.ResourceRequirements{
-				//	Limits: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("200m"),
-				//		"memory": resource.MustParse("1Gi"),
-				//	},
-				//	Requests: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("50m"),
-				//		"memory": resource.MustParse("200Mi"),
-				//	},
-				//},
+				// resources: corev1.ResourceRequirements{
+				// 	 Limits: corev1.ResourceList{
+				// 	 	"cpu":    resource.MustParse("200m"),
+				// 	 	"memory": resource.MustParse("1Gi"),
+				// 	 },
+				// 	 Requests: corev1.ResourceList{
+				// 	 	"cpu":    resource.MustParse("50m"),
+				// 	 	"memory": resource.MustParse("200Mi"),
+				// 	 },
+				// },
 				env: []corev1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",
@@ -488,16 +488,16 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 						MountPath: cfg.volumeMountPath + "/" + routerName + "-amqps",
 					},
 				},
-				//resources: corev1.ResourceRequirements{
-				//	Limits: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("200m"),
-				//		"memory": resource.MustParse("1Gi"),
-				//	},
-				//	Requests: corev1.ResourceList{
-				//		"cpu":    resource.MustParse("50m"),
-				//		"memory": resource.MustParse("200Mi"),
-				//	},
-				//},
+				// resources: corev1.ResourceRequirements{
+				// 	 Limits: corev1.ResourceList{
+				// 	 	"cpu":    resource.MustParse("200m"),
+				// 	 	"memory": resource.MustParse("1Gi"),
+				// 	 },
+				// 	 Requests: corev1.ResourceList{
+				// 	 	"cpu":    resource.MustParse("50m"),
+				// 	 	"memory": resource.MustParse("200Mi"),
+				// 	 },
+				// },
 			},
 		},
 	}
