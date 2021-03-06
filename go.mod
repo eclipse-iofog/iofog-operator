@@ -3,25 +3,14 @@ module github.com/eclipse-iofog/iofog-operator/v2
 go 1.15
 
 require (
-	cloud.google.com/go v0.51.0 // indirect
-	github.com/Azure/go-autorest/autorest v0.9.6 // indirect
-	github.com/eapache/channels v1.1.0 // indirect
-	github.com/eapache/queue v1.1.0 // indirect
-	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210305053726-60261529beab
+	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210306092845-4d8568558b5d
 	github.com/go-logr/logr v0.3.0
-	github.com/gorilla/websocket v1.4.1 // indirect
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
-	github.com/onsi/ginkgo v1.14.1 // indirect
-	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/skupperproject/skupper-cli v0.0.1-beta6
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	k8s.io/api v0.19.4
-	k8s.io/apiextensions-apiserver v0.18.6
+	k8s.io/apiextensions-apiserver v0.19.4
 	k8s.io/apimachinery v0.19.4
 	k8s.io/client-go v11.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.6.4
-	sigs.k8s.io/kustomize/kustomize/v3 v3.5.4 // indirect
-	sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e // indirect
 )
 
 replace (

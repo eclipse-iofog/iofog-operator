@@ -23,6 +23,7 @@ import (
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
+	op "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	cond "k8s.io/apimachinery/pkg/api/meta"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-	ctrls "github.com/eclipse-iofog/iofog-operator/v2/controllers"
 )
 
 const (
@@ -56,25 +56,24 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 	r.log = r.Log.WithValues("controlplane", request.NamespacedName)
 
 	// Fetch the ControlPlane control plane
-	err := r.Client.Get(ctx, request.NamespacedName, &r.cp)
-	if err != nil {
+	if err := r.Client.Get(ctx, request.NamespacedName, &r.cp); err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			return ctrls.DoNotRequeue()
+			return op.DoNotRequeue()
 		}
 		// Error reading the object - requeue the request.
-		return ctrls.RequeueWithError(err)
+		return op.RequeueWithError(err)
 	}
 	if cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
 		r.log.Info("Completed Reconciliation")
-		return ctrls.DoNotRequeue()
+		return op.DoNotRequeue()
 	}
 
 	// Error chan for reconcile routines
 	reconcilerCount := 3
-	reconChan := make(chan ctrls.Reconciliation, reconcilerCount)
+	reconChan := make(chan op.Reconciliation, reconcilerCount)
 
 	// Reconcile Router
 	go reconcileRoutine(r.reconcileRouter, reconChan)
@@ -85,25 +84,32 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 	// Reconcile Port Manager
 	go reconcileRoutine(r.reconcilePortManager, reconChan)
 
-	result := ctrl.Result{}
+	finRecon := op.Reconciliation{}
 	for idx := 0; idx < reconcilerCount; idx++ {
 		recon := <-reconChan
 		if recon.Err != nil {
-			if err == nil {
+			if finRecon.Err == nil {
 				// Create new err
-				err = recon.Err
+				finRecon.Err = recon.Err
 			} else {
 				// Append
-				err = fmt.Errorf("%s\n%s", err.Error(), recon.Err.Error())
+				finRecon.Err = fmt.Errorf("%s\n%s", finRecon.Err.Error(), recon.Err.Error())
 			}
 		}
-		// Requeue with largest delay
-		if recon.Result.RequeueAfter > result.RequeueAfter {
-			result = recon.Result
+		// End overrides all
+		if recon.End {
+			finRecon.End = true
+		}
+		// Record largest requeue
+		if recon.Requeue {
+			finRecon.Requeue = true
+			if recon.Delay > finRecon.Delay {
+				finRecon.Delay = recon.Delay
+			}
 		}
 	}
-	if err != nil || result.Requeue {
-		return result, err
+	if finRecon.IsFinal() {
+		return finRecon.Result()
 	}
 
 	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
@@ -116,13 +122,13 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 			},
 		}
 		if err := r.Update(ctx, &r.cp); err != nil {
-			return ctrls.RequeueWithError(err)
+			return op.RequeueWithError(err)
 		}
 		// Update will trigger reconciliation again
-		return ctrls.DoNotRequeue()
+		return op.DoNotRequeue()
 	}
 
-	return ctrls.DoNotRequeue()
+	return op.DoNotRequeue()
 }
 
 func (r *ControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
