@@ -2,19 +2,36 @@ package controllers
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"strings"
-
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
 )
+
+func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool, error) {
+	key := types.NamespacedName{
+		Name:      name,
+		Namespace: namespace,
+	}
+	dep := &appsv1.Deployment{}
+	err := r.Client.Get(context.TODO(), key, dep)
+	if err == nil {
+		return true, nil
+	}
+	if k8serrors.IsNotFound(err) {
+		return false, nil
+	}
+	return false, err
+}
 
 func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 	dep := newDeployment(r.cp.ObjectMeta.Namespace, ms)
@@ -26,7 +43,7 @@ func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 	// Check if this resource already exists
 	found := &appsv1.Deployment{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.Client.Create(context.TODO(), dep)
 		if err != nil {
@@ -79,7 +96,7 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 		// Check if this resource already exists
 		found := &corev1.PersistentVolumeClaim{}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
+		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new PersistentVolumeClaim", "PersistentVolumeClaim.Namespace", pvc.Namespace, "PersistentVolumeClaim.Name", pvc.Name)
 			err = r.Client.Create(context.TODO(), &pvc)
 			if err != nil {
@@ -109,7 +126,7 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 		// Check if this resource already exists
 		found := &corev1.Secret{}
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
+		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
 			err = r.Client.Create(context.TODO(), secret)
 			if err != nil {
@@ -139,7 +156,7 @@ func (r *ControlPlaneReconciler) createService(ms *microservice) error {
 		// Check if this resource already exists
 		found := &corev1.Service{}
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
+		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
 			err = r.Client.Create(context.TODO(), svc)
 			if err != nil {
@@ -188,10 +205,10 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 	// Check if this resource already exists
 	found := &corev1.ServiceAccount{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
 		// TODO: Find out why the IsAlreadyExists() check is necessary here. Happens when CP redeployed
-		if err = r.Client.Create(context.TODO(), svcAcc); err != nil && !errors.IsAlreadyExists(err) {
+		if err = r.Client.Create(context.TODO(), svcAcc); err != nil && !k8serrors.IsAlreadyExists(err) {
 			return err
 		}
 
@@ -217,7 +234,7 @@ func (r *ControlPlaneReconciler) createRole(ms *microservice) error {
 	// Check if this resource already exists
 	found := &rbacv1.Role{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role ", "Role.Namespace", role.Namespace, "Role.Name", role.Name)
 		err = r.Client.Create(context.TODO(), role)
 		if err != nil {
@@ -247,7 +264,7 @@ func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error {
 	// Check if this resource already exists
 	found := &rbacv1.RoleBinding{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role Binding", "RoleBinding.Namespace", crb.Namespace, "RoleBinding.Name", crb.Name)
 		err = r.Client.Create(context.TODO(), crb)
 		if err != nil {
@@ -307,4 +324,12 @@ func (r *ControlPlaneReconciler) createDefaultRouter(iofogClient *iofogclient.Cl
 		return
 	}
 	return
+}
+
+func decodeBase64(encoded string) (string, error) {
+	decodedBytes, err := b64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", err
+	}
+	return string(decodedBytes), nil
 }

@@ -1,15 +1,10 @@
-package controllers
+package operator
 
 import (
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-type Reconciliation struct {
-	Result ctrl.Result
-	Err    error
-}
 
 func DoNotRequeue() (ctrl.Result, error) {
 	return ctrl.Result{}, nil
