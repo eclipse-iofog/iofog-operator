@@ -18,25 +18,16 @@ package controllers
 
 import (
 	"context"
-	b64 "encoding/base64"
-	"fmt"
-	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
 	op "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	cond "k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-)
-
-const (
-	conditionReady = "ready"
 )
 
 // ControlPlaneReconciler reconciles a ControlPlane object
@@ -66,69 +57,14 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 		// Error reading the object - requeue the request.
 		return op.RequeueWithError(err)
 	}
-	if cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
-		r.log.Info("Completed Reconciliation")
-		return op.DoNotRequeue()
+
+	// Reconcile based on state
+	reconciler, err := r.getReconcileFunc()
+	if err != nil {
+		return op.RequeueWithError(err)
 	}
-
-	// Error chan for reconcile routines
-	reconcilerCount := 3
-	reconChan := make(chan op.Reconciliation, reconcilerCount)
-
-	// Reconcile Router
-	go reconcileRoutine(r.reconcileRouter, reconChan)
-
-	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(r.reconcileIofogController, reconChan)
-
-	// Reconcile Port Manager
-	go reconcileRoutine(r.reconcilePortManager, reconChan)
-
-	finRecon := op.Reconciliation{}
-	for idx := 0; idx < reconcilerCount; idx++ {
-		recon := <-reconChan
-		if recon.Err != nil {
-			if finRecon.Err == nil {
-				// Create new err
-				finRecon.Err = recon.Err
-			} else {
-				// Append
-				finRecon.Err = fmt.Errorf("%s\n%s", finRecon.Err.Error(), recon.Err.Error())
-			}
-		}
-		// End overrides all
-		if recon.End {
-			finRecon.End = true
-		}
-		// Record largest requeue
-		if recon.Requeue {
-			finRecon.Requeue = true
-			if recon.Delay > finRecon.Delay {
-				finRecon.Delay = recon.Delay
-			}
-		}
-	}
-	if finRecon.IsFinal() {
-		return finRecon.Result()
-	}
-
-	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
-		// Overwrite
-		r.cp.Status.Conditions = []metav1.Condition{
-			{
-				Type:               conditionReady,
-				Status:             metav1.ConditionTrue,
-				LastTransitionTime: metav1.NewTime(time.Now()),
-			},
-		}
-		if err := r.Update(ctx, &r.cp); err != nil {
-			return op.RequeueWithError(err)
-		}
-		// Update will trigger reconciliation again
-		return op.DoNotRequeue()
-	}
-
-	return op.DoNotRequeue()
+	recon := reconciler()
+	return recon.Result()
 }
 
 func (r *ControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -142,12 +78,4 @@ func (r *ControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cpv2.ControlPlane{}).
 		Complete(r)
-}
-
-func decodeBase64(encoded string) (string, error) {
-	decodedBytes, err := b64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return "", err
-	}
-	return string(decodedBytes), nil
 }

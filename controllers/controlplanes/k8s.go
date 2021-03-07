@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
@@ -323,4 +324,12 @@ func (r *ControlPlaneReconciler) createDefaultRouter(iofogClient *iofogclient.Cl
 		return
 	}
 	return
+}
+
+func decodeBase64(encoded string) (string, error) {
+	decodedBytes, err := b64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", err
+	}
+	return string(decodedBytes), nil
 }
