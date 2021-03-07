@@ -113,6 +113,7 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return op.ReconcileWithError(err)
 		}
+		r.log.Info(fmt.Sprintf("Control Plane %s is ready", r.cp.Name))
 		return op.Reconcile()
 	}
 	return op.Continue()
