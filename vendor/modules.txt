@@ -8,11 +8,13 @@ github.com/cespare/xxhash/v2
 github.com/davecgh/go-spew/spew
 # github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210306092845-4d8568558b5d
 ## explicit
-github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/apps
-github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client
-github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s
-github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator
-github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/util
+# github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-alpha
+## explicit
+github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/apps
+github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client
+github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s
+github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator
+github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/util
 # github.com/evanphx/json-patch v4.9.0+incompatible
 github.com/evanphx/json-patch
 # github.com/fsnotify/fsnotify v1.4.9

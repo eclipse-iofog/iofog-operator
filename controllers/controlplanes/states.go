@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	op "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator"
+	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	cond "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

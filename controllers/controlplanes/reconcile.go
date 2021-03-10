@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s"
-	op "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
+	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s"
+	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
 

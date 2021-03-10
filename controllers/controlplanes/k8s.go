@@ -5,7 +5,7 @@ import (
 	b64 "encoding/base64"
 	"strings"
 
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"

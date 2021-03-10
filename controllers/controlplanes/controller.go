@@ -19,8 +19,8 @@ package controllers
 import (
 	"context"
 
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/client"
-	op "github.com/eclipse-iofog/iofog-go-sdk/v2/pkg/k8s/operator"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
+	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
