@@ -5,9 +5,9 @@ projectName: iofog-operator
 repo: github.com/eclipse-iofog/iofog-operator
 resources:
 - kind: Application
-  version: v2
+  version: v3
 - kind: ControlPlane
-  version: v2
+  version: v3
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
