@@ -34,7 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	appsv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/apps/v2"
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 )
 
 // ApplicationReconciler reconciles a Application object
@@ -51,7 +51,7 @@ func (r *ApplicationReconciler) Reconcile(request ctrl.Request) (ctrl.Result, er
 	ctx := context.Background()
 	log := r.Log.WithValues("application", request.NamespacedName)
 
-	instance := &appsv2.Application{}
+	instance := &appsv3.Application{}
 	err := r.Client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -116,7 +116,7 @@ func (r *ApplicationReconciler) Reconcile(request ctrl.Request) (ctrl.Result, er
 
 func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&appsv2.Application{}).
+		For(&appsv3.Application{}).
 		Complete(r)
 }
 
@@ -134,7 +134,7 @@ func labelsForIOFog(name string) map[string]string {
 	}
 }
 
-func (r *ApplicationReconciler) deploymentForApp(app *appsv2.Application) (*appsv1.Deployment, error) {
+func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*appsv1.Deployment, error) {
 	labels := labelsForIOFog(app.Name)
 
 	microservices, _ := json.Marshal(app.Spec.Microservices)

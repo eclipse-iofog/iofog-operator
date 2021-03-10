@@ -27,7 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 )
 
 // ControlPlaneReconciler reconciles a ControlPlane object
@@ -36,7 +36,7 @@ type ControlPlaneReconciler struct {
 	Log    logr.Logger
 	log    logr.Logger
 	Scheme *runtime.Scheme
-	cp     cpv2.ControlPlane
+	cp     cpv3.ControlPlane
 }
 
 // +kubebuilder:rbac:groups=iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
@@ -76,6 +76,6 @@ func (r *ControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		},
 	})
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cpv2.ControlPlane{}).
+		For(&cpv3.ControlPlane{}).
 		Complete(r)
 }

@@ -2,7 +2,7 @@ OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-PREFIX = github.com/eclipse-iofog/iofog-operator/v2/internal/util
+PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 LDFLAGS += -X $(PREFIX).portManagerTag=2.0.0
 LDFLAGS += -X $(PREFIX).kubeletTag=undef
 LDFLAGS += -X $(PREFIX).proxyTag=2.0.2

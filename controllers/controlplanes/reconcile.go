@@ -12,8 +12,8 @@ import (
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 )
 
 const (
@@ -102,14 +102,14 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 
 	// Get Router or Router Proxy
-	var routerProxy cpv2.RouterIngress
+	var routerProxy cpv3.RouterIngress
 	if strings.EqualFold(r.cp.Spec.Services.Router.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		routerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
-		routerProxy = cpv2.RouterIngress{
-			Ingress: cpv2.Ingress{
+		routerProxy = cpv3.RouterIngress{
+			Ingress: cpv3.Ingress{
 				Address: routerAddr,
 			},
 			MessagePort:  router.MessagePort,

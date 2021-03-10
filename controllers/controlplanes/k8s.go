@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 )
 
 func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool, error) {
@@ -311,7 +311,7 @@ func newInt(val int) *int {
 	return &val
 }
 
-func (r *ControlPlaneReconciler) createDefaultRouter(iofogClient *iofogclient.Client, proxy cpv2.RouterIngress) (err error) {
+func (r *ControlPlaneReconciler) createDefaultRouter(iofogClient *iofogclient.Client, proxy cpv3.RouterIngress) (err error) {
 	routerConfig := iofogclient.Router{
 		Host: proxy.Address,
 		RouterConfig: iofogclient.RouterConfig{

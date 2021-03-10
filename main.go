@@ -27,10 +27,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appsv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/apps/v2"
-	controlplanesv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-	appscontroller "github.com/eclipse-iofog/iofog-operator/v2/controllers/apps"
-	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes"
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	appscontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/apps"
+	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -42,8 +42,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(appsv2.AddToScheme(scheme))
-	utilruntime.Must(controlplanesv2.AddToScheme(scheme))
+	utilruntime.Must(appsv3.AddToScheme(scheme))
+	utilruntime.Must(cpv3.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

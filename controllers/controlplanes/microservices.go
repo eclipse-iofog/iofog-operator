@@ -23,9 +23,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	cpv2 "github.com/eclipse-iofog/iofog-operator/v2/apis/controlplanes/v2"
-	"github.com/eclipse-iofog/iofog-operator/v2/controllers/controlplanes/router"
-	"github.com/eclipse-iofog/iofog-operator/v2/internal/util"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 )
 
 const (
@@ -75,7 +75,7 @@ type controllerMicroserviceConfig struct {
 	imagePullSecret   string
 	serviceType       string
 	loadBalancerAddr  string
-	db                *cpv2.Database
+	db                *cpv3.Database
 	proxyImage        string
 	routerImage       string
 	portProvider      string
