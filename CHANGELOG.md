@@ -1,10 +1,12 @@
 # Changelog
 
-## Develop
+## [v3.0.0-alpha] - 11 March 2021
 
 * Reproduce entire project using Operator Framework v1.3.0
 * Upgrade Operator SDK to 0.15.2 to avoid modules import error
 * Remove Cluster Role Binding from Port Manager
+* Refactor ControlPlane reconciler runtime into more obvious state machine
+* Add Status.Conditions to ControlPlane type and reconciler logic
 
 ## [v2.0.1] - 2020-10-02
 
