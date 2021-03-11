@@ -21,8 +21,8 @@ function testCreateCRD() {
   startTest
   kctl apply -f config/crd/applications.yaml
   kctl apply -f config/crd/controlplanes.yaml
-  kctl get crds | grep controlplane
-  kctl get crds | grep application
+  kctl get crds | grep "controlplanes\.iofog\.org"
+  kctl get crds | grep "apps\.iofog\.org"
   stopTest
 }
 
