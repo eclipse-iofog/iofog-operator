@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 const (
 	loadBalancerTimeout   = 360
 	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
+	errParseControllerURL = "failed to parse Controller endpoint as URL: %s"
 )
 
 func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
@@ -78,9 +80,14 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		return op.ReconcileWithError(err)
 	}
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
+	baseURL := fmt.Sprintf("http://%s:%d/api/v3", host, ctrlPort)
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
+	}
 	iofogClient := iofogclient.New(iofogclient.Options{
-		Timeout:  1,
-		Endpoint: fmt.Sprintf("%s:%d", host, ctrlPort),
+		Timeout: 1,
+		BaseURL: *parsedURL,
 	})
 
 	// Wait for Controller REST API
@@ -132,9 +139,14 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
+		baseURL := fmt.Sprintf("https://%s:%d/api/v3", controllerAddr, ctrlPort)
+		parsedURL, err := url.Parse(baseURL)
+		if err != nil {
+			return op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
+		}
 		iofogClient = iofogclient.New(iofogclient.Options{
-			Endpoint: fmt.Sprintf("%s:%d", controllerAddr, ctrlPort),
-			Timeout:  1,
+			BaseURL: *parsedURL,
+			Timeout: 1,
 		})
 		if _, err = iofogClient.GetStatus(); err != nil {
 			r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s via LoadBalancer: %s", r.cp.Name, err.Error()))
