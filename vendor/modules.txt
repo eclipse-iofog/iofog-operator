@@ -8,7 +8,7 @@ github.com/cespare/xxhash/v2
 github.com/davecgh/go-spew/spew
 # github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210306092845-4d8568558b5d
 ## explicit
-# github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-20210706032736-ecffef4a3548
+# github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-20210709000022-a201df08f941
 ## explicit
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/apps
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client
