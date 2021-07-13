@@ -11,6 +11,7 @@ function waitCmdGrep() {
     STATUS=0
     local LOGS=$(eval "$CMD")
     for TXT in ${TXTS[@]}; do
+      echo "$TXT"
       local FOUND=$(echo "$LOGS" | grep "$TXT")
       log "$TXT"
       log "$FOUND"
