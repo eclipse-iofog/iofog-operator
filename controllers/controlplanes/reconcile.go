@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 const (
 	loadBalancerTimeout   = 360
 	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
+	errParseControllerURL = "failed to parse Controller endpoint as URL (%s): %s"
 )
 
 func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
@@ -78,15 +80,9 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		return op.ReconcileWithError(err)
 	}
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
-	iofogClient := iofogclient.New(iofogclient.Options{
-		Timeout:  1,
-		Endpoint: fmt.Sprintf("%s:%d", host, ctrlPort),
-	})
-
-	// Wait for Controller REST API
-	if _, err = iofogClient.GetStatus(); err != nil {
-		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
-		return op.ReconcileWithRequeue(time.Second * 3)
+	iofogClient, fin := r.getIofogClient(host, ctrlPort)
+	if fin.IsFinal() {
+		return fin
 	}
 
 	// Set up user
@@ -128,21 +124,34 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Wait for Controller LB to actually work
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		controllerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
+		host, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
-		iofogClient = iofogclient.New(iofogclient.Options{
-			Endpoint: fmt.Sprintf("%s:%d", controllerAddr, ctrlPort),
-			Timeout:  1,
-		})
-		if _, err = iofogClient.GetStatus(); err != nil {
-			r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s via LoadBalancer: %s", r.cp.Name, err.Error()))
-			return op.ReconcileWithRequeue(time.Second * 3)
+		// Check LB connection works
+		if _, fin := r.getIofogClient(host, ctrlPort); fin.IsFinal() {
+			return fin
 		}
 	}
 
 	return op.Continue()
+}
+
+func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogclient.Client, op.Reconciliation) {
+	baseURL := fmt.Sprintf("http://%s:%d/api/v3", host, port)
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
+	}
+	iofogClient := iofogclient.New(iofogclient.Options{
+		BaseURL: parsedURL,
+		Timeout: 1,
+	})
+	if _, err = iofogClient.GetStatus(); err != nil {
+		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
+		return nil, op.ReconcileWithRequeue(time.Second * 3)
+	}
+	return iofogClient, op.Continue()
 }
 
 func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {

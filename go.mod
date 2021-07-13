@@ -1,10 +1,9 @@
 module github.com/eclipse-iofog/iofog-operator/v3
 
-go 1.15
+go 1.16
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk/v2 v2.0.0-beta3.0.20210306092845-4d8568558b5d // indirect
-	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-20210315001729-4bfb68b2b2a6
+	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-20210713074357-099a53d65d91
 	github.com/go-logr/logr v0.3.0
 	github.com/skupperproject/skupper-cli v0.0.1-beta6
 	k8s.io/api v0.19.4
