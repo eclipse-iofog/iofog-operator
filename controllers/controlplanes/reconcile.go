@@ -20,7 +20,7 @@ import (
 const (
 	loadBalancerTimeout   = 360
 	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
-	errParseControllerURL = "failed to parse Controller endpoint as URL: %s"
+	errParseControllerURL = "failed to parse Controller endpoint as URL (%s): %s"
 )
 
 func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
@@ -87,7 +87,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 	iofogClient := iofogclient.New(iofogclient.Options{
 		Timeout: 1,
-		BaseURL: *parsedURL,
+		BaseURL: parsedURL,
 	})
 
 	// Wait for Controller REST API
@@ -145,7 +145,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 			return op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
 		}
 		iofogClient = iofogclient.New(iofogclient.Options{
-			BaseURL: *parsedURL,
+			BaseURL: parsedURL,
 			Timeout: 1,
 		})
 		if _, err = iofogClient.GetStatus(); err != nil {

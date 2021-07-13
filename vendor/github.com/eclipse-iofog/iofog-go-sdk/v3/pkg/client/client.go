@@ -14,6 +14,7 @@
 package client
 
 import (
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -27,7 +28,7 @@ type controllerStatus struct {
 }
 
 type Client struct {
-	baseURL     url.URL
+	baseURL     *url.URL
 	accessToken string
 	retries     Retries
 	status      controllerStatus
@@ -35,7 +36,7 @@ type Client struct {
 }
 
 type Options struct {
-	BaseURL url.URL
+	BaseURL *url.URL
 	Retries *Retries
 	Timeout int
 }
@@ -52,6 +53,12 @@ func New(opt Options) *Client {
 		retries: retries,
 		baseURL: opt.BaseURL,
 		timeout: opt.Timeout,
+	}
+	if client.baseURL.Scheme == "" {
+		client.baseURL.Path = "http"
+	}
+	if client.baseURL.Path == "" {
+		client.baseURL.Path = "api/v3"
 	}
 	// Get Controller version
 	if status, err := client.GetStatus(); err == nil {
@@ -135,12 +142,23 @@ func (clt *Client) doRequestWithRetries(currentRetries Retries, method, requestU
 }
 
 func (clt *Client) doRequest(method, requestPath string, request interface{}) ([]byte, error) {
-	// Prepare request
+	// Copy the base URL
 	requestURL, err := url.Parse(clt.baseURL.String())
 	if err != nil {
 		return nil, err
 	}
-	requestURL.Path = path.Join(requestURL.Path, requestPath)
+	// Get query params
+	qpSplit := strings.Split(requestPath, "?")
+	switch len(qpSplit) {
+	case 1:
+		requestURL.Path = path.Join(requestURL.Path, requestPath)
+	case 2:
+		requestURL.Path = path.Join(requestURL.Path, qpSplit[0])
+		requestURL.RawQuery = qpSplit[1]
+	default:
+		return nil, fmt.Errorf("failed to parse request URL %s", requestPath)
+	}
+	// Set headers
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": clt.accessToken,

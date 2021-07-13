@@ -9,7 +9,7 @@ LDFLAGS += -X $(PREFIX).proxyTag=develop
 LDFLAGS += -X $(PREFIX).routerTag=develop
 LDFLAGS += -X $(PREFIX).controllerTag=develop
 LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
-GO_SDK_MODULE = iofog-go-sdk/v3@a201df08f94157943c3085a209ca095aee6929e1
+GO_SDK_MODULE = iofog-go-sdk/v3@develop
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
