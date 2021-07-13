@@ -139,7 +139,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
-		baseURL := fmt.Sprintf("https://%s:%d/api/v3", controllerAddr, ctrlPort)
+		baseURL := fmt.Sprintf("http://%s:%d/api/v3", controllerAddr, ctrlPort)
 		parsedURL, err := url.Parse(baseURL)
 		if err != nil {
 			return op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
