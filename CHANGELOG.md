@@ -1,6 +1,10 @@
 # Changelog
 
-## [v3.0.0-alpha] - 11 March 2021
+## [v3.0.0-alpha2] - 28 July 2021
+
+* Support for Base URLs for ioFog Controllers
+
+## [v3.0.0-alpha1] - 11 March 2021
 
 * Reproduce entire project using Operator Framework v1.3.0
 * Upgrade Operator SDK to 0.15.2 to avoid modules import error
