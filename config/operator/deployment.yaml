@@ -21,6 +21,7 @@ spec:
         args:
         - --enable-leader-election
         image: gcr.io/focal-freedom-236620/operator:develop
+        imagePullPolicy: Always
         name: iofog-operator
         env:
         - name: WATCH_NAMESPACE

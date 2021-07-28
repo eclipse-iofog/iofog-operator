@@ -4,7 +4,7 @@ Operator is a component of the ioFog Kubernetes Control Plane. It is responsible
 
 ## Build from Source
 
-Go 1.15+ is a prerequisite.
+Go 1.16+ is a prerequisite.
 
 See all `make` commands by running:
 ```

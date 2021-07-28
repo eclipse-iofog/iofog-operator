@@ -39,7 +39,9 @@ function testDeployOperator() {
     'Starting Controller	{"reconcilerGroup": "iofog.org", "reconcilerKind": "ControlPlane", "controller": "controlplane"}'
     'Starting workers	{"reconcilerGroup": "iofog.org", "reconcilerKind": "ControlPlane", "controller": "controlplane", "worker count": 1}'
   )
-  waitCmdGrep 30 "kctl logs -l name=iofog-operator" ${TXTS[@]}
+  for TXT in "${TXTS[@]}"; do
+    waitCmdGrep 30 "kctl logs -l name=iofog-operator" "$TXT"
+  done
   stopTest
 }
 
@@ -49,7 +51,9 @@ function testCreateControlplane() {
   local TXTS=(
     "Successfully Reconciled	{\"reconcilerGroup\": \"iofog.org\", \"reconcilerKind\": \"ControlPlane\", \"controller\": \"controlplane\", \"name\": \"iofog\", \"namespace\": \"$NAMESPACE\"}"
   )
-  waitCmdGrep 180 "kctl logs -l name=iofog-operator" ${TXTS[@]}
+  for TXT in "${TXTS[@]}"; do
+    waitCmdGrep 180 "kctl logs -l name=iofog-operator" "$TXT"
+  done
   kctl wait --for=condition=Ready pods -l name=controller --timeout 1m
   kctl wait --for=condition=Ready pods -l name=port-manager --timeout 1m
   kctl wait --for=condition=Ready pods -l name=router --timeout 1m
