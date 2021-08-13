@@ -1,5 +1,9 @@
 # Changelog
 
+## [v3.0.0-beta1] - 13 August 2021
+
+* No changes since alpha2
+
 ## [v3.0.0-alpha2] - 28 July 2021
 
 * Support for Base URLs for ioFog Controllers
