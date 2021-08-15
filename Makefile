@@ -3,13 +3,13 @@ OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
-LDFLAGS += -X $(PREFIX).portManagerTag=2.0.0
-LDFLAGS += -X $(PREFIX).kubeletTag=undef
-LDFLAGS += -X $(PREFIX).proxyTag=2.0.2
-LDFLAGS += -X $(PREFIX).routerTag=2.0.1
-LDFLAGS += -X $(PREFIX).controllerTag=2.0.1
+LDFLAGS += -X $(PREFIX).portManagerTag=v3.0.0-beta1
+LDFLAGS += -X $(PREFIX).kubeletTag=v3.0.0-beta1
+LDFLAGS += -X $(PREFIX).proxyTag=v3.0.0-beta1
+LDFLAGS += -X $(PREFIX).routerTag=v3.0.0-beta1
+LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
-GO_SDK_MODULE = iofog-go-sdk/v3@v3.0.0-alpha2
+GO_SDK_MODULE = iofog-go-sdk/v3@v3.0.0-beta1
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
