@@ -28,6 +28,9 @@ func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconcil
 }
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
+	// feature/ingress: Here new ControllerIngress fields in r.cp.Spec will be used to create Ingress Controllers + Rules
+	// feature/ingress: Note we have code for deploying Kong for this purpose I can provide
+
 	// Configure Controller
 	ms := newControllerMicroservice(&controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,

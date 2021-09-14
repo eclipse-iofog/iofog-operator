@@ -42,7 +42,7 @@ type Replicas struct {
 }
 
 type Services struct {
-	Controller Service `json:"controller,omitempty"`
+	Controller Service `json:"controller,omitempty"` // feature/ingress: This should be ClusterIP
 	Router     Service `json:"router,omitempty"`
 	Proxy      Service `json:"proxy,omitempty"`
 }
@@ -87,6 +87,10 @@ type Ingress struct {
 	Address string `json:"address,omitempty"`
 }
 
+// feature/ingress: These are used to inform operator of existing ingresses/hostnames
+// feature/ingress: We might want to rename this to ExternalIngresses
+// feature/ingress: We might want to add a struct that represents Ingresses which the Operator manages (e.g for Controller)
+// feature/ingress: ControllerIngress type which specifies whether TLS is enabled or not
 type Ingresses struct {
 	Router    RouterIngress `json:"router,omitempty"`
 	HTTPProxy Ingress       `json:"httpProxy,omitempty"`
