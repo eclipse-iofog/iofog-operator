@@ -77,7 +77,7 @@ type User struct {
 }
 
 type RouterIngress struct {
-	Ingress
+	Ingress      `json:""`
 	MessagePort  int `json:"messagePort,omitempty"`
 	InteriorPort int `json:"interiorPort,omitempty"`
 	EdgePort     int `json:"edgePort,omitempty"`

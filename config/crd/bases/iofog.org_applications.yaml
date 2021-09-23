@@ -1,0 +1,268 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: applications.iofog.org
+spec:
+  group: iofog.org
+  names:
+    kind: Application
+    listKind: ApplicationList
+    plural: applications
+    singular: application
+  scope: Namespaced
+  versions:
+  - name: v3
+    schema:
+      openAPIV3Schema:
+        description: Application is the Schema for the applications API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ApplicationSpec defines the desired state of Application
+            properties:
+              microservices:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "operator-sdk generate k8s" to regenerate code after
+                  modifying this file Add custom validation using kubebuilder tags:
+                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                items:
+                  description: Microservice contains information for configuring a
+                    microservice
+                  properties:
+                    agent:
+                      description: MicroserviceAgent contains information about required
+                        agent configuration for a microservice
+                      properties:
+                        config:
+                          properties:
+                            abstractedHardwareEnabled:
+                              type: boolean
+                            bluetoothEnabled:
+                              type: boolean
+                            changeFrequency: {}
+                            cpuLimit:
+                              format: int64
+                              type: integer
+                            deviceScanFrequency: {}
+                            diskDirectory:
+                              type: string
+                            diskLimit:
+                              format: int64
+                              type: integer
+                            dockerUrl:
+                              type: string
+                            logDirectory:
+                              type: string
+                            logFileCount:
+                              format: int64
+                              type: integer
+                            logLimit:
+                              format: int64
+                              type: integer
+                            memoryLimit:
+                              format: int64
+                              type: integer
+                            networkRouter:
+                              type: string
+                            routerMode:
+                              type: string
+                            routerPort:
+                              type: integer
+                            statusFrequency: {}
+                            upstreamRouters:
+                              items:
+                                type: string
+                              type: array
+                            watchdogEnabled:
+                              type: boolean
+                          type: object
+                        name:
+                          type: string
+                      required:
+                      - config
+                      - name
+                      type: object
+                    application:
+                      type: string
+                    config: {}
+                    container:
+                      description: MicroserviceContainer contains information for
+                        configuring a microservice container
+                      properties:
+                        commands:
+                          items:
+                            type: string
+                          type: array
+                        env:
+                          items:
+                            properties:
+                              key:
+                                type: string
+                              value:
+                                type: string
+                            required:
+                            - key
+                            - value
+                            type: object
+                          type: array
+                        extraHosts:
+                          items:
+                            properties:
+                              address:
+                                type: string
+                              name:
+                                type: string
+                              value:
+                                type: string
+                            type: object
+                          type: array
+                        ports:
+                          items:
+                            properties:
+                              external: {}
+                              host:
+                                type: string
+                              internal: {}
+                              protocol:
+                                type: string
+                              publicLink:
+                                type: string
+                              publicPort: {}
+                            required:
+                            - external
+                            - host
+                            - internal
+                            - protocol
+                            - publicLink
+                            - publicPort
+                            type: object
+                          type: array
+                        rootHostAccess: {}
+                        volumes:
+                          items:
+                            properties:
+                              accessMode:
+                                type: string
+                              containerDestination:
+                                type: string
+                              hostDestination:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - accessMode
+                            - containerDestination
+                            - hostDestination
+                            type: object
+                          type: array
+                      required:
+                      - ports
+                      - rootHostAccess
+                      type: object
+                    created:
+                      type: string
+                    flow:
+                      type: string
+                    images:
+                      description: MicroserviceImages contains information about the
+                        images for a microservice
+                      properties:
+                        arm:
+                          type: string
+                        catalogId:
+                          type: integer
+                        registry:
+                          type: string
+                        x86:
+                          type: string
+                      required:
+                      - arm
+                      - catalogId
+                      - registry
+                      - x86
+                      type: object
+                    name:
+                      type: string
+                    rebuild: {}
+                    uuid:
+                      type: string
+                  required:
+                  - agent
+                  - config
+                  - name
+                  - uuid
+                  type: object
+                type: array
+              replicas:
+                format: int32
+                type: integer
+              routes:
+                items:
+                  description: Route contains information about a route from one microservice
+                    to another
+                  properties:
+                    from:
+                      type: string
+                    name:
+                      type: string
+                    to:
+                      type: string
+                  required:
+                  - from
+                  - name
+                  - to
+                  type: object
+                type: array
+            required:
+            - microservices
+            - replicas
+            - routes
+            type: object
+          status:
+            description: ApplicationStatus defines the observed state of Application
+            properties:
+              labelSelector:
+                type: string
+              podNames:
+                items:
+                  type: string
+                type: array
+              replicas:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                  code after modifying this file Add custom validation using kubebuilder
+                  tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                format: int32
+                type: integer
+            required:
+            - labelSelector
+            - podNames
+            - replicas
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
