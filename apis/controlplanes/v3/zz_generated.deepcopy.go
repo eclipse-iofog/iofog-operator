@@ -89,10 +89,10 @@ func (in *ControlPlaneSpec) DeepCopyInto(out *ControlPlaneSpec) {
 	*out = *in
 	out.User = in.User
 	out.Database = in.Database
+	out.Ingresses = in.Ingresses
 	out.Services = in.Services
 	out.Replicas = in.Replicas
 	out.Images = in.Images
-	out.Ingresses = in.Ingresses
 	out.Controller = in.Controller
 }
 

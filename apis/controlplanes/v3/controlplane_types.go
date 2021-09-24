@@ -28,12 +28,19 @@ type ControlPlaneSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	User       User       `json:"user"`
-	Database   Database   `json:"database,omitempty"`
-	Services   Services   `json:"services,omitempty"`
-	Replicas   Replicas   `json:"replicas,omitempty"`
-	Images     Images     `json:"images,omitempty"`
-	Ingresses  Ingresses  `json:"ingresses,omitempty"`
+	// User contains credentials for ioFog Controller
+	User User `json:"user"`
+	// Database is only used when ioFog Controller is configured to connect to an extrenal DB
+	Database Database `json:"database,omitempty"`
+	// Ingresses allow Router and Port Manager to configure endpoint addresses correctly
+	Ingresses Ingresses `json:"ingresses,omitempty"`
+	// Services should be LoadBalancer unless Ingress is being configured
+	Services Services `json:"services,omitempty"`
+	// Replicas of ioFog Controller should be 1 unless an external DB is configured
+	Replicas Replicas `json:"replicas,omitempty"`
+	// Images specifies which containers to run for each component of the ControlPlane
+	Images Images `json:"images,omitempty"`
+	// Controller contains runtime configuration for ioFog Controller
 	Controller Controller `json:"controller,omitempty"`
 }
 
