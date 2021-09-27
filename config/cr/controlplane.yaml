@@ -29,7 +29,6 @@ spec:
     databaseName: ""
   images:
     pullSecret: ""
-    kubelet: ""
     controller: ""
     router: ""
     portManager: ""
@@ -37,7 +36,6 @@ spec:
   ingresses:
     router:
       address: ""
-      httpPort: 0
       messagePort: 0
       interiorPort: 0
       edgePort: 0
@@ -45,9 +43,6 @@ spec:
       address: ""
     tcpProxy:
       address: ""
-      tcpAllocatorPort: 0
-      tcpAllocatorHost: ""
-      ecnId: 0
   controller:
     pidBaseDir: ""
     ecnViewerPort: 0
