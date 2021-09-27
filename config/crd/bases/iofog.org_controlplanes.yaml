@@ -93,6 +93,8 @@ spec:
                     type: object
                   router:
                     properties:
+                      address:
+                        type: string
                       edgePort:
                         type: integer
                       interiorPort:
