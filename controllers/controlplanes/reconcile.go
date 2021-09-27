@@ -105,9 +105,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 			return op.ReconcileWithError(err)
 		}
 		routerProxy = cpv3.RouterIngress{
-			Ingress: cpv3.Ingress{
-				Address: routerAddr,
-			},
+			Address:      routerAddr,
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
 			EdgePort:     router.EdgePort,
