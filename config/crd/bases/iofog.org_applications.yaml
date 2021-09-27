@@ -55,11 +55,15 @@ spec:
                               type: boolean
                             bluetoothEnabled:
                               type: boolean
-                            changeFrequency: {}
+                            changeFrequency:
+                              format: int64
+                              type: integer
                             cpuLimit:
                               format: int64
                               type: integer
-                            deviceScanFrequency: {}
+                            deviceScanFrequency:
+                              format: int64
+                              type: integer
                             diskDirectory:
                               type: string
                             diskLimit:
@@ -84,7 +88,9 @@ spec:
                               type: string
                             routerPort:
                               type: integer
-                            statusFrequency: {}
+                            statusFrequency:
+                              format: int64
+                              type: integer
                             upstreamRouters:
                               items:
                                 type: string
@@ -100,7 +106,8 @@ spec:
                       type: object
                     application:
                       type: string
-                    config: {}
+                    # TODO: map[string]string
+                    # config: {}
                     container:
                       description: MicroserviceContainer contains information for
                         configuring a microservice container
@@ -135,15 +142,18 @@ spec:
                         ports:
                           items:
                             properties:
-                              external: {}
+                              external:
+                                type: integer
                               host:
                                 type: string
-                              internal: {}
+                              internal:
+                                type: integer
                               protocol:
                                 type: string
                               publicLink:
                                 type: string
-                              publicPort: {}
+                              publicPort:
+                                type: integer
                             required:
                             - external
                             - host
@@ -153,7 +163,8 @@ spec:
                             - publicPort
                             type: object
                           type: array
-                        rootHostAccess: {}
+                        rootHostAccess:
+                          type: boolean
                         volumes:
                           items:
                             properties:
@@ -199,7 +210,8 @@ spec:
                       type: object
                     name:
                       type: string
-                    rebuild: {}
+                    rebuild:
+                      type: boolean
                     uuid:
                       type: string
                   required:
