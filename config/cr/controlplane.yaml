@@ -1,4 +1,4 @@
-apiVersion: iofog.org/v2
+apiVersion: iofog.org/v3
 kind: ControlPlane
 metadata:
   name: iofog
