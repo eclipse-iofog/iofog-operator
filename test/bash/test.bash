@@ -20,6 +20,7 @@ function testDeleteNamespace() {
 function testCreateCRD() {
   startTest
   kctl apply -f config/crd/bases/iofog.org_applications.yaml
+  kctl apply -f config/crd/bases/iofog.org_controlplanes.yaml
   kctl get crds | grep "controlplanes\.iofog\.org"
   kctl get crds | grep "apps\.iofog\.org"
   stopTest
