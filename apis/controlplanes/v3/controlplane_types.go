@@ -17,8 +17,10 @@ limitations under the License.
 package v3
 
 import (
+	"fmt"
 	"time"
 
+	cond "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -136,15 +138,21 @@ type ControlPlane struct {
 
 func (cp *ControlPlane) setCondition(conditionType string) {
 	now := metav1.NewTime(time.Now())
+	// Clear all
 	for idx := range cp.Status.Conditions {
 		condition := &cp.Status.Conditions[idx]
-		if condition.Type == conditionType {
-			condition.Status = metav1.ConditionTrue
-		} else {
-			condition.Status = metav1.ConditionFalse
-		}
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = fmt.Sprintf("transition to %s", conditionType)
 		condition.LastTransitionTime = now
 	}
+	// Add / overwrite
+	newCondition := metav1.Condition{
+		Type:               conditionType,
+		Status:             metav1.ConditionTrue,
+		Reason:             "",
+		LastTransitionTime: now,
+	}
+	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
 }
 
 func (cp *ControlPlane) SetConditionDeploying() {
