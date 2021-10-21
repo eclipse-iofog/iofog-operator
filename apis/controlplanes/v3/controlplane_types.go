@@ -134,24 +134,25 @@ type ControlPlane struct {
 	Status ControlPlaneStatus `json:"status,omitempty"`
 }
 
-func (cp *ControlPlane) SetConditionDeploying() {
-	cp.Status.Conditions = []metav1.Condition{
-		{
-			Type:               conditionDeploying,
-			Status:             metav1.ConditionTrue,
-			LastTransitionTime: metav1.NewTime(time.Now()),
-		},
+func (cp *ControlPlane) setCondition(conditionType string) {
+	now := metav1.NewTime(time.Now())
+	for idx := range cp.Status.Conditions {
+		condition := &cp.Status.Conditions[idx]
+		if condition.Type == conditionType {
+			condition.Status = metav1.ConditionTrue
+		} else {
+			condition.Status = metav1.ConditionFalse
+		}
+		condition.LastTransitionTime = now
 	}
 }
 
+func (cp *ControlPlane) SetConditionDeploying() {
+	cp.setCondition(conditionDeploying)
+}
+
 func (cp *ControlPlane) SetConditionReady() {
-	cp.Status.Conditions = []metav1.Condition{
-		{
-			Type:               conditionReady,
-			Status:             metav1.ConditionTrue,
-			LastTransitionTime: metav1.NewTime(time.Now()),
-		},
-	}
+	cp.setCondition(conditionReady)
 }
 
 func (cp *ControlPlane) GetCondition() string {
