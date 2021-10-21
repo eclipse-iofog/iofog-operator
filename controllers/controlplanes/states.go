@@ -19,36 +19,20 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
-	cond "k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-const (
-	conditionReady     = "ready"
-	conditionDeploying = "" // Update iofogctl etc to set default state
 )
 
 type reconcileFunc = func() op.Reconciliation
 
 func (r *ControlPlaneReconciler) getReconcileFunc() (reconcileFunc, error) {
-	state := ""
-	for _, condition := range r.cp.Status.Conditions {
-		if condition.Status == metav1.ConditionTrue {
-			state = condition.Type
-			break
-		}
-	}
-	switch state {
-	case conditionReady:
+	if r.cp.IsReady() {
 		return r.reconcileReady, nil
-	case conditionDeploying:
-		return r.reconcileDeploying, nil
-	default:
-		return nil, fmt.Errorf("invalid state %s for ECN %s", state, r.cp.Name)
 	}
+	if r.cp.IsDeploying() {
+		return r.reconcileDeploying, nil
+	}
+	return nil, fmt.Errorf("invalid state %s for ECN %s", r.cp.GetCondition(), r.cp.Name)
 }
 
 func (r *ControlPlaneReconciler) reconcileReady() op.Reconciliation {
@@ -101,15 +85,8 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 	}
 
 	// deploying -> ready
-	if !cond.IsStatusConditionPresentAndEqual(r.cp.Status.Conditions, conditionReady, metav1.ConditionTrue) {
-		// Overwrite
-		r.cp.Status.Conditions = []metav1.Condition{
-			{
-				Type:               conditionReady,
-				Status:             metav1.ConditionTrue,
-				LastTransitionTime: metav1.NewTime(time.Now()),
-			},
-		}
+	if r.cp.IsDeploying() {
+		r.cp.SetConditionReady()
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return op.ReconcileWithError(err)
 		}

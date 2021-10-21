@@ -17,7 +17,14 @@ limitations under the License.
 package v3
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	conditionReady     = "ready"
+	conditionDeploying = "" // Update iofogctl etc to set default state
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -125,6 +132,45 @@ type ControlPlane struct {
 
 	Spec   ControlPlaneSpec   `json:"spec,omitempty"`
 	Status ControlPlaneStatus `json:"status,omitempty"`
+}
+
+func (cp *ControlPlane) SetConditionDeploying() {
+	cp.Status.Conditions = []metav1.Condition{
+		{
+			Type:               conditionDeploying,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		},
+	}
+}
+
+func (cp *ControlPlane) SetConditionReady() {
+	cp.Status.Conditions = []metav1.Condition{
+		{
+			Type:               conditionReady,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		},
+	}
+}
+
+func (cp *ControlPlane) GetCondition() string {
+	state := ""
+	for _, condition := range cp.Status.Conditions {
+		if condition.Status == metav1.ConditionTrue {
+			state = condition.Type
+			break
+		}
+	}
+	return state
+}
+
+func (cp *ControlPlane) IsReady() bool {
+	return cp.GetCondition() == conditionReady
+}
+
+func (cp *ControlPlane) IsDeploying() bool {
+	return cp.GetCondition() == conditionDeploying
 }
 
 // +kubebuilder:object:root=true
