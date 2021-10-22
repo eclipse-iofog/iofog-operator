@@ -141,9 +141,11 @@ func (cp *ControlPlane) setCondition(conditionType string) {
 	// Clear all
 	for idx := range cp.Status.Conditions {
 		condition := &cp.Status.Conditions[idx]
-		condition.Status = metav1.ConditionFalse
-		condition.Reason = fmt.Sprintf("transition to %s", conditionType)
-		condition.LastTransitionTime = now
+		if condition.Status == metav1.ConditionTrue {
+			condition.Status = metav1.ConditionFalse
+			condition.Reason = fmt.Sprintf("transition to %s", conditionType)
+			condition.LastTransitionTime = now
+		}
 	}
 	// Add / overwrite
 	newCondition := metav1.Condition{
