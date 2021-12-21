@@ -244,15 +244,20 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	}
 
 	// Create secrets
+	r.log.Info(fmt.Sprintf("Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
 	if err := r.createSecrets(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create secrets %v for router reconcile for Controlplane %s", err, r.cp.Name))
 		return op.ReconcileWithError(err)
 	}
 
 	// Deployment
+	r.log.Info(fmt.Sprintf("Creating deployment for router reconcile for Controlplane %s", r.cp.Name))
 	if err := r.createDeployment(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create deployment %v for router reconcile for Controlplane %s", err, r.cp.Name))
 		return op.ReconcileWithError(err)
 	}
 
+	r.log.Info(fmt.Sprintf("op.Continue for router reconcile for Controlplane %s", r.cp.Name))
 	return op.Continue()
 }
 
@@ -279,7 +284,7 @@ func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address s
 		ms.secrets = append(ms.secrets, secret)
 	}
 
-	r.log.Info(fmt.Sprintf("Secrets generated %v for Controlplane %s", ms.secrets, r.cp.Name))
+	r.log.Info(fmt.Sprintf("Secrets generated for Controlplane %s", r.cp.Name))
 	return err
 }
 
