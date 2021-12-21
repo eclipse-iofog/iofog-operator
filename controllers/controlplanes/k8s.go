@@ -117,6 +117,12 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 }
 
 func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
+	defer func() {
+		if recoverResult := recover(); recoverResult != nil {
+			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for Controlplane %s", recoverResult, r.cp.Name))
+
+		}
+	}()
 	for idx := range ms.secrets {
 		secret := &ms.secrets[idx]
 		r.log.Info(fmt.Sprintf("Creating secret %v", secret))
