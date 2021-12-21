@@ -262,7 +262,7 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 }
 
 func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address string) (err error) {
-	r.log.Info(fmt.Sprintf("Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
+	r.log.Info(fmt.Sprintf("Creating routerSecrets definition for router reconcile for Controlplane %s", r.cp.Name))
 	defer func() {
 		if recoverResult := recover(); recoverResult != nil {
 			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for router reconcile for Controlplane %s", recoverResult, r.cp.Name))
