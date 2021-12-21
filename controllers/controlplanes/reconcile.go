@@ -232,17 +232,8 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	}
 
 	// Secrets
-	// CA
-	caName := "router-ca"
-	caSecret := certs.GenerateCASecret(caName, caName)
-	caSecret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
-	ms.secrets = append(ms.secrets, caSecret)
-
-	// AMQPS and Internal
-	for _, suffix := range []string{"amqps", "internal"} {
-		secret := certs.GenerateSecret("router-"+suffix, address, address, &caSecret)
-		secret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
-		ms.secrets = append(ms.secrets, secret)
+	if err = r.createRouterSecrets(ms, address); err != nil {
+		return op.ReconcileWithError(err)
 	}
 
 	// Create secrets
@@ -256,6 +247,27 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	}
 
 	return op.Continue()
+}
+
+func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("createRouterSecrets failed: %v", r)
+		}
+	}()
+	// CA
+	caName := "router-ca"
+	caSecret := certs.GenerateCASecret(caName, caName)
+	caSecret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
+	ms.secrets = append(ms.secrets, caSecret)
+
+	// AMQPS and Internal
+	for _, suffix := range []string{"amqps", "internal"} {
+		secret := certs.GenerateSecret("router-"+suffix, address, address, &caSecret)
+		secret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
+		ms.secrets = append(ms.secrets, secret)
+	}
+	return err
 }
 
 func newK8sClient() (*k8sclient.Client, error) {
