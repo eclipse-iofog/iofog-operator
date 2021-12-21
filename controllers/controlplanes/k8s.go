@@ -124,7 +124,7 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 	}()
 	for idx := range ms.secrets {
 		secret := &ms.secrets[idx]
-		r.log.Info(fmt.Sprintf("Creating secret %v", secret))
+		r.log.Info(fmt.Sprintf("Creating secret %s", secret.ObjectMeta.Name))
 		// Set ControlPlane instance as the owner and controller
 		r.log.Info(fmt.Sprintf("Setting owner reference for secret %s", secret.ObjectMeta.Name))
 		if err := controllerutil.SetControllerReference(&r.cp, secret, r.Scheme); err != nil {
@@ -136,7 +136,7 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 		r.log.Info(fmt.Sprintf("Checking if secret %s exists", secret.ObjectMeta.Name))
 		found := &corev1.Secret{}
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
-		r.log.Info(fmt.Sprintf("secret %s: Exists: %v Error: %v", secret.ObjectMeta.Name, found, err))
+		r.log.Info(fmt.Sprintf("secret %s: Exists: %s Error: %v", secret.ObjectMeta.Name, found.Name, err))
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
 			err = r.Client.Create(context.TODO(), secret)
