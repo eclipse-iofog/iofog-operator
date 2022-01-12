@@ -354,7 +354,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 								LocalObjectReference: corev1.LocalObjectReference{
 									Name: controllerCredentialsSecretName,
 								},
-								Key: passwordSecretKey,
+								Key: emailSecretKey,
 							},
 						},
 					},
@@ -365,7 +365,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 								LocalObjectReference: corev1.LocalObjectReference{
 									Name: controllerCredentialsSecretName,
 								},
-								Key: emailSecretKey,
+								Key: passwordSecretKey,
 							},
 						},
 					},
