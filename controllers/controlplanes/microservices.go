@@ -290,8 +290,10 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 		},
 		secrets: []corev1.Secret{
 			{
+				Type: corev1.SecretTypeOpaque,
 				ObjectMeta: metav1.ObjectMeta{
-					Name: controllerCredentialsSecretName,
+					Namespace: cfg.watchNamespace,
+					Name:      controllerCredentialsSecretName,
 				},
 				StringData: map[string]string{
 					emailSecretKey:    cfg.userEmail,
