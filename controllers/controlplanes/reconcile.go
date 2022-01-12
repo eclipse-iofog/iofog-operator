@@ -179,6 +179,14 @@ func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {
 	if err := r.createRoleBinding(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
+
+	// Create secrets
+	r.log.Info(fmt.Sprintf("Creating secrets for port-manager reconcile for Controlplane %s", r.cp.Name))
+	if err := r.createSecrets(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create secrets %v for port-manager reconcile for Controlplane %s", err, r.cp.Name))
+		return op.ReconcileWithError(err)
+	}
+
 	// Deployment
 	if err := r.createDeployment(ms); err != nil {
 		return op.ReconcileWithError(err)
