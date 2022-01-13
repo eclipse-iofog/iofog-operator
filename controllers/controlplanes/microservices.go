@@ -21,6 +21,7 @@ import (
 	// "k8s.io/apimachinery/pkg/api/resource"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
@@ -29,8 +30,11 @@ import (
 )
 
 const (
-	routerName     = "router"
-	controllerName = "controller"
+	routerName                      = "router"
+	controllerName                  = "controller"
+	controllerCredentialsSecretName = "controller-credentials"
+	emailSecretKey                  = "email"
+	passwordSecretKey               = "password"
 )
 
 type service struct {
@@ -284,6 +288,19 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				Resources: []string{"deployments", "services", "pods", "configmaps"},
 			},
 		},
+		secrets: []corev1.Secret{
+			{
+				Type: corev1.SecretTypeOpaque,
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: cfg.watchNamespace,
+					Name:      controllerCredentialsSecretName,
+				},
+				StringData: map[string]string{
+					emailSecretKey:    cfg.userEmail,
+					passwordSecretKey: cfg.userPass,
+				},
+			},
+		},
 		containers: []container{
 			{
 				name:            "port-manager",
@@ -331,12 +348,26 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 						Value: "port-manager",
 					},
 					{
-						Name:  "IOFOG_USER_EMAIL",
-						Value: cfg.userEmail,
+						Name: "IOFOG_USER_EMAIL",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerCredentialsSecretName,
+								},
+								Key: emailSecretKey,
+							},
+						},
 					},
 					{
-						Name:  "IOFOG_USER_PASS",
-						Value: cfg.userPass,
+						Name: "IOFOG_USER_PASS",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerCredentialsSecretName,
+								},
+								Key: passwordSecretKey,
+							},
+						},
 					},
 					{
 						Name:  "PROXY_IMAGE",

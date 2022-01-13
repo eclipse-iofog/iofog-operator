@@ -105,9 +105,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 			return op.ReconcileWithError(err)
 		}
 		routerProxy = cpv3.RouterIngress{
-			Ingress: cpv3.Ingress{
-				Address: routerAddr,
-			},
+			Address:      routerAddr,
 			MessagePort:  router.MessagePort,
 			InteriorPort: router.InteriorPort,
 			EdgePort:     router.EdgePort,
@@ -123,6 +121,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 
 	// Wait for Controller LB to actually work
+
+	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		host, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
 		if err != nil {
@@ -130,10 +130,12 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		}
 		// Check LB connection works
 		if _, fin := r.getIofogClient(host, ctrlPort); fin.IsFinal() {
+			r.log.Info(fmt.Sprintf("LB Connection works for ControlPlane %s", r.cp.Name))
 			return fin
 		}
 	}
 
+	r.log.Info(fmt.Sprintf("op.Continue in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
 	return op.Continue()
 }
 
@@ -177,6 +179,14 @@ func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {
 	if err := r.createRoleBinding(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
+
+	// Create secrets
+	r.log.Info(fmt.Sprintf("Creating secrets for port-manager reconcile for Controlplane %s", r.cp.Name))
+	if err := r.createSecrets(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create secrets %v for port-manager reconcile for Controlplane %s", err, r.cp.Name))
+		return op.ReconcileWithError(err)
+	}
+
 	// Deployment
 	if err := r.createDeployment(ms); err != nil {
 		return op.ReconcileWithError(err)
@@ -220,6 +230,8 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	}
 
 	// Wait for external IP of LB Service
+
+	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in router reconcile for ControlPlane %s", r.cp.Name))
 	address := ""
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
@@ -232,32 +244,56 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 		err = fmt.Errorf("reconcile Router failed: %s", errProxyRouterMissing)
 		return op.ReconcileWithError(err)
 	}
+	r.log.Info(fmt.Sprintf("Found address %s for router reconcile for Controlplane %s", address, r.cp.Name))
 
 	// Secrets
+	if err = r.createRouterSecrets(ms, address); err != nil {
+		return op.ReconcileWithError(err)
+	}
+
+	// Create secrets
+	r.log.Info(fmt.Sprintf("Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
+	if err := r.createSecrets(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create secrets %v for router reconcile for Controlplane %s", err, r.cp.Name))
+		return op.ReconcileWithError(err)
+	}
+
+	// Deployment
+	r.log.Info(fmt.Sprintf("Creating deployment for router reconcile for Controlplane %s", r.cp.Name))
+	if err := r.createDeployment(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create deployment %v for router reconcile for Controlplane %s", err, r.cp.Name))
+		return op.ReconcileWithError(err)
+	}
+
+	r.log.Info(fmt.Sprintf("op.Continue for router reconcile for Controlplane %s", r.cp.Name))
+	return op.Continue()
+}
+
+func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address string) (err error) {
+	r.log.Info(fmt.Sprintf("Creating routerSecrets definition for router reconcile for Controlplane %s", r.cp.Name))
+	defer func() {
+		if recoverResult := recover(); recoverResult != nil {
+			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for router reconcile for Controlplane %s", recoverResult, r.cp.Name))
+			err = fmt.Errorf("createRouterSecrets failed: %v", recoverResult)
+		}
+	}()
 	// CA
 	caName := "router-ca"
+	r.log.Info(fmt.Sprintf("Generating CA Secret secrets for router reconcile for Controlplane %s", r.cp.Name))
 	caSecret := certs.GenerateCASecret(caName, caName)
 	caSecret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
 	ms.secrets = append(ms.secrets, caSecret)
 
 	// AMQPS and Internal
 	for _, suffix := range []string{"amqps", "internal"} {
+		r.log.Info(fmt.Sprintf("Generating %s Secret secrets for router reconcile for Controlplane %s", suffix, r.cp.Name))
 		secret := certs.GenerateSecret("router-"+suffix, address, address, &caSecret)
 		secret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
 		ms.secrets = append(ms.secrets, secret)
 	}
 
-	// Create secrets
-	if err := r.createSecrets(ms); err != nil {
-		return op.ReconcileWithError(err)
-	}
-
-	// Deployment
-	if err := r.createDeployment(ms); err != nil {
-		return op.ReconcileWithError(err)
-	}
-
-	return op.Continue()
+	r.log.Info(fmt.Sprintf("Secrets generated for Controlplane %s", r.cp.Name))
+	return err
 }
 
 func newK8sClient() (*k8sclient.Client, error) {

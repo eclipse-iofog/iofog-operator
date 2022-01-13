@@ -8,6 +8,6 @@ resources:
   version: v3
 - kind: ControlPlane
   version: v3
-version: 3-alpha
+version: "3"
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}

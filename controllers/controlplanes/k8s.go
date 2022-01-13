@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	b64 "encoding/base64"
+	"fmt"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
@@ -116,16 +117,26 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 }
 
 func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
+	defer func() {
+		if recoverResult := recover(); recoverResult != nil {
+			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for Controlplane %s", recoverResult, r.cp.Name))
+		}
+	}()
 	for idx := range ms.secrets {
 		secret := &ms.secrets[idx]
+		r.log.Info(fmt.Sprintf("Creating secret %s", secret.ObjectMeta.Name))
 		// Set ControlPlane instance as the owner and controller
+		r.log.Info(fmt.Sprintf("Setting owner reference for secret %s", secret.ObjectMeta.Name))
 		if err := controllerutil.SetControllerReference(&r.cp, secret, r.Scheme); err != nil {
+			r.log.Info(fmt.Sprintf("Failed to set owner reference for secret %s: %v", secret.ObjectMeta.Name, err))
 			return err
 		}
 
 		// Check if this resource already exists
+		r.log.Info(fmt.Sprintf("Checking if secret %s exists", secret.ObjectMeta.Name))
 		found := &corev1.Secret{}
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+		r.log.Info(fmt.Sprintf("secret %s: Exists: %s Error: %v", secret.ObjectMeta.Name, found.Name, err))
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
 			err = r.Client.Create(context.TODO(), secret)
@@ -136,12 +147,14 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 			// Resource created successfully - don't requeue
 			continue
 		} else if err != nil {
+			r.log.Info(fmt.Sprintf("Failed with error %v for secret %s:", err, secret.ObjectMeta.Name))
 			return err
 		}
 
 		// Resource already exists - don't requeue
 		r.log.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
 	}
+	r.log.Info(fmt.Sprintf("Done Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
 	return nil
 }
 
