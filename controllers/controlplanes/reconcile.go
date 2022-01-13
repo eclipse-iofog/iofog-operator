@@ -29,7 +29,7 @@ func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconcil
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Configure Controller
-	ms := newControllerMicroservice(&controllerMicroserviceConfig{
+	ms := newControllerMicroservice(r.cp.Namespace, &controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,
 		image:             r.cp.Spec.Images.Controller,
 		imagePullSecret:   r.cp.Spec.Images.PullSecret,
@@ -47,6 +47,13 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
+		return op.ReconcileWithError(err)
+	}
+
+	// Create secrets
+	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
+	if err := r.createSecrets(ms); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
 		return op.ReconcileWithError(err)
 	}
 

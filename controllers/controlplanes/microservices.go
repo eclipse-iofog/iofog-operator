@@ -30,11 +30,17 @@ import (
 )
 
 const (
-	routerName                      = "router"
-	controllerName                  = "controller"
-	controllerCredentialsSecretName = "controller-credentials"
-	emailSecretKey                  = "email"
-	passwordSecretKey               = "password"
+	routerName                        = "router"
+	controllerName                    = "controller"
+	controllerCredentialsSecretName   = "controller-credentials"
+	emailSecretKey                    = "email"
+	passwordSecretKey                 = "password"
+	controllerDBCredentialsSecretName = "controller-db-credentials"
+	controllerDBUserSecretKey         = "username"
+	controllerDBDBNameSecretKey       = "dbname"
+	controllerDBPasswordSecretKey     = "password"
+	controllerDBHostSecretKey         = "host"
+	controllerDBPortSecretKey         = "port"
 )
 
 type service struct {
@@ -114,7 +120,7 @@ func getControllerPort(msvc *microservice) (int, error) {
 	return msvc.services[0].ports[0], nil
 }
 
-func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice {
+func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConfig) *microservice {
 	filterControllerConfig(cfg)
 	msvc := &microservice{
 		availableDelay: 5,
@@ -133,6 +139,22 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 				ports: []int{
 					51121,
 					80,
+				},
+			},
+		},
+		secrets: []corev1.Secret{
+			{
+				Type: corev1.SecretTypeOpaque,
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      controllerDBCredentialsSecretName,
+				},
+				StringData: map[string]string{
+					controllerDBDBNameSecretKey:   cfg.db.DatabaseName,
+					controllerDBHostSecretKey:     cfg.db.Host,
+					controllerDBPortSecretKey:     strconv.Itoa(cfg.db.Port),
+					controllerDBUserSecretKey:     cfg.db.User,
+					controllerDBPasswordSecretKey: cfg.db.Password,
 				},
 			},
 		},
@@ -159,24 +181,59 @@ func newControllerMicroservice(cfg *controllerMicroserviceConfig) *microservice 
 						Value: cfg.db.Provider,
 					},
 					{
-						Name:  "DB_NAME",
-						Value: cfg.db.DatabaseName,
+						Name: "DB_NAME",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerDBCredentialsSecretName,
+								},
+								Key: controllerDBDBNameSecretKey,
+							},
+						},
 					},
 					{
-						Name:  "DB_USERNAME",
-						Value: cfg.db.User,
+						Name: "DB_USERNAME",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerDBCredentialsSecretName,
+								},
+								Key: controllerDBUserSecretKey,
+							},
+						},
 					},
 					{
-						Name:  "DB_PASSWORD",
-						Value: cfg.db.Password,
+						Name: "DB_PASSWORD",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerDBCredentialsSecretName,
+								},
+								Key: controllerDBPasswordSecretKey,
+							},
+						},
 					},
 					{
-						Name:  "DB_HOST",
-						Value: cfg.db.Host,
+						Name: "DB_HOST",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerDBCredentialsSecretName,
+								},
+								Key: controllerDBHostSecretKey,
+							},
+						},
 					},
 					{
-						Name:  "DB_PORT",
-						Value: strconv.Itoa(cfg.db.Port),
+						Name: "DB_PORT",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerDBCredentialsSecretName,
+								},
+								Key: controllerDBPortSecretKey,
+							},
+						},
 					},
 					{
 						Name:  "MSVC_PORT_PROVIDER",
