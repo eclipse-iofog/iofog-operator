@@ -182,6 +182,8 @@ github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-alpha h1:E3vAZKMYHGUZ5uEjLbBJ8uv
 github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-alpha/go.mod h1:aauE9ce3SVr9mTkLTKpEblKHjN4xBPjQqs5WGt5V3WA=
 github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta1 h1:+DWw16B2bgXwTbXjEhwMQLX+Z50EeNWcNU4AYeGqHV0=
 github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta1/go.mod h1:eTYUMrj9RbW3emlAap0ZNzE0x0MXBvRnYTIuwNK4tbs=
+github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta2.0.20220116221831-d1a6b29bd120 h1:+SQa8kFpGZfirS9ELicYUMsj8EQLmkzIp2GimJ9BEtI=
+github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta2.0.20220116221831-d1a6b29bd120/go.mod h1:qt3TNwMFti7JTxEmykMn0DgYvZ/fqmweBedu5H+VkbY=
 github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20190911111923-ecfe977594f1/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=

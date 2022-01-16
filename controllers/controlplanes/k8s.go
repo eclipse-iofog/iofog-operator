@@ -152,7 +152,11 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 		}
 
 		// Resource already exists - don't requeue
-		r.log.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+		r.log.Info("Secret already exists: Updating...", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+		if err := r.Client.Update(context.TODO(), secret); err != nil {
+			r.log.Info(fmt.Sprintf("Failed with error %v for secret %s:", err, secret.ObjectMeta.Name))
+			return err
+		}
 	}
 	r.log.Info(fmt.Sprintf("Done Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
 	return nil
@@ -295,8 +299,13 @@ func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error {
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createIofogUser(iofogClient *iofogclient.Client) error {
-	user := iofogclient.User(r.cp.Spec.User)
+func (r *ControlPlaneReconciler) createOrUpdateIofogUser(iofogClient *iofogclient.Client) error {
+	user := iofogclient.User{
+		Name:     r.cp.Spec.User.Name,
+		Surname:  r.cp.Spec.User.Surname,
+		Email:    r.cp.Spec.User.Email,
+		Password: r.cp.Spec.User.Password,
+	}
 	password, err := decodeBase64(user.Password)
 	if err == nil {
 		user.Password = password
@@ -306,6 +315,15 @@ func (r *ControlPlaneReconciler) createIofogUser(iofogClient *iofogclient.Client
 		// If not error about account existing, fail
 		if !strings.Contains(err.Error(), "already an account associated") {
 			return err
+		}
+		// If account exists, update password
+		if r.cp.Spec.User.OldPassword != "" && r.cp.Spec.User.OldPassword != user.Password {
+			if err := iofogClient.UpdateUserPassword(iofogclient.UpdateUserPasswordRequest{
+				OldPassword: r.cp.Spec.User.OldPassword,
+				NewPassword: r.cp.Spec.User.Password,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 

@@ -86,10 +86,11 @@ type Database struct {
 }
 
 type User struct {
-	Name     string `json:"name"`
-	Surname  string `json:"surname"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name        string `json:"name"`
+	Surname     string `json:"surname"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	OldPassword string `json:"oldPassword"`
 }
 
 type RouterIngress struct {

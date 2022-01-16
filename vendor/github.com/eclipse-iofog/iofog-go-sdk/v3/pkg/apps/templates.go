@@ -14,34 +14,36 @@
 package apps
 
 import (
+	"bytes"
 	"net/url"
 
 	"github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
+	"gopkg.in/yaml.v2"
 )
 
 type applicationTemplateExecutor struct {
-	controller         IofogController
-	baseURL            *url.URL
-	template           ApplicationTemplate
-	microserviceByName map[string]*client.MicroserviceInfo
-	client             *client.Client
+	controller IofogController
+	baseURL    *url.URL
+	template   interface{}
+	name       string
+	client     *client.Client
 }
 
-func newApplicationTemplateExecutor(controller IofogController, controllerBaseURL *url.URL, template ApplicationTemplate) *applicationTemplateExecutor {
+func newApplicationTemplateExecutor(controller IofogController, controllerBaseURL *url.URL, template interface{}, name string) *applicationTemplateExecutor {
 	exe := &applicationTemplateExecutor{
-		controller:         controller,
-		baseURL:            controllerBaseURL,
-		template:           template,
-		microserviceByName: microserviceArrayToClientMap(template.Application.Microservices),
+		controller: controller,
+		baseURL:    controllerBaseURL,
+		name:       name,
+		template:   template,
 	}
 
 	return exe
 }
 
-func (exe *applicationTemplateExecutor) execute() (err error) {
+func (exe *applicationTemplateExecutor) execute() error {
 	// Init remote resources
-	if err = exe.init(); err != nil {
-		return
+	if err := exe.init(); err != nil {
+		return err
 	}
 
 	// Deploy application
@@ -54,31 +56,35 @@ func (exe *applicationTemplateExecutor) init() (err error) {
 	} else {
 		exe.client, err = client.NewAndLogin(client.Options{BaseURL: exe.baseURL}, exe.controller.Email, exe.controller.Password)
 	}
-	if err != nil {
-		return
-	}
 
-	return
+	return err
 }
 
-func (exe *applicationTemplateExecutor) deploy() (err error) {
-	microservices, err := mapMicroservicesToClientMicroserviceRequests(exe.template.Application.Microservices)
+func (exe *applicationTemplateExecutor) deploy() error {
+	file := IofogHeader{
+		APIVersion: "iofog.org/v3",
+		Kind:       ApplicationTemplateKind,
+		Metadata: HeaderMetadata{
+			Name: exe.name,
+		},
+		Spec: exe.template,
+	}
+	yamlBytes, err := yaml.Marshal(file)
 	if err != nil {
 		return err
 	}
-	routes := mapRoutesToClientRouteRequests(exe.template.Application.Routes)
-	variables := mapVariablesToClientVariables(exe.template.Variables)
-	request := &client.ApplicationTemplateUpdateRequest{
-		Description: exe.template.Description,
-		Name:        exe.template.Name,
-		Application: &client.ApplicationTemplateInfo{
-			Microservices: microservices,
-			Routes:        routes,
-		},
-		Variables: variables,
+	existingAppTemplate, err := exe.client.GetApplicationTemplate(exe.name)
+	// If not notfound error, return error
+	if _, ok := err.(*client.NotFoundError); err != nil && !ok {
+		return err
 	}
-
-	if _, err = exe.client.UpdateApplicationTemplate(request); err != nil {
+	if existingAppTemplate == nil {
+		if _, err := exe.client.CreateApplicationTemplateFromYAML(bytes.NewReader(yamlBytes)); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := exe.client.UpdateApplicationTemplateFromYAML(exe.name, bytes.NewReader(yamlBytes)); err != nil {
 		return err
 	}
 	return nil
