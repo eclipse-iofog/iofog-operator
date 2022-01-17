@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	b64 "encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -31,7 +30,7 @@ func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconcil
 }
 
 func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclient.Client) error {
-	r.log.Info(fmt.Sprintf("Updating user password for ControlPlane %s", r.cp.Name))
+	r.log.Info(fmt.Sprintf("Updating user password %s for ControlPlane %s", r.cp.Spec.User.Password, r.cp.Name))
 	// Retrieve old password from secrets
 	found := &corev1.Secret{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
@@ -43,7 +42,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if !ok {
 		return fmt.Errorf("password secret key %s not found in secret %s", passwordSecretKey, controllerCredentialsSecretName)
 	}
-	password, err := DecodeBase64(string(passwordBytes))
+	oldPassword, err := DecodeBase64(string(passwordBytes))
 	if err != nil {
 		return fmt.Errorf("password %s in secret %s is not a valid base64 string", string(passwordBytes), controllerCredentialsSecretName)
 	}
@@ -54,18 +53,22 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	email := string(emailBytes)
 	if err := iofogClient.Login(iofogclient.LoginRequest{
 		Email:    email,
-		Password: password,
+		Password: oldPassword,
 	}); err != nil {
-		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, email, password))
+		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, email, oldPassword))
 		return err
 	}
 	// Update password
-	if err := r.updateIofogUser(iofogClient, password, r.cp.Spec.User.Password); err != nil {
+	newPassword, err := DecodeBase64(r.cp.Spec.User.Password)
+	if err != nil {
+		return fmt.Errorf("new password %s for ControlPlane %s is not a valid base64 string", r.cp.Name, r.cp.Spec.User.Password)
+	}
+	if err := r.updateIofogUser(iofogClient, oldPassword, newPassword); err != nil {
 		return err
 	}
 	// Update secret
 	found.StringData = map[string]string{
-		passwordSecretKey: b64.StdEncoding.EncodeToString([]byte(r.cp.Spec.User.Password)),
+		passwordSecretKey: r.cp.Spec.User.Password,
 		emailSecretKey:    r.cp.Spec.User.Email,
 	}
 	if err := r.Client.Update(context.TODO(), found); err != nil {
