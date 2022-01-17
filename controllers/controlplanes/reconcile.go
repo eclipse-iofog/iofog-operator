@@ -44,7 +44,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	}
 	password, err := DecodeBase64(string(passwordBytes))
 	if err != nil {
-		return err
+		return fmt.Errorf("password %s in secret %s is invalid: %s", string(passwordBytes), controllerCredentialsSecretName, err.Error())
 	}
 	emailBytes, ok := found.Data[emailSecretKey]
 	if !ok {
@@ -52,7 +52,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	}
 	email, err := DecodeBase64(string(emailBytes))
 	if err != nil {
-		return err
+		return fmt.Errorf("email %s in secret %s is invalid: %s", string(emailBytes), controllerCredentialsSecretName, err.Error())
 	}
 	if err := iofogClient.Login(iofogclient.LoginRequest{
 		Email:    email,
