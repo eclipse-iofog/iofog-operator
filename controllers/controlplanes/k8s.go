@@ -116,23 +116,6 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 	return nil
 }
 
-func (r *ControlPlaneReconciler) updateSecret(secret *corev1.Secret) error {
-	r.log.Info("Updating existing Secret", "Secret.Namespace", secret.Namespace, "Secret.Name", secret.Name)
-	// Check if this resource already exists
-	found := &corev1.Secret{}
-	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
-	if err != nil {
-		return err
-	}
-
-	// Resource already exists - update it
-	if err := r.Client.Update(context.TODO(), secret); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 	defer func() {
 		if recoverResult := recover(); recoverResult != nil {

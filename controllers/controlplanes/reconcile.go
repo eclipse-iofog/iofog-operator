@@ -55,30 +55,20 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 		return err
 	}
 	if err := iofogClient.Login(iofogclient.LoginRequest{
-		Email:    string(email),
-		Password: string(password),
+		Email:    email,
+		Password: password,
 	}); err != nil {
-		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, string(email), string(password)))
+		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, email, password))
 		return err
 	}
 	// Update password
-	if err := iofogClient.UpdateUserPassword(iofogclient.UpdateUserPasswordRequest{
-		OldPassword: string(password),
-		NewPassword: string(r.cp.Spec.User.Password),
-	}); err != nil {
-		return err
-	}
-	if err := iofogClient.Login(iofogclient.LoginRequest{
-		Email:    string(email),
-		Password: string(r.cp.Spec.User.Password),
-	}); err != nil {
-		r.log.Info(fmt.Sprintf("Failed to log in with new credentials for ControlPlane %s: %s %s", r.cp.Name, string(email), string(r.cp.Spec.User.Password)))
+	if err := r.updateIofogUser(iofogClient, password, r.cp.Spec.User.Password); err != nil {
 		return err
 	}
 	// Update secret
 	found.StringData = map[string]string{
-		passwordSecretKey: string(r.cp.Spec.User.Password),
-		emailSecretKey:    string(r.cp.Spec.User.Email),
+		passwordSecretKey: r.cp.Spec.User.Password,
+		emailSecretKey:    r.cp.Spec.User.Email,
 	}
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
