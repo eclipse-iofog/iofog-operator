@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -42,7 +43,10 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if !ok {
 		return fmt.Errorf("password secret key %s not found in secret %s", passwordSecretKey, controllerCredentialsSecretName)
 	}
-	password := string(passwordBytes)
+	password, err := DecodeBase64(string(passwordBytes))
+	if err != nil {
+		return fmt.Errorf("password %s in secret %s is not a valid base64 string", string(passwordBytes), controllerCredentialsSecretName)
+	}
 	emailBytes, ok := found.Data[emailSecretKey]
 	if !ok {
 		return fmt.Errorf("email secret key %s not found in secret %s", emailSecretKey, controllerCredentialsSecretName)
@@ -61,7 +65,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	}
 	// Update secret
 	found.StringData = map[string]string{
-		passwordSecretKey: r.cp.Spec.User.Password,
+		passwordSecretKey: b64.StdEncoding.EncodeToString([]byte(r.cp.Spec.User.Password)),
 		emailSecretKey:    r.cp.Spec.User.Email,
 	}
 	if err := r.Client.Update(context.TODO(), found); err != nil {
