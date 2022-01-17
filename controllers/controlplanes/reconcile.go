@@ -144,7 +144,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Set up user
 	if err := r.createIofogUser(iofogClient); err != nil {
-		if !strings.Contains(err.Error(), "invalid credentials") {
+		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
 			return op.ReconcileWithRequeue(time.Second * 3)
 		}
