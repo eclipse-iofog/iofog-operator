@@ -333,7 +333,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 	filterPortManagerConfig(cfg)
 	return &microservice{
 		mustRecreateOnRollout: true,
-		name:                  "port-manager",
+		name:                  portManagerDeploymentName,
 		labels: map[string]string{
 			"name": "port-manager",
 		},

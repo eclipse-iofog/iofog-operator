@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	loadBalancerTimeout   = 360
-	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
-	errParseControllerURL = "failed to parse Controller endpoint as URL (%s): %s"
+	loadBalancerTimeout       = 360
+	errProxyRouterMissing     = "missing Proxy.Router data for non LoadBalancer Router service"
+	errParseControllerURL     = "failed to parse Controller endpoint as URL (%s): %s"
+	portManagerDeploymentName = "port-manager"
 )
 
 func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
@@ -72,6 +73,10 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 		emailSecretKey:    r.cp.Spec.User.Email,
 	}
 	if err := r.Client.Update(context.TODO(), found); err != nil {
+		return err
+	}
+	// Restart pods that depend on secret
+	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
 		return err
 	}
 
