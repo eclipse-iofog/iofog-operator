@@ -6,13 +6,12 @@ github.com/beorn7/perks/quantile
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta1
+# github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta2.0.20220116221831-d1a6b29bd120
 ## explicit
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/apps
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s
 github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator
-github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/util
 # github.com/evanphx/json-patch v4.9.0+incompatible
 github.com/evanphx/json-patch
 # github.com/fsnotify/fsnotify v1.4.9

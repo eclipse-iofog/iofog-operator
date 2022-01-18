@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,19 +13,74 @@ import (
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 )
 
 const (
-	loadBalancerTimeout   = 360
-	errProxyRouterMissing = "missing Proxy.Router data for non LoadBalancer Router service"
-	errParseControllerURL = "failed to parse Controller endpoint as URL (%s): %s"
+	loadBalancerTimeout       = 360
+	errProxyRouterMissing     = "missing Proxy.Router data for non LoadBalancer Router service"
+	errParseControllerURL     = "failed to parse Controller endpoint as URL (%s): %s"
+	portManagerDeploymentName = "port-manager"
 )
 
 func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
 	reconChan <- recon()
+}
+
+func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclient.Client) error {
+	r.log.Info(fmt.Sprintf("Updating user password %s for ControlPlane %s", r.cp.Spec.User.Password, r.cp.Name))
+	// Retrieve old password from secrets
+	found := &corev1.Secret{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
+	if err != nil {
+		return err
+	}
+	// Try to log in with old password
+	passwordBytes, ok := found.Data[passwordSecretKey]
+	if !ok {
+		return fmt.Errorf("password secret key %s not found in secret %s", passwordSecretKey, controllerCredentialsSecretName)
+	}
+	oldPassword, err := DecodeBase64(string(passwordBytes))
+	if err != nil {
+		return fmt.Errorf("password %s in secret %s is not a valid base64 string", string(passwordBytes), controllerCredentialsSecretName)
+	}
+	emailBytes, ok := found.Data[emailSecretKey]
+	if !ok {
+		return fmt.Errorf("email secret key %s not found in secret %s", emailSecretKey, controllerCredentialsSecretName)
+	}
+	email := string(emailBytes)
+	if err := iofogClient.Login(iofogclient.LoginRequest{
+		Email:    email,
+		Password: oldPassword,
+	}); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, email, oldPassword))
+		return err
+	}
+	// Update password
+	newPassword, err := DecodeBase64(r.cp.Spec.User.Password)
+	if err != nil {
+		return fmt.Errorf("new password %s for ControlPlane %s is not a valid base64 string", r.cp.Name, r.cp.Spec.User.Password)
+	}
+	if err := r.updateIofogUser(iofogClient, oldPassword, newPassword); err != nil {
+		return err
+	}
+	// Update secret
+	found.StringData = map[string]string{
+		passwordSecretKey: r.cp.Spec.User.Password,
+		emailSecretKey:    r.cp.Spec.User.Email,
+	}
+	if err := r.Client.Update(context.TODO(), found); err != nil {
+		return err
+	}
+	// Restart pods that depend on secret
+	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
@@ -94,8 +150,15 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Set up user
 	if err := r.createIofogUser(iofogClient); err != nil {
-		r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
-		return op.ReconcileWithRequeue(time.Second * 3)
+		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
+			r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
+			return op.ReconcileWithRequeue(time.Second * 3)
+		}
+		// If the error is invalid credentials, update user password
+		if err := r.updateIofogUserPassword(iofogClient); err != nil {
+			r.log.Info(fmt.Sprintf("Could not update user for ControlPlane %s: %s", r.cp.Name, err.Error()))
+			return op.ReconcileWithError(err)
+		}
 	}
 
 	// Connect to cluster

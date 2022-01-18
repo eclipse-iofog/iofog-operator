@@ -14,16 +14,17 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"strings"
-
-	"github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/util"
 )
 
 // GetMicroserviceByName retrieves a microservice information using Controller REST API
-func (clt *Client) GetMicroserviceByName(name string) (response *MicroserviceInfo, err error) {
-	listMsvcs, err := clt.GetAllMicroservices()
+func (clt *Client) GetMicroserviceByName(appName, name string) (response *MicroserviceInfo, err error) {
+	listMsvcs, err := clt.GetMicroservicesByApplication(appName)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (clt *Client) GetMicroserviceByName(name string) (response *MicroserviceInf
 			return &listMsvcs.Microservices[i], nil
 		}
 	}
-	return nil, NewNotFoundError(fmt.Sprintf("Could not find a microservice named %s", name))
+	return nil, NewNotFoundError(fmt.Sprintf("Could not find a microservice named %s/%s", appName, name))
 }
 
 // GetMicroserviceByID retrieves a microservice information using Controller REST API
@@ -49,29 +50,28 @@ func (clt *Client) GetMicroserviceByID(uuid string) (response *MicroserviceInfo,
 	return
 }
 
-// CreateMicroservice creates a microservice using Controller REST API
-func (clt *Client) CreateMicroservice(request *MicroserviceCreateRequest) (*MicroserviceInfo, error) {
-	// Init empty arrays
-	if request.Volumes == nil {
-		request.Volumes = []MicroserviceVolumeMapping{}
-	}
-	if request.Env == nil {
-		request.Env = []MicroserviceEnvironment{}
-	}
-	if request.Ports == nil {
-		request.Ports = []MicroservicePortMapping{}
-	}
-	if request.Commands == nil {
-		request.Commands = []string{}
-	}
-
-	// Make request
-	body, err := clt.doRequest("POST", "/microservices", request)
+// CreateMicroserviceFromYAML creates a new microservice using the Controller REST API
+// It sends the yaml file to Controller REST API
+func (clt *Client) CreateMicroserviceFromYAML(file io.Reader) (*MicroserviceInfo, error) {
+	requestBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(requestBody)
+	part, _ := writer.CreateFormFile("microservice", "microservice.yaml")
+	_, err := io.Copy(part, file)
 	if err != nil {
 		return nil, err
 	}
-	response := &MicroserviceCreateResponse{}
-	if err := json.Unmarshal(body, response); err != nil {
+	writer.Close()
+
+	headers := map[string]string{
+		"Content-Type": writer.FormDataContentType(),
+	}
+	body, err := clt.doRequestWithHeaders("POST", "/microservices/yaml", requestBody, headers)
+
+	if err != nil {
+		return nil, err
+	}
+	response := MicroserviceCreateResponse{}
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 	return clt.GetMicroserviceByID(response.UUID)
@@ -154,68 +154,14 @@ func (clt *Client) GetMicroservicePortMapping(uuid string) (response *Microservi
 }
 
 // DeleteMicroservicePortMapping deletes a microservice port mapping using Controller REST API
-func (clt *Client) DeleteMicroservicePortMapping(uuid string, portMapping *MicroservicePortMapping) (err error) {
+func (clt *Client) DeleteMicroservicePortMapping(uuid string, portMapping *MicroservicePortMappingInfo) (err error) {
 	_, err = clt.doRequest("DELETE", fmt.Sprintf("/microservices/%s/port-mapping/%v", uuid, portMapping.Internal), nil)
 	return
 }
 
 // CreateMicroservicePortMapping creates a microservice port mapping using Controller REST API
-func (clt *Client) CreateMicroservicePortMapping(uuid string, portMapping *MicroservicePortMapping) (err error) {
+func (clt *Client) CreateMicroservicePortMapping(uuid string, portMapping *MicroservicePortMappingInfo) (err error) {
 	_, err = clt.doRequest("POST", fmt.Sprintf("/microservices/%s/port-mapping", uuid), portMapping)
-	return
-}
-
-func portMappingsToMap(mappings []MicroservicePortMapping) map[int]MicroservicePortMapping {
-	response := make(map[int]MicroservicePortMapping)
-	for _, mapping := range mappings {
-		response[util.AssertInt(mapping.Internal)] = mapping
-	}
-	return response
-}
-
-func samePortMapping(currentMapping, newMapping *MicroservicePortMapping) bool {
-	if newMapping.Host == "" {
-		newMapping.Host = DefaultRouterName
-	}
-	if newMapping.Protocol == "" {
-		newMapping.Protocol = "http"
-	}
-	return (currentMapping.Internal == newMapping.Internal &&
-		currentMapping.Public == newMapping.Public &&
-		currentMapping.Protocol == newMapping.Protocol &&
-		currentMapping.External == newMapping.External &&
-		currentMapping.Host == newMapping.Host)
-}
-
-func (clt *Client) updateMicroservicePortMapping(uuid string, newPortMappings []MicroservicePortMapping) (err error) {
-	currentPortMappings, err := clt.GetMicroservicePortMapping(uuid)
-	if err != nil {
-		return
-	}
-
-	currentPortMappingMap := portMappingsToMap(currentPortMappings.PortMappings)
-	newPortMappingMap := portMappingsToMap(newPortMappings)
-
-	// Remove outdated ports
-	for idx := range currentPortMappings.PortMappings {
-		currentMapping := &currentPortMappings.PortMappings[idx]
-		if newPortMapping, found := newPortMappingMap[util.AssertInt(currentMapping.Internal)]; !found || (found && !samePortMapping(currentMapping, &newPortMapping)) {
-			if err = clt.DeleteMicroservicePortMapping(uuid, currentMapping); err != nil {
-				return
-			}
-		}
-	}
-
-	// Create missing mappings
-	for idx := range newPortMappings {
-		newMapping := &newPortMappings[idx]
-		if currentMapping, found := currentPortMappingMap[util.AssertInt(newMapping.Internal)]; !found || (found && !samePortMapping(&currentMapping, newMapping)) {
-			if err = clt.CreateMicroservicePortMapping(uuid, newMapping); err != nil {
-				return
-			}
-		}
-	}
-
 	return
 }
 
@@ -276,20 +222,27 @@ func (clt *Client) UpdateMicroserviceRoutes(uuid string, currentRoutes, newRoute
 	return
 }
 
-// UpdateMicroservice patches a microservice using the Controller REST API
-func (clt *Client) UpdateMicroservice(request *MicroserviceUpdateRequest) (*MicroserviceInfo, error) {
-	// Update microservice
-	_, err := clt.doRequest("PATCH", fmt.Sprintf("/microservices/%s", request.UUID), request)
+// UpdateMicroserviceFromYAML updates a microservice using the Controller REST API
+// It sends the yaml file to Controller REST API
+func (clt *Client) UpdateMicroserviceFromYAML(uuid string, file io.Reader) (*MicroserviceInfo, error) {
+	requestBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(requestBody)
+	part, _ := writer.CreateFormFile("microservice", "microservice.yaml")
+	_, err := io.Copy(part, file)
 	if err != nil {
 		return nil, err
 	}
+	writer.Close()
 
-	// Update Ports mapping
-	if err := clt.updateMicroservicePortMapping(request.UUID, request.Ports); err != nil {
-		return nil, err
+	headers := map[string]string{
+		"Content-Type": writer.FormDataContentType(),
 	}
 
-	return clt.GetMicroserviceByID(request.UUID)
+	_, err = clt.doRequestWithHeaders("PATCH", fmt.Sprintf("/microservices/yaml/%s", uuid), requestBody, headers)
+	if err != nil {
+		return nil, err
+	}
+	return clt.GetMicroserviceByID(uuid)
 }
 
 // DeleteMicroservice deletes a microservice using Controller REST API
