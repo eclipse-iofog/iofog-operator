@@ -85,7 +85,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Configure Controller
-	ms := newControllerMicroservice(r.cp.Namespace, &controllerMicroserviceConfig{
+	config := &controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,
 		image:             r.cp.Spec.Images.Controller,
 		imagePullSecret:   r.cp.Spec.Images.PullSecret,
@@ -99,7 +99,10 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		pidBaseDir:        r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
 		portProvider:      r.cp.Spec.Controller.PortProvider,
-	})
+	}
+	r.log.WithValues("config DB", *config.db).Info("Microservice config")
+	ms := newControllerMicroservice(r.cp.Namespace, config)
+	r.log.WithValues("Secrets", ms.secrets).Info("Microservice secrets")
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {

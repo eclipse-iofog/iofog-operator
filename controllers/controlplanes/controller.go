@@ -59,6 +59,7 @@ func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 	}
 
 	// Reconcile based on state
+	r.log.WithValues("db", r.cp.Spec.Database).Info("Database value")
 	reconciler, err := r.getReconcileFunc()
 	if err != nil {
 		return op.RequeueWithError(err)
