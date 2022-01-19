@@ -158,6 +158,17 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				},
 			},
 		},
+		// Adding the secret as a volume so that the pods gets restarted automatically if the secret changes
+		volumes: []corev1.Volume{
+			{
+				Name: controllerDBCredentialsSecretName + "-volume",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: controllerDBCredentialsSecretName,
+					},
+				},
+			},
+		},
 		containers: []container{
 			{
 				name:            "controller",
@@ -174,6 +185,13 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					TimeoutSeconds:      10,
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
+				},
+				volumeMounts: []corev1.VolumeMount{
+					{
+						Name:      controllerDBCredentialsSecretName + "-volume",
+						ReadOnly:  true,
+						MountPath: "/etc/iofog-controller/db-credentials",
+					},
 				},
 				env: []corev1.EnvVar{
 					{
@@ -288,24 +306,21 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
 		msvc.mustRecreateOnRollout = true
-		msvc.volumes = []corev1.Volume{
-			{
-				Name: "controller-sqlite",
-				VolumeSource: corev1.VolumeSource{
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "controller-sqlite",
-						ReadOnly:  false,
-					},
+		msvc.volumes = append(msvc.volumes, corev1.Volume{
+			Name: "controller-sqlite",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "controller-sqlite",
+					ReadOnly:  false,
 				},
 			},
-		}
-		msvc.containers[0].volumeMounts = []corev1.VolumeMount{
-			{
-				Name:      "controller-sqlite",
-				MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
-				SubPath:   "prod_database.sqlite",
-			},
-		}
+		})
+
+		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
+			Name:      "controller-sqlite",
+			MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
+			SubPath:   "prod_database.sqlite",
+		})
 	}
 	return msvc
 }
@@ -358,6 +373,17 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				},
 			},
 		},
+		// Adding the secret as a volume so that the pods gets restarted automatically if the secret changes
+		volumes: []corev1.Volume{
+			{
+				Name: controllerCredentialsSecretName + "-volume",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: controllerCredentialsSecretName,
+					},
+				},
+			},
+		},
 		containers: []container{
 			{
 				name:            "port-manager",
@@ -387,6 +413,13 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				// 	 	"memory": resource.MustParse("200Mi"),
 				// 	 },
 				// },
+				volumeMounts: []corev1.VolumeMount{
+					{
+						Name:      controllerCredentialsSecretName + "-volume",
+						MountPath: "/tmp/",
+						ReadOnly:  true,
+					},
+				},
 				env: []corev1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",
