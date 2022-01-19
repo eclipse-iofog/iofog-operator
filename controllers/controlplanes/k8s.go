@@ -141,6 +141,10 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 }
 
 func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
+	return r.createOrUpdateSecrets(ms, false)
+}
+
+func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update bool) error {
 	defer func() {
 		if recoverResult := recover(); recoverResult != nil {
 			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for Controlplane %s", recoverResult, r.cp.Name))
@@ -176,7 +180,15 @@ func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
 		}
 
 		// Resource already exists - don't requeue
-		r.log.Info("Skip reconciliation: Secret already exists.", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+		if update {
+			r.log.Info("Updating secret...", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+			err = r.Client.Update(context.TODO(), secret)
+			if err != nil {
+				return err
+			}
+		} else {
+			r.log.Info("Skip reconciliation: Secret already exists.", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+		}
 	}
 	r.log.Info(fmt.Sprintf("Done Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
 	return nil

@@ -100,9 +100,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
 		portProvider:      r.cp.Spec.Controller.PortProvider,
 	}
-	r.log.WithValues("config DB", *config.db).Info("Microservice config")
 	ms := newControllerMicroservice(r.cp.Namespace, config)
-	r.log.WithValues("Secrets", ms.secrets).Info("Microservice secrets")
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
@@ -111,7 +109,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
-	if err := r.createSecrets(ms); err != nil {
+	if err := r.createOrUpdateSecrets(ms, true); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
 		return op.ReconcileWithError(err)
 	}
