@@ -75,11 +75,6 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
-	// Restart pods that depend on secret
-	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
-		return err
-	}
-
 	return nil
 }
 
