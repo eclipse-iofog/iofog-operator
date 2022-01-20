@@ -13,6 +13,7 @@ import (
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
@@ -75,17 +76,46 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
-	// Restart pods that depend on secret
+	// Restart required pods
 	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) (shouldRestartPod bool, err error) {
+	for idx := range ms.secrets {
+		secret := &ms.secrets[idx]
+		if secret.Name == controllerDBCredentialsSecretName {
+			found := &corev1.Secret{}
+			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+			if err != nil {
+				if !k8serrors.IsNotFound(err) {
+					return false, err
+				}
+				// Create secret
+				err = r.Client.Create(context.TODO(), secret)
+				if err != nil {
+					return false, err
+				}
+				return false, nil
+			}
+			// Secret already exists
+			// Update secret
+			err = r.Client.Update(context.TODO(), secret)
+			if err != nil {
+				return false, err
+			}
+			// Restart pod
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Configure Controller
-	ms := newControllerMicroservice(r.cp.Namespace, &controllerMicroserviceConfig{
+	config := &controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,
 		image:             r.cp.Spec.Images.Controller,
 		imagePullSecret:   r.cp.Spec.Images.PullSecret,
@@ -99,13 +129,19 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		pidBaseDir:        r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
 		portProvider:      r.cp.Spec.Controller.PortProvider,
-	})
+	}
+	ms := newControllerMicroservice(r.cp.Namespace, config)
 
 	// Service Account
 	if err := r.createServiceAccount(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
+	// Handle DB credentials secret
+	shouldRestartPods, err := r.reconcileDBCredentialsSecret(ms)
+	if err != nil {
+		return op.ReconcileWithError(err)
+	}
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
 	if err := r.createSecrets(ms); err != nil {
@@ -202,6 +238,13 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if _, fin := r.getIofogClient(host, ctrlPort); fin.IsFinal() {
 			r.log.Info(fmt.Sprintf("LB Connection works for ControlPlane %s", r.cp.Name))
 			return fin
+		}
+	}
+
+	if shouldRestartPods {
+		r.log.Info(fmt.Sprintf("Restarting pods for ControlPlane %s", r.cp.Name))
+		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
+			return op.ReconcileWithError(err)
 		}
 	}
 

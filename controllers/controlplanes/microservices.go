@@ -158,6 +158,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				},
 			},
 		},
+		volumes: []corev1.Volume{},
 		containers: []container{
 			{
 				name:            "controller",
@@ -175,6 +176,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
+				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
 					{
 						Name:  "DB_PROVIDER",
@@ -288,24 +290,21 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
 		msvc.mustRecreateOnRollout = true
-		msvc.volumes = []corev1.Volume{
-			{
-				Name: "controller-sqlite",
-				VolumeSource: corev1.VolumeSource{
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "controller-sqlite",
-						ReadOnly:  false,
-					},
+		msvc.volumes = append(msvc.volumes, corev1.Volume{
+			Name: "controller-sqlite",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "controller-sqlite",
+					ReadOnly:  false,
 				},
 			},
-		}
-		msvc.containers[0].volumeMounts = []corev1.VolumeMount{
-			{
-				Name:      "controller-sqlite",
-				MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
-				SubPath:   "prod_database.sqlite",
-			},
-		}
+		})
+
+		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
+			Name:      "controller-sqlite",
+			MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
+			SubPath:   "prod_database.sqlite",
+		})
 	}
 	return msvc
 }
@@ -358,6 +357,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				},
 			},
 		},
+		volumes: []corev1.Volume{},
 		containers: []container{
 			{
 				name:            "port-manager",
@@ -387,6 +387,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				// 	 	"memory": resource.MustParse("200Mi"),
 				// 	 },
 				// },
+				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",
