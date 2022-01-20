@@ -13,6 +13,7 @@ import (
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
@@ -82,6 +83,38 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	return nil
 }
 
+func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) error {
+	for idx := range ms.secrets {
+		secret := &ms.secrets[idx]
+		if secret.Name == controllerDBCredentialsSecretName {
+			found := &corev1.Secret{}
+			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+			if err != nil {
+				if !k8serrors.IsNotFound(err) {
+					return err
+				}
+				// Create secret
+				err = r.Client.Create(context.TODO(), secret)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+			// Secret already exists
+			// Update secret
+			err = r.Client.Update(context.TODO(), secret)
+			if err != nil {
+				return err
+			}
+			// Restart pod
+			if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Configure Controller
 	config := &controllerMicroserviceConfig{
@@ -108,8 +141,12 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
-	if err := r.createOrUpdateSecrets(ms, true); err != nil {
+	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
+		return op.ReconcileWithError(err)
+	}
+	// Handle DB credentials secret
+	if err := r.reconcileDBCredentialsSecret(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
@@ -126,14 +163,6 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	alreadyExists, err := r.deploymentExists(r.cp.Namespace, ms.name)
 	if err != nil {
 		return op.ReconcileWithError(err)
-	}
-
-	// If pod exists, restart it
-	if alreadyExists {
-		r.log.Info(fmt.Sprintf("Restarting controller pods in controller reconcile for Controlplane %s", r.cp.Name))
-		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
-			return op.ReconcileWithError(err)
-		}
 	}
 
 	// Deployment
