@@ -83,7 +83,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	return nil
 }
 
-func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) error {
+func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) (shouldRestartPod bool, err error) {
 	for idx := range ms.secrets {
 		secret := &ms.secrets[idx]
 		if secret.Name == controllerDBCredentialsSecretName {
@@ -91,28 +91,26 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
-					return err
+					return false, err
 				}
 				// Create secret
 				err = r.Client.Create(context.TODO(), secret)
 				if err != nil {
-					return err
+					return false, err
 				}
-				return nil
+				return false, nil
 			}
 			// Secret already exists
 			// Update secret
 			err = r.Client.Update(context.TODO(), secret)
 			if err != nil {
-				return err
+				return false, err
 			}
 			// Restart pod
-			if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
-				return err
-			}
+			return true, nil
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
@@ -140,7 +138,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 
 	// Handle DB credentials secret
-	if err := r.reconcileDBCredentialsSecret(ms); err != nil {
+	shouldRestartPods, err := r.reconcileDBCredentialsSecret(ms)
+	if err != nil {
 		return op.ReconcileWithError(err)
 	}
 	// Create secrets
@@ -239,6 +238,13 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if _, fin := r.getIofogClient(host, ctrlPort); fin.IsFinal() {
 			r.log.Info(fmt.Sprintf("LB Connection works for ControlPlane %s", r.cp.Name))
 			return fin
+		}
+	}
+
+	if shouldRestartPods {
+		r.log.Info(fmt.Sprintf("Restarting pods for ControlPlane %s", r.cp.Name))
+		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
+			return op.ReconcileWithError(err)
 		}
 	}
 
