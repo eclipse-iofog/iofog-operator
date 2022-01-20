@@ -34,30 +34,29 @@ func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool,
 	return false, err
 }
 
-// Unused atm
-// func (r *ControlPlaneReconciler) restartPodsForDeployment(deploymentName, namespace string) error {
-// 	// Check if this resource already exists
-// 	found := &appsv1.Deployment{}
-// 	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: deploymentName, Namespace: namespace}, found); err != nil {
-// 		return err
-// 	}
+func (r *ControlPlaneReconciler) restartPodsForDeployment(deploymentName, namespace string) error {
+	// Check if this resource already exists
+	found := &appsv1.Deployment{}
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: deploymentName, Namespace: namespace}, found); err != nil {
+		return err
+	}
 
-// 	originValue := int32(1)
-// 	if found.Spec.Replicas == nil {
-// 		originValue = *found.Spec.Replicas
-// 	}
+	originValue := int32(1)
+	if found.Spec.Replicas == nil {
+		originValue = *found.Spec.Replicas
+	}
 
-// 	// Set replicas to 0
-// 	desiredReplicas := int32(0)
-// 	found.Spec.Replicas = &desiredReplicas
-// 	if err := r.Client.Update(context.TODO(), found); err != nil {
-// 		return err
-// 	}
+	// Set replicas to 0
+	desiredReplicas := int32(0)
+	found.Spec.Replicas = &desiredReplicas
+	if err := r.Client.Update(context.TODO(), found); err != nil {
+		return err
+	}
 
-// 	// Set replicas to previous value
-// 	found.Spec.Replicas = &originValue
-// 	return r.Client.Update(context.TODO(), found)
-// }
+	// Set replicas to previous value
+	found.Spec.Replicas = &originValue
+	return r.Client.Update(context.TODO(), found)
+}
 
 func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 	dep := newDeployment(r.cp.ObjectMeta.Namespace, ms)

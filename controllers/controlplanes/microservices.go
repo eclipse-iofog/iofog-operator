@@ -158,17 +158,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				},
 			},
 		},
-		// Adding the secret as a volume so that the pods gets restarted automatically if the secret changes
-		volumes: []corev1.Volume{
-			{
-				Name: controllerDBCredentialsSecretName + "-volume",
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: controllerDBCredentialsSecretName,
-					},
-				},
-			},
-		},
+		volumes: []corev1.Volume{},
 		containers: []container{
 			{
 				name:            "controller",
@@ -186,13 +176,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					PeriodSeconds:       5,
 					FailureThreshold:    2,
 				},
-				volumeMounts: []corev1.VolumeMount{
-					{
-						Name:      controllerDBCredentialsSecretName + "-volume",
-						ReadOnly:  true,
-						MountPath: "/etc/iofog-controller/db-credentials",
-					},
-				},
+				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
 					{
 						Name:  "DB_PROVIDER",
@@ -373,17 +357,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				},
 			},
 		},
-		// Adding the secret as a volume so that the pods gets restarted automatically if the secret changes
-		volumes: []corev1.Volume{
-			{
-				Name: controllerCredentialsSecretName + "-volume",
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: controllerCredentialsSecretName,
-					},
-				},
-			},
-		},
+		volumes: []corev1.Volume{},
 		containers: []container{
 			{
 				name:            "port-manager",
@@ -413,13 +387,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				// 	 	"memory": resource.MustParse("200Mi"),
 				// 	 },
 				// },
-				volumeMounts: []corev1.VolumeMount{
-					{
-						Name:      controllerCredentialsSecretName + "-volume",
-						MountPath: "/tmp/",
-						ReadOnly:  true,
-					},
-				},
+				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
 					{
 						Name:  "WATCH_NAMESPACE",

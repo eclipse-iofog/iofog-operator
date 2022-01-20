@@ -75,6 +75,10 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
+	// Restart required pods
+	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -122,6 +126,14 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	alreadyExists, err := r.deploymentExists(r.cp.Namespace, ms.name)
 	if err != nil {
 		return op.ReconcileWithError(err)
+	}
+
+	// If pod exists, restart it
+	if alreadyExists {
+		r.log.Info(fmt.Sprintf("Restarting controller pods in controller reconcile for Controlplane %s", r.cp.Name))
+		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
+			return op.ReconcileWithError(err)
+		}
 	}
 
 	// Deployment
