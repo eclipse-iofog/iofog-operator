@@ -139,14 +139,14 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		return op.ReconcileWithError(err)
 	}
 
+	// Handle DB credentials secret
+	if err := r.reconcileDBCredentialsSecret(ms); err != nil {
+		return op.ReconcileWithError(err)
+	}
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
 	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
-		return op.ReconcileWithError(err)
-	}
-	// Handle DB credentials secret
-	if err := r.reconcileDBCredentialsSecret(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
