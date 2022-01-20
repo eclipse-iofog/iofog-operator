@@ -54,7 +54,8 @@ function testCreateControlplane() {
   for TXT in "${TXTS[@]}"; do
     waitCmdGrep 180 "kctl logs -l name=iofog-operator" "$TXT"
   done
-  kctl wait --for=condition=Ready pods -l name=controller --timeout 1m
+  # Pod will restart once, so wait for either of them to be ready
+  kctl wait --for=condition=Ready pods -l name=controller --timeout 1m || kctl wait --for=condition=Ready pods -l name=controller --timeout 1m
   kctl wait --for=condition=Ready pods -l name=port-manager --timeout 1m
   kctl wait --for=condition=Ready pods -l name=router --timeout 1m
   [ -z "$(kctl logs -l name=iofog-operator | grep "ERROR")" ]
