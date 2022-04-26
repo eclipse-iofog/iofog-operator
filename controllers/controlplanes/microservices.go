@@ -93,6 +93,7 @@ type controllerMicroserviceConfig struct {
 	ecn               string
 	pidBaseDir        string
 	ecnViewerPort     int
+	ecnViewerUrl      string
 }
 
 func filterControllerConfig(cfg *controllerMicroserviceConfig) {
@@ -272,6 +273,10 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					{
 						Name:  "VIEWER_PORT",
 						Value: strconv.Itoa(cfg.ecnViewerPort),
+					},
+					{
+						Name:  "VIEWER_URL",
+						Value: cfg.ecnViewerUrl,
 					},
 				},
 				// resources: corev1.ResourceRequirements{

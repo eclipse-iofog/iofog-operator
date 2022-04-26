@@ -128,6 +128,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		ecn:               r.cp.Spec.Controller.ECNName,
 		pidBaseDir:        r.cp.Spec.Controller.PidBaseDir,
 		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
+		ecnViewerUrl:      r.cp.Spec.Controller.EcnViewerUrl,
 		portProvider:      r.cp.Spec.Controller.PortProvider,
 	}
 	ms := newControllerMicroservice(r.cp.Namespace, config)
