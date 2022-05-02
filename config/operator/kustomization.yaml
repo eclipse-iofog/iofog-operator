@@ -1,6 +1,6 @@
 resources:
 - deployment.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
+apiVersion: kustomize.config.k8s.io/v1
 kind: Kustomization
 images:
 - name: gcr.io/focal-freedom-236620/operator

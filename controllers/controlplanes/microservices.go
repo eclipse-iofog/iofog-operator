@@ -165,7 +165,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				image:           cfg.image,
 				imagePullPolicy: "Always",
 				readinessProbe: &corev1.Probe{
-					Handler: corev1.Handler{
+					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/api/v3/status",
 							Port: intstr.FromInt(51121),
@@ -364,7 +364,7 @@ func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 				image:           cfg.image,
 				imagePullPolicy: "Always",
 				readinessProbe: &corev1.Probe{
-					Handler: corev1.Handler{
+					ProbeHandler: corev1.ProbeHandler{
 						Exec: &corev1.ExecAction{
 							Command: []string{
 								"stat",
@@ -526,7 +526,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 					"/qpid-dispatch/launch.sh",
 				},
 				readinessProbe: &corev1.Probe{
-					Handler: corev1.Handler{
+					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Port: intstr.FromInt(9090),
 							Path: "/healthz",
