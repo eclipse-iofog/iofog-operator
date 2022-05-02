@@ -47,8 +47,7 @@ type ApplicationReconciler struct {
 // +kubebuilder:rbac:groups=iofog.org,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=iofog.org,resources=applications/status,verbs=get;update;patch
 
-func (r *ApplicationReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("application", request.NamespacedName)
 
 	instance := &appsv3.Application{}

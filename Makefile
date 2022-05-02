@@ -100,7 +100,7 @@ ifeq (, $(shell which kubectl))
 	set -e ;\
 	KCTL_TMP_DIR=$$(mktemp -d) ;\
 	cd $$KCTL_TMP_DIR ;\
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.4/bin/"$(OS)"/amd64/kubectl ;\
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.6/bin/"$(OS)"/amd64/kubectl ;\
 	chmod +x kubectl ;\
 	mv kubectl /usr/local/bin/ ;\
 	rm -rf $$KCTL_TMP_DIR ;\
@@ -144,7 +144,7 @@ ifeq (, $(shell which kustomize))
 	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
 	go mod init tmp ;\
-	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
+	go get sigs.k8s.io/kustomize/kustomize/v4 ;\
 	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
 	}
 KUSTOMIZE=$(GOBIN)/kustomize

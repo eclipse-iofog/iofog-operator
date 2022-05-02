@@ -42,8 +42,7 @@ type ControlPlaneReconciler struct {
 // +kubebuilder:rbac:groups=iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=iofog.org,resources=controlplanes/status,verbs=get;update;patch
 
-func (r *ControlPlaneReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *ControlPlaneReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	r.log = r.Log.WithValues("controlplane", request.NamespacedName)
 
 	// Fetch the ControlPlane control plane
