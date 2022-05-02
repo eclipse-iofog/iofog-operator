@@ -40,7 +40,7 @@ function testDeployOperator() {
     'Starting workers	{"reconcilerGroup": "iofog.org", "reconcilerKind": "ControlPlane", "controller": "controlplane", "worker count": 1}'
   )
   for TXT in "${TXTS[@]}"; do
-    waitCmdGrep 30 "kctl logs -l name=iofog-operator" "$TXT"
+    waitCmdGrep 180 "kctl logs -l name=iofog-operator" "$TXT"
   done
   stopTest
 }
