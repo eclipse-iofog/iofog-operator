@@ -152,7 +152,7 @@ func (cp *ControlPlane) setCondition(conditionType string) {
 	newCondition := metav1.Condition{
 		Type:               conditionType,
 		Status:             metav1.ConditionTrue,
-		Reason:             "",
+		Reason:             "initial status",
 		LastTransitionTime: now,
 	}
 	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
