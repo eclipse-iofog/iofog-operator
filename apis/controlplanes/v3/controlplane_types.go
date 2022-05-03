@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	cond "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -137,14 +138,14 @@ type ControlPlane struct {
 	Status ControlPlaneStatus `json:"status,omitempty"`
 }
 
-func (cp *ControlPlane) setCondition(conditionType string) {
+func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 	now := metav1.NewTime(time.Now())
 	// Clear all
 	for idx := range cp.Status.Conditions {
 		condition := &cp.Status.Conditions[idx]
 		if condition.Status == metav1.ConditionTrue {
 			condition.Status = metav1.ConditionFalse
-			condition.Reason = fmt.Sprintf("transition to %s", conditionType)
+			condition.Reason = fmt.Sprintf("transition_to_%s", conditionType)
 			condition.LastTransitionTime = now
 		}
 	}
@@ -152,18 +153,21 @@ func (cp *ControlPlane) setCondition(conditionType string) {
 	newCondition := metav1.Condition{
 		Type:               conditionType,
 		Status:             metav1.ConditionTrue,
-		Reason:             "initial status",
+		Reason:             "initial_status",
 		LastTransitionTime: now,
+	}
+	if log != nil {
+		(*log).Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setCondition %v -- Existing conditions %v", cp.Name, newCondition, cp.Status.Conditions))
 	}
 	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
 }
 
 func (cp *ControlPlane) SetConditionDeploying() {
-	cp.setCondition(conditionDeploying)
+	cp.setCondition(conditionDeploying, nil)
 }
 
-func (cp *ControlPlane) SetConditionReady() {
-	cp.setCondition(conditionReady)
+func (cp *ControlPlane) SetConditionReady(log *logr.Logger) {
+	cp.setCondition(conditionReady, log)
 }
 
 func (cp *ControlPlane) GetCondition() string {
