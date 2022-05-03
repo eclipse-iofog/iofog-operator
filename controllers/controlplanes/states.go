@@ -37,10 +37,12 @@ func (r *ControlPlaneReconciler) getReconcileFunc() (reconcileFunc, error) {
 
 func (r *ControlPlaneReconciler) reconcileReady() op.Reconciliation {
 	// Do nothing
+	r.log.Info(fmt.Sprintf("reconcileReady() ControlPlane %s", r.cp.Name))
 	return op.Reconcile()
 }
 
 func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
+	r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s", r.cp.Name))
 	ctx := context.Background()
 	// Error chan for reconcile routines
 	reconcilerCount := 3
@@ -81,12 +83,19 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 		}
 	}
 	if finRecon.IsFinal() {
+		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s isFinal", r.cp.Name))
 		return finRecon
 	}
 
 	// deploying -> ready
 	if r.cp.IsDeploying() {
-		r.cp.SetConditionReady()
+		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setReady", r.cp.Name))
+		r.cp.SetConditionReady(&r.log) // temporary logger
+		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s -- write status update, new conditions %v", r.cp.Name, r.cp.Status.Conditions))
+		if err := r.Status().Update(ctx, &r.cp); err != nil {
+			r.log.Error(err, fmt.Sprintf("reconcileDeploying() ControlPlane %s -- failed to update status", r.cp.Name))
+			return op.ReconcileWithError(err)
+		}
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return op.ReconcileWithError(err)
 		}
