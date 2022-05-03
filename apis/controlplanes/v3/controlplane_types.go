@@ -156,7 +156,7 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 		LastTransitionTime: now,
 	}
 	if log != nil {
-		(*log).Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setCondition %v -- Existing conditions %v", cp.Name, newCondition, cp.Status.Conditions))
+		log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setCondition %v -- Existing conditions %v", cp.Name, newCondition, cp.Status.Conditions))
 	}
 	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
 }
