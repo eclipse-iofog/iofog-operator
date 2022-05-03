@@ -46,3 +46,10 @@ spec:
   controller:
     pidBaseDir: ""
     ecnViewerPort: 0
+status:
+  conditions:
+    - lastTransitionTime: "2022-04-10T22:44:09Z"
+      message: ""
+      reason: "initial_status"
+      status: "True"
+      type: "deploying"

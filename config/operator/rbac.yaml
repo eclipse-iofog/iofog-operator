@@ -21,6 +21,12 @@ metadata:
   name: iofog-operator
 rules:
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - roles
@@ -30,12 +36,43 @@ rules:
 - apiGroups:
   - iofog.org
   resources:
+  - applications
   - apps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - iofog.org
+  resources:
+  - applications/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - iofog.org
+  resources:
   - controlplanes
   verbs:
-  - list
+  - create
+  - delete
   - get
+  - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - iofog.org
+  resources:
+  - controlplanes/status
+  verbs:
+  - get
+  - patch
   - update
 - apiGroups:
   - apps

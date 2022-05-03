@@ -27,7 +27,7 @@ import (
 
 const (
 	conditionReady     = "ready"
-	conditionDeploying = "" // Update iofogctl etc to set default state
+	conditionDeploying = "deploying"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -128,7 +128,6 @@ type ControlPlaneStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-
 // ControlPlane is the Schema for the controlplanes API
 type ControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -171,7 +170,7 @@ func (cp *ControlPlane) SetConditionReady(log *logr.Logger) {
 }
 
 func (cp *ControlPlane) GetCondition() string {
-	state := ""
+	state := conditionDeploying
 	for _, condition := range cp.Status.Conditions {
 		if condition.Status == metav1.ConditionTrue {
 			state = condition.Type

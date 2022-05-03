@@ -1,10 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
   name: controlplanes.iofog.org
 spec:
@@ -37,11 +36,14 @@ spec:
             description: ControlPlaneSpec defines the desired state of ControlPlane
             properties:
               controller:
+                description: Controller contains runtime configuration for ioFog Controller
                 properties:
                   ecn:
                     type: string
                   ecnViewerPort:
                     type: integer
+                  ecnViewerUrl:
+                    type: string
                   pidBaseDir:
                     type: string
                   portAllocatorHost:
@@ -50,6 +52,8 @@ spec:
                     type: string
                 type: object
               database:
+                description: Database is only used when ioFog Controller is configured
+                  to connect to an extrenal DB
                 properties:
                   databaseName:
                     type: string
@@ -72,6 +76,8 @@ spec:
                 - user
                 type: object
               images:
+                description: Images specifies which containers to run for each component
+                  of the ControlPlane
                 properties:
                   controller:
                     type: string
@@ -85,6 +91,8 @@ spec:
                     type: string
                 type: object
               ingresses:
+                description: Ingresses allow Router and Port Manager to configure
+                  endpoint addresses correctly
                 properties:
                   httpProxy:
                     properties:
@@ -109,12 +117,16 @@ spec:
                     type: object
                 type: object
               replicas:
+                description: Replicas of ioFog Controller should be 1 unless an external
+                  DB is configured
                 properties:
                   controller:
                     format: int32
                     type: integer
                 type: object
               services:
+                description: Services should be LoadBalancer unless Ingress is being
+                  configured
                 properties:
                   controller:
                     properties:
@@ -142,7 +154,8 @@ spec:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                   Important: Run "operator-sdk generate k8s" to regenerate code after
                   modifying this file Add custom validation using kubebuilder tags:
-                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+                  https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+                  User contains credentials for ioFog Controller'
                 properties:
                   email:
                     type: string
@@ -172,13 +185,12 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{     // Represents the observations of a
-                    foo's current state.     // Known .status.conditions.type are:
-                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
-                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
-                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
-                    \n     // other fields }"
+                    type FooStatus struct{ // Represents the observations of a foo's
+                    current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
                   properties:
                     lastTransitionTime:
                       description: lastTransitionTime is the last time the condition
