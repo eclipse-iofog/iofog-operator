@@ -23,13 +23,8 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 		}
 		versions[idx].Schema = &extsv1.CustomResourceValidation{
 			OpenAPIV3Schema: &extsv1.JSONSchemaProps{
-				Properties: map[string]extsv1.JSONSchemaProps{},
-				AdditionalProperties: &extsv1.JSONSchemaPropsOrBool{
-					Allows: true,
-				},
-				Required:               []string{},
+				Properties:             map[string]extsv1.JSONSchemaProps{},
 				XPreserveUnknownFields: &preserveUnknownFields,
-				XEmbeddedResource:      true,
 				Type:                   "object",
 			},
 		}
@@ -67,13 +62,8 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 		}
 		versions[idx].Schema = &extsv1.CustomResourceValidation{
 			OpenAPIV3Schema: &extsv1.JSONSchemaProps{
-				Properties: map[string]extsv1.JSONSchemaProps{},
-				AdditionalProperties: &extsv1.JSONSchemaPropsOrBool{
-					Allows: true,
-				},
-				Required:               []string{},
+				Properties:             map[string]extsv1.JSONSchemaProps{},
 				XPreserveUnknownFields: &preserveUnknownFields,
-				XEmbeddedResource:      true,
 				Type:                   "object",
 			},
 		}
