@@ -32,7 +32,12 @@ func (r *ControlPlaneReconciler) getReconcileFunc() (reconcileFunc, error) {
 	if r.cp.IsDeploying() {
 		return r.reconcileDeploying, nil
 	}
-	return nil, fmt.Errorf("invalid state %s for ECN %s", r.cp.GetCondition(), r.cp.Name)
+	// If invalid state, migrate state to deploying to restart on sane basis
+	r.cp.SetConditionDeploying()
+	if err := r.Status().Update(context.Background(), &r.cp); err != nil {
+		return nil, err
+	}
+	return r.reconcileDeploying, nil
 }
 
 func (r *ControlPlaneReconciler) reconcileReady() op.Reconciliation {
