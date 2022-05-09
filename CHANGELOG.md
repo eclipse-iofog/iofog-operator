@@ -1,5 +1,9 @@
 # Changelog
 
+## [v3.0.0] - 09 May 2022
+
+* Update CRDs and CR from v1beta1 to v1 to be Kubernetes v1.22+ compliant
+
 ## [v3.0.0-beta1] - 13 August 2021
 
 * No changes since alpha2
