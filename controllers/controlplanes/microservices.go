@@ -256,7 +256,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					},
 					{
 						Name:  "SystemImages_Router_2",
-						Value: util.TransformImageToARM(cfg.routerImage),
+						Value: cfg.routerImage,
 					},
 					{
 						Name:  "PORT_ALLOC_ADDRESS",
