@@ -169,8 +169,8 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
 }
 
-func (cp *ControlPlane) SetConditionDeploying() {
-	cp.setCondition(conditionDeploying, nil)
+func (cp *ControlPlane) SetConditionDeploying(log *logr.Logger) {
+	cp.setCondition(conditionDeploying, log)
 }
 
 func (cp *ControlPlane) SetConditionReady(log *logr.Logger) {

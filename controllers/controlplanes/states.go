@@ -34,7 +34,7 @@ func (r *ControlPlaneReconciler) getReconcileFunc(ctx context.Context) (reconcil
 		return r.reconcileDeploying, nil
 	}
 	// If invalid state, migrate state to deploying to restart on sane basis
-	r.cp.SetConditionDeploying()
+	r.cp.SetConditionDeploying(nil)
 
 	if err := r.Status().Update(ctx, &r.cp); err != nil {
 		return nil, err
