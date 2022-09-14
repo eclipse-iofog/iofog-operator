@@ -1,7 +1,6 @@
 OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
-GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 LDFLAGS += -X $(PREFIX).portManagerTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).kubeletTag=v3.0.0-beta1
@@ -9,7 +8,6 @@ LDFLAGS += -X $(PREFIX).proxyTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).routerTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
-GO_SDK_MODULE = iofog-go-sdk/v3@develop
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
@@ -31,18 +29,9 @@ endif
 
 all: build
 
-.PHONY: modules
-modules: ## Download modules
-	@for module in $(GO_SDK_MODULE); do \
-		go get github.com/eclipse-iofog/$$module; \
-	done
-
-.PHONY: vendor
-vendor: modules ## Vendor all modules
-	@go mod vendor
 
 .PHONY: build
-build: GOARGS += -mod=vendor -ldflags "$(LDFLAGS)"
+build: GOARGS += -ldflags "$(LDFLAGS)"
 build: fmt gen ## Build operator binary
 	go build $(GOARGS) -o bin/iofog-operator main.go
 
@@ -56,18 +45,15 @@ deploy: manifests kustomize ## Deploy controller in the configured Kubernetes cl
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
-manifests: export GOFLAGS=-mod=vendor
 manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases 
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 fmt: ## Run go fmt against code
-	@gofmt -s -w $(GOFILES_NOVENDOR)
- 
-lint: export GOFLAGS=-mod=vendor
+	@gofmt -s -w .
+
 lint: golangci-lint fmt ## Lint the source
 	@$(GOLANGCI_LINT) run --timeout 5m0s
 
-gen: export GOFLAGS=-mod=vendor
 gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
@@ -75,7 +61,7 @@ docker:
 	docker build -t $(IMG) .
 
 unit: ## Run unit tests
-	set -o pipefail; go list -mod=vendor ./... | xargs -n1 go test -mod=vendor $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
+	set -o pipefail; go list ./... | xargs -n1 go test  $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
 
 feature: bats kubectl kustomize ## Run feature tests
 	test/run.bash
@@ -111,11 +97,7 @@ golangci-lint: ## Install golangci
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
-	GOLANGCI_TMP_DIR=$$(mktemp -d) ;\
-	cd $$GOLANGCI_TMP_DIR ;\
-	go mod init tmp ;\
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
-	rm -rf $$GOLANGCI_TMP_DIR ;\
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
 	}
 GOLANGCI_LINT=$(GOBIN)/golangci-lint
 else
@@ -126,11 +108,7 @@ controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
@@ -141,11 +119,7 @@ kustomize: ## Install kustomize
 ifeq (, $(shell which kustomize))
 	@{ \
 	set -e ;\
-	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/kustomize/kustomize/v4 ;\
-	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
+	go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7 ;\
 	}
 KUSTOMIZE=$(GOBIN)/kustomize
 else
