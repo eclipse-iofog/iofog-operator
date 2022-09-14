@@ -20,7 +20,7 @@ make build
 ```
 
 Note that the Makefile targets have a number of tooling dependencies. These are
-installed automatically if not present (as the Azure build/test pipeline requires them),
+installed automatically if not present (as the [Azure build/test pipeline](azure-pipelines.yml) requires them),
 but for local development, you can use your own install method for the tools. They are:
 
 - [controller-gen](https://github.com/kubernetes-sigs/controller-tools)

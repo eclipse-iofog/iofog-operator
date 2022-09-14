@@ -114,7 +114,7 @@ func Write(fd int, p []byte) (n int, err error) {
 
 var ioSync int64
 
-//sys	fd2path(fd int, buf []byte) (err error)
+// sys	fd2path(fd int, buf []byte) (err error)
 func Fd2path(fd int) (path string, err error) {
 	var buf [512]byte
 
@@ -125,7 +125,7 @@ func Fd2path(fd int) (path string, err error) {
 	return cstring(buf[:]), nil
 }
 
-//sys	pipe(p *[2]int32) (err error)
+// sys	pipe(p *[2]int32) (err error)
 func Pipe(p []int) (err error) {
 	if len(p) != 2 {
 		return syscall.ErrorString("bad arg in system call")
@@ -179,7 +179,7 @@ func (w Waitmsg) ExitStatus() int {
 	return 1
 }
 
-//sys	await(s []byte) (n int, err error)
+// sys	await(s []byte) (n int, err error)
 func Await(w *Waitmsg) (err error) {
 	var buf [512]byte
 	var f [5][]byte
@@ -300,43 +300,43 @@ func Getgroups() (gids []int, err error) {
 	return make([]int, 0), nil
 }
 
-//sys	open(path string, mode int) (fd int, err error)
+// sys	open(path string, mode int) (fd int, err error)
 func Open(path string, mode int) (fd int, err error) {
 	fixwd()
 	return open(path, mode)
 }
 
-//sys	create(path string, mode int, perm uint32) (fd int, err error)
+// sys	create(path string, mode int, perm uint32) (fd int, err error)
 func Create(path string, mode int, perm uint32) (fd int, err error) {
 	fixwd()
 	return create(path, mode, perm)
 }
 
-//sys	remove(path string) (err error)
+// sys	remove(path string) (err error)
 func Remove(path string) error {
 	fixwd()
 	return remove(path)
 }
 
-//sys	stat(path string, edir []byte) (n int, err error)
+// sys	stat(path string, edir []byte) (n int, err error)
 func Stat(path string, edir []byte) (n int, err error) {
 	fixwd()
 	return stat(path, edir)
 }
 
-//sys	bind(name string, old string, flag int) (err error)
+// sys	bind(name string, old string, flag int) (err error)
 func Bind(name string, old string, flag int) (err error) {
 	fixwd()
 	return bind(name, old, flag)
 }
 
-//sys	mount(fd int, afd int, old string, flag int, aname string) (err error)
+// sys	mount(fd int, afd int, old string, flag int, aname string) (err error)
 func Mount(fd int, afd int, old string, flag int, aname string) (err error) {
 	fixwd()
 	return mount(fd, afd, old, flag, aname)
 }
 
-//sys	wstat(path string, edir []byte) (err error)
+// sys	wstat(path string, edir []byte) (err error)
 func Wstat(path string, edir []byte) (err error) {
 	fixwd()
 	return wstat(path, edir)
