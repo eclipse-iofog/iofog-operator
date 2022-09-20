@@ -26,7 +26,7 @@ but for local development, you can use your own install method for the tools. Th
 - [controller-gen](https://github.com/kubernetes-sigs/controller-tools): k8s component
 - [kustomize](https://kustomize.io): k8s component
 - [golangci-lint](https://golangci-lint.run): linting
-- [kubectl](https://kubectl.docs.kubernetes.io): ClI for controlling k8s
+- [kubectl](https://kubectl.docs.kubernetes.io): CLI for controlling k8s
 - [bats](https://github.com/bats-core/bats-core): Bash-based testing framework
 
 
