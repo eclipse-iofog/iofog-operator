@@ -11,6 +11,19 @@ trigger:
     - CHANGELOG.md
     - LICENSE
 
+pr:
+  autoCancel: true
+  branches:
+    include:
+      - master
+      - develop
+      - release*
+  paths:
+    exclude:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
   GOROOT: '/usr/local/go1.17.9'
@@ -55,7 +68,7 @@ jobs:
       set -e
       make lint
     displayName: 'Lint source'
-  
+
   - task: Docker@2
     displayName: 'build and push docker image'
     inputs:
