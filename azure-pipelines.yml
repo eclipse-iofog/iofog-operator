@@ -14,22 +14,7 @@ pr:
   autoCancel: true
   branches:
     include:
-      - master
-      - develop
-      - release*
-  paths:
-    exclude:
-      - README.md
-      - CHANGELOG.md
-      - LICENSE
-
-pr:
-  autoCancel: true
-  branches:
-    include:
-      - master
-      - develop
-      - release*
+      - "*"
   paths:
     exclude:
       - README.md
