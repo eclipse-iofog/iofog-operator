@@ -4,7 +4,7 @@ trigger:
     - v*
   branches:
     include:
-    - develop
+    - "*"
   paths:
     exclude:
     - README.md
