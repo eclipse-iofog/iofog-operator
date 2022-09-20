@@ -11,6 +11,8 @@ LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1
 LDFLAGS += -X $(PREFIX).repo=gcr.io/focal-freedom-236620
 GO_SDK_MODULE = iofog-go-sdk/v3@develop
 
+# Here's a temp comment
+
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
 else
@@ -58,11 +60,11 @@ deploy: manifests kustomize ## Deploy controller in the configured Kubernetes cl
 
 manifests: export GOFLAGS=-mod=vendor
 manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases 
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 fmt: ## Run go fmt against code
 	@gofmt -s -w $(GOFILES_NOVENDOR)
- 
+
 lint: export GOFLAGS=-mod=vendor
 lint: golangci-lint fmt ## Lint the source
 	@$(GOLANGCI_LINT) run --timeout 5m0s
