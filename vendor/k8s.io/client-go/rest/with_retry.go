@@ -167,11 +167,11 @@ func (r *withRetry) IsNextRetry(ctx context.Context, restReq *Request, httpReq *
 
 // prepareForNextRetry is responsible for carrying out operations that need
 // to be completed before the next retry is initiated:
-// - if the request context is already canceled there is no need to
-//   retry, the function will return ctx.Err().
-// - we need to seek to the beginning of the request body before we
-//   initiate the next retry, the function should return an error if
-//   it fails to do so.
+//   - if the request context is already canceled there is no need to
+//     retry, the function will return ctx.Err().
+//   - we need to seek to the beginning of the request body before we
+//     initiate the next retry, the function should return an error if
+//     it fails to do so.
 func (r *withRetry) prepareForNextRetry(ctx context.Context, request *Request) error {
 	if ctx.Err() != nil {
 		return ctx.Err()

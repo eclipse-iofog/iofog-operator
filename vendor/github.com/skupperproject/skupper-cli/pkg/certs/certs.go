@@ -50,8 +50,8 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 
 type CertificateAuthority struct {
 	Certificate *x509.Certificate
-	Key interface{}
-	CrtData []byte
+	Key         interface{}
+	CrtData     []byte
 }
 
 func decodeDataElement(in []byte, name string) []byte {
@@ -73,8 +73,8 @@ func getCAFromSecret(secret *corev1.Secret) CertificateAuthority {
 	}
 	return CertificateAuthority{
 		Certificate: cert,
-		Key: key,
-		CrtData: secret.Data["tls.crt"],
+		Key:         key,
+		CrtData:     secret.Data["tls.crt"],
 	}
 }
 
@@ -85,7 +85,7 @@ func generateSecret(name string, subject string, hosts string, ca *CertificateAu
 	}
 
 	notBefore := time.Now()
-	notAfter := notBefore.Add(5*365*24*time.Hour) //TODO: make configurable?
+	notAfter := notBefore.Add(5 * 365 * 24 * time.Hour) //TODO: make configurable?
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
@@ -98,8 +98,8 @@ func generateSecret(name string, subject string, hosts string, ca *CertificateAu
 		Subject: pkix.Name{
 			CommonName: subject,
 		},
-		NotBefore: notBefore,
-		NotAfter:  notAfter,
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
@@ -115,7 +115,7 @@ func generateSecret(name string, subject string, hosts string, ca *CertificateAu
 	}
 
 	var parent *x509.Certificate
-	var cakey interface {}
+	var cakey interface{}
 	if ca == nil {
 		//self signed
 		template.IsCA = true
@@ -138,7 +138,7 @@ func generateSecret(name string, subject string, hosts string, ca *CertificateAu
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name: name,
 		},
 		Type: "kubernetes.io/tls",
 		Data: map[string][]byte{},
