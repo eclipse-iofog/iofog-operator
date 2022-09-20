@@ -4,7 +4,7 @@ trigger:
     - v*
   branches:
     include:
-    - develop
+    - "*"
   paths:
     exclude:
     - README.md
@@ -14,14 +14,12 @@ pr:
   autoCancel: true
   branches:
     include:
-      - master
-      - develop
-      - release*
+    - "*"
   paths:
     exclude:
-      - README.md
-      - CHANGELOG.md
-      - LICENSE
+    - README.md
+    - CHANGELOG.md
+    - LICENSE
 
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
