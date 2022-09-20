@@ -23,8 +23,8 @@ Note that the Makefile targets have a number of tooling dependencies. These are
 installed automatically if not present (as the [Azure build/test pipeline](azure-pipelines.yml) requires them),
 but for local development, you can use your own install method for the tools. They are:
 
-- [controller-gen](https://github.com/kubernetes-sigs/controller-tools)
-- [kustomize](https://kustomize.io)
+- [controller-gen](https://github.com/kubernetes-sigs/controller-tools): k8s component
+- [kustomize](https://kustomize.io): k8s component
 - [golangci-lint](https://golangci-lint.run): linting
 - [kubectl](https://kubectl.docs.kubernetes.io): ClI for controlling k8s
 - [bats](https://github.com/bats-core/bats-core): Bash-based testing framework
