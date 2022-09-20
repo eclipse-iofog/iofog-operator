@@ -14,12 +14,12 @@ pr:
   autoCancel: true
   branches:
     include:
-      - "*"
+    - "*"
   paths:
     exclude:
-      - README.md
-      - CHANGELOG.md
-      - LICENSE
+    - README.md
+    - CHANGELOG.md
+    - LICENSE
 
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
