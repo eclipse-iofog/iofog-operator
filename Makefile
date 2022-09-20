@@ -48,7 +48,7 @@ deploy: manifests kustomize ## Deploy controller in the configured Kubernetes cl
 manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-fmt: ## Run go fmt against code
+fmt: ## Run gofmt against code
 	@gofmt -s -w .
 
 lint: golangci-lint fmt ## Lint the source
@@ -62,7 +62,6 @@ docker:
 
 unit: ## Run unit tests
 	set -o pipefail; go list ./... | xargs -n1 go test  $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
-
 
 feature: bats kubectl kustomize ## Run feature tests
 	test/run.bash
