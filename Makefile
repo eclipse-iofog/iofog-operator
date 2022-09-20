@@ -29,7 +29,6 @@ endif
 
 all: build
 
-
 .PHONY: build
 build: GOARGS += -ldflags "$(LDFLAGS)"
 build: fmt gen ## Build operator binary
