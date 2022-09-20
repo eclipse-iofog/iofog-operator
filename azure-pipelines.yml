@@ -14,13 +14,15 @@ pr:
   autoCancel: true
   branches:
     include:
-    - "*"
+    - master
+    - develop
+    - release/*
   paths:
     exclude:
     - README.md
     - CHANGELOG.md
     - LICENSE
-
+    
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
   GOROOT: '/usr/local/go1.17.9'
