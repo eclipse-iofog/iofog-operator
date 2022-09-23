@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -14,8 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 )
 
 func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool, error) {
@@ -24,6 +23,7 @@ func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool,
 		Namespace: namespace,
 	}
 	dep := &appsv1.Deployment{}
+
 	err := r.Client.Get(context.TODO(), key, dep)
 	if err == nil {
 		return true, nil
@@ -203,6 +203,7 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update 
 		// Resource already exists - don't requeue
 		if update {
 			r.log.Info("Updating secret...", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
+
 			err = r.Client.Update(context.TODO(), secret)
 			if err != nil {
 				return err
@@ -227,9 +228,11 @@ func (r *ControlPlaneReconciler) createService(ms *microservice) error {
 
 		// Check if this resource already exists
 		found := &corev1.Service{}
+
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+
 			err = r.Client.Create(context.TODO(), svc)
 			if err != nil {
 				return err
@@ -258,11 +261,13 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 			Namespace: svcAcc.Namespace,
 			Name:      ms.imagePullSecret,
 		}, secret)
+
 		if err != nil || secret.Type != corev1.SecretTypeDockerConfigJson {
 			r.log.Error(err, "Failed to create a new Service Account with imagePullSecret",
 				"ServiceAccount.Namespace", svcAcc.Namespace,
 				"ServiceAccount.Name", svcAcc.Name,
 				"pullSecret", ms.imagePullSecret)
+
 			return err
 		}
 
@@ -278,6 +283,7 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 
 	// Check if this resource already exists
 	found := &corev1.ServiceAccount{}
+
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
@@ -294,6 +300,7 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 
 	// Resource already exists - don't requeue
 	r.log.Info("Skip reconcile: Service Account already exists", "ServiceAccount.Namespace", found.Namespace, "ServiceAccount.Name", found.Name)
+
 	return nil
 }
 
@@ -307,9 +314,11 @@ func (r *ControlPlaneReconciler) createRole(ms *microservice) error { //nolint:d
 
 	// Check if this resource already exists
 	found := &rbacv1.Role{}
+
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role ", "Role.Namespace", role.Namespace, "Role.Name", role.Name)
+
 		err = r.Client.Create(context.TODO(), role)
 		if err != nil {
 			return err
@@ -337,9 +346,11 @@ func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error { //n
 
 	// Check if this resource already exists
 	found := &rbacv1.RoleBinding{}
+
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role Binding", "RoleBinding.Namespace", crb.Namespace, "RoleBinding.Name", crb.Name)
+
 		err = r.Client.Create(context.TODO(), crb)
 		if err != nil {
 			return err
@@ -353,6 +364,7 @@ func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error { //n
 
 	// Resource already exists - don't requeue
 	r.log.Info("Skip reconcile: Role Binding already exists", "RoleBinding.Namespace", found.Namespace, "RoleBinding.Name", found.Name)
+
 	return nil
 }
 
@@ -363,6 +375,7 @@ func (r *ControlPlaneReconciler) createIofogUser(iofogClient *iofogclient.Client
 		Email:    r.cp.Spec.User.Email,
 		Password: r.cp.Spec.User.Password,
 	}
+
 	password, err := DecodeBase64(user.Password)
 	if err == nil {
 		user.Password = password
@@ -421,10 +434,8 @@ func (r *ControlPlaneReconciler) createDefaultRouter(iofogClient *iofogclient.Cl
 			MessagingPort:   newInt(proxy.MessagePort),
 		},
 	}
-	if err = iofogClient.PutDefaultRouter(routerConfig); err != nil {
-		return
-	}
-	return
+
+	return iofogClient.PutDefaultRouter(routerConfig)
 }
 
 func DecodeBase64(encoded string) (string, error) {

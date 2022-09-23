@@ -18,15 +18,13 @@ import (
 	"strconv"
 	"strings"
 
-	// "k8s.io/apimachinery/pkg/api/resource"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
-	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 )
 
 const (
@@ -122,6 +120,7 @@ func getControllerPort(msvc *microservice) (int, error) {
 	if len(msvc.services) == 0 || len(msvc.services[0].ports) == 0 {
 		return 0, errors.New("controller microservice does not have requisite ports")
 	}
+
 	return msvc.services[0].ports[0], nil
 }
 
@@ -483,6 +482,7 @@ func filterRouterConfig(cfg routerMicroserviceConfig) routerMicroserviceConfig {
 
 func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 	cfg = filterRouterConfig(cfg)
+
 	return &microservice{
 		name: routerName,
 		labels: map[string]string{
@@ -515,7 +515,6 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 			},
 		},
 		volumes: []corev1.Volume{
-
 			{
 				Name: routerName + "-internal",
 				VolumeSource: corev1.VolumeSource{
@@ -612,5 +611,6 @@ func getTrafficPolicy(serviceType string) string {
 	if strings.EqualFold(serviceType, string(corev1.ServiceTypeLoadBalancer)) {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
+
 	return ""
 }

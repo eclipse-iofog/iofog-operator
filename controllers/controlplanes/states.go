@@ -120,5 +120,6 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 
 		return op.Reconcile()
 	}
+
 	return op.Continue()
 }

@@ -9,18 +9,16 @@ import (
 	"strings"
 	"time"
 
-	net2 "k8s.io/apimachinery/pkg/util/net"
-
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s"
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	net2 "k8s.io/apimachinery/pkg/util/net"
 )
 
 const (
@@ -39,6 +37,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	r.log.Info(fmt.Sprintf("Updating user password %s for ControlPlane %s", r.cp.Spec.User.Password, r.cp.Name))
 	// Retrieve old password from secrets
 	found := &corev1.Secret{}
+
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
 	if err != nil {
 		return err
@@ -102,6 +101,7 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 
 		if secret.Name == controllerDBCredentialsSecretName {
 			found := &corev1.Secret{}
+
 			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
@@ -112,6 +112,7 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 				if err != nil {
 					return false, err
 				}
+
 				return false, nil
 			}
 			// Secret already exists
@@ -124,6 +125,7 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -198,6 +200,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
 	iofogClient, fin := r.getIofogClient(host, ctrlPort)
+
 	if fin.IsFinal() {
 		return fin
 	}
@@ -276,11 +279,13 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 
 	r.log.Info(fmt.Sprintf("op.Continue in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
+
 	return op.Continue()
 }
 
 func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogclient.Client, op.Reconciliation) {
 	baseURL := net2.JoinSchemeNamePort("http", host, strconv.Itoa(port))
+
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
@@ -452,6 +457,7 @@ func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address s
 	}
 
 	r.log.Info(fmt.Sprintf("Secrets generated for Controlplane %s", r.cp.Name))
+
 	return err
 }
 
@@ -460,5 +466,6 @@ func newK8sClient() (*k8sclient.Client, error) {
 	if kubeConf == "" {
 		return k8sclient.NewInCluster()
 	}
+
 	return k8sclient.New(kubeConf)
 }

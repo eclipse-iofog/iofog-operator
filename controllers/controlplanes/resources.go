@@ -51,6 +51,7 @@ func newServices(namespace string, ms *microservice) (svcs []*corev1.Service) {
 
 		svcs = append(svcs, svc)
 	}
+
 	return svcs
 }
 

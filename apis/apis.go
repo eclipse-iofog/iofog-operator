@@ -1,14 +1,13 @@
 package apis
 
 import (
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	extsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-
-	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 )
 
 func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
@@ -19,6 +18,7 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 	for i, version := range apiVersions {
 		versions[i].Name = version
 		versions[i].Served = true
+
 		if i == 0 {
 			versions[i].Storage = true
 		}
@@ -110,6 +110,7 @@ func sameVersionsSupported(left, right *extsv1.CustomResourceDefinition) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -133,5 +134,6 @@ func InitClientScheme() *runtime.Scheme {
 
 	utilruntime.Must(appsv3.AddToScheme(scheme))
 	utilruntime.Must(cpv3.AddToScheme(scheme))
+
 	return scheme
 }

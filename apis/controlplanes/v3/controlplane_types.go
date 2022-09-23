@@ -120,7 +120,7 @@ type Controller struct {
 	PortAllocatorHost string `json:"portAllocatorHost,omitempty"`
 }
 
-// ControlPlaneStatus defines the observed state of ControlPlane
+// ControlPlaneStatus defines the observed state of ControlPlane.
 type ControlPlaneStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -129,7 +129,7 @@ type ControlPlaneStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// ControlPlane is the Schema for the controlplanes API
+// ControlPlane is the Schema for the controlplanes API.
 type ControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -147,6 +147,7 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 		condition.Reason = strings.ToLower(condition.Reason)
 		condition.Reason = strings.Replace(condition.Reason, " ", "_", -1)
 		condition.Reason = strings.Replace(condition.Reason, "-", "_", -1)
+
 		if condition.Status == metav1.ConditionTrue {
 			condition.Status = metav1.ConditionFalse
 			condition.Reason = fmt.Sprintf("transition_to_%s", conditionType)
@@ -160,6 +161,7 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 		Reason:             "initial_status",
 		LastTransitionTime: now,
 	}
+
 	if log != nil {
 		log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setCondition %v -- Existing conditions %v", cp.Name, newCondition, cp.Status.Conditions))
 	}
@@ -185,6 +187,7 @@ func (cp *ControlPlane) GetCondition() string {
 			break
 		}
 	}
+
 	return state
 }
 
@@ -198,7 +201,7 @@ func (cp *ControlPlane) IsDeploying() bool {
 
 // +kubebuilder:object:root=true
 
-// ControlPlaneList contains a list of ControlPlane
+// ControlPlaneList contains a list of ControlPlane.
 type ControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
