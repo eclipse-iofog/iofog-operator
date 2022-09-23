@@ -28,9 +28,11 @@ func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool,
 	if err == nil {
 		return true, nil
 	}
+
 	if k8serrors.IsNotFound(err) {
 		return false, nil
 	}
+
 	return false, err
 }
 
@@ -83,6 +85,7 @@ func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 
 	// Resource already exists - update it
 	r.log.Info("Updating existing Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+
 	if err := r.Client.Update(context.TODO(), dep); err != nil {
 		return err
 	}
@@ -150,23 +153,29 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update 
 			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for Controlplane %s", recoverResult, r.cp.Name))
 		}
 	}()
-	for idx := range ms.secrets {
-		secret := &ms.secrets[idx]
+
+	for i := range ms.secrets {
+		secret := &ms.secrets[i]
 		r.log.Info(fmt.Sprintf("Creating secret %s", secret.ObjectMeta.Name))
 		// Set ControlPlane instance as the owner and controller
 		r.log.Info(fmt.Sprintf("Setting owner reference for secret %s", secret.ObjectMeta.Name))
+
 		if err := controllerutil.SetControllerReference(&r.cp, secret, r.Scheme); err != nil {
 			r.log.Info(fmt.Sprintf("Failed to set owner reference for secret %s: %v", secret.ObjectMeta.Name, err))
+
 			return err
 		}
 
 		// Check if this resource already exists
 		r.log.Info(fmt.Sprintf("Checking if secret %s exists", secret.ObjectMeta.Name))
 		found := &corev1.Secret{}
+
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 		r.log.Info(fmt.Sprintf("secret %s: Exists: %s Error: %v", secret.ObjectMeta.Name, found.Name, err))
+
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
+
 			err = r.Client.Create(context.TODO(), secret)
 			if err != nil {
 				return err
@@ -176,6 +185,7 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update 
 			continue
 		} else if err != nil {
 			r.log.Info(fmt.Sprintf("Failed with error %v for secret %s:", err, secret.ObjectMeta.Name))
+
 			return err
 		}
 
@@ -190,7 +200,9 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update 
 			r.log.Info("Skip reconciliation: Secret already exists.", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
 		}
 	}
+
 	r.log.Info(fmt.Sprintf("Done Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
+
 	return nil
 }
 

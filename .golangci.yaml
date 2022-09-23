@@ -1,5 +1,7 @@
 linters-settings:
-
+  cyclop:
+    max-complexity: 30
+    skip-tests: true
   depguard:
     list-type: blacklist
     packages:
@@ -52,11 +54,14 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+  nestif:
+    min-complexity: 10
+
   varnamelen:
     # The longest distance, in source lines, that is being considered a "small scope".
     # Variables used in at most this many lines will be ignored.
     # Default: 5
-    max-distance: 6
+    max-distance: 20
     # The minimum length of a variable's name that is considered "long".
     # Variable names that are at least this long will be ignored.
     # Default: 3
@@ -88,7 +93,7 @@ linters:
     - execinquery
     - exhaustive
 #    - exhaustivestruct
-    - exhaustruct
+#    - exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert
@@ -102,7 +107,7 @@ linters:
     - gocyclo
     - godot
     - godox
-    - goerr113
+#    - goerr113
     - gofmt
     - gofumpt
     - goheader

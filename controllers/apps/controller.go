@@ -66,27 +66,33 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+
 		err = r.Client.Create(ctx, dep)
 		if err != nil {
 			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+
 			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Deployment")
+
 		return ctrl.Result{}, err
 	}
 
 	count := instance.Spec.Replicas
 	log.Info("Scaling", "Current count: ", *found.Spec.Replicas)
 	log.Info("Scaling", "Desired count: ", count)
+
 	if *found.Spec.Replicas != count {
 		found.Spec.Replicas = &count
 		err = r.Client.Update(ctx, found)
 		if err != nil {
 			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
+
 			return ctrl.Result{}, err
 		}
 
@@ -97,6 +103,7 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 	err = r.Client.List(ctx, podList)
 	if err != nil {
 		log.Error(err, "Failed to list pods", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
+
 		return ctrl.Result{}, err
 	}
 	podNames := getPodNames(podList.Items)
@@ -106,6 +113,7 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		err := r.Client.Update(ctx, instance)
 		if err != nil {
 			log.Error(err, "failed to update node status", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
+
 			return ctrl.Result{}, err
 		}
 	}
@@ -136,21 +144,30 @@ func labelsForIOFog(name string) map[string]string {
 func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*appsv1.Deployment, error) {
 	labels := labelsForIOFog(app.Name)
 
-	microservices, _ := json.Marshal(app.Spec.Microservices)
-	routes, _ := json.Marshal(app.Spec.Routes)
+	microservices, err := json.Marshal(app.Spec.Microservices)
+	if err != nil {
+		return nil, err
+	}
+
+	routes, err := json.Marshal(app.Spec.Routes)
+	if err != nil {
+		return nil, err
+	}
+
 	annotations := map[string]string{
 		"microservices": string(microservices),
 		"routes":        string(routes),
 	}
 
 	containers := make([]corev1.Container, len(app.Spec.Microservices))
-	for idx := range app.Spec.Microservices {
-		microservice := &app.Spec.Microservices[idx]
+
+	for i := range app.Spec.Microservices {
+		microservice := &app.Spec.Microservices[i]
 		container := corev1.Container{
 			Name:  microservice.Name,
 			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
 		}
-		containers[idx] = container
+		containers[i] = container
 	}
 
 	dep := &appsv1.Deployment{

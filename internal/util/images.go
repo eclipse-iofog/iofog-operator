@@ -15,15 +15,14 @@ package util
 
 import "fmt"
 
-// Set by linker.
+// These values are set by the linker, e.g. "LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1".
 var (
-	repo = "undefined"
-
-	controllerTag  = "undefined"
-	kubeletTag     = "undefined"
-	routerTag      = "undefined"
-	portManagerTag = "undefined"
-	proxyTag       = "undefined"
+	repo           = "undefined" //nolint:gochecknoglobals
+	controllerTag  = "undefined" //nolint:gochecknoglobals
+	kubeletTag     = "undefined" //nolint:gochecknoglobals
+	routerTag      = "undefined" //nolint:gochecknoglobals
+	portManagerTag = "undefined" //nolint:gochecknoglobals
+	proxyTag       = "undefined" //nolint:gochecknoglobals
 )
 
 const (

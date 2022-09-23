@@ -163,6 +163,7 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 	if log != nil {
 		log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setCondition %v -- Existing conditions %v", cp.Name, newCondition, cp.Status.Conditions))
 	}
+
 	cond.SetStatusCondition(&cp.Status.Conditions, newCondition)
 }
 
@@ -176,9 +177,11 @@ func (cp *ControlPlane) SetConditionReady(log *logr.Logger) {
 
 func (cp *ControlPlane) GetCondition() string {
 	state := conditionDeploying
+
 	for _, condition := range cp.Status.Conditions {
 		if condition.Status == metav1.ConditionTrue {
 			state = condition.Type
+
 			break
 		}
 	}
@@ -202,6 +205,6 @@ type ControlPlaneList struct {
 	Items           []ControlPlane `json:"items"`
 }
 
-func init() {
+func init() { //nolint:gochecknoinits
 	SchemeBuilder.Register(&ControlPlane{}, &ControlPlaneList{})
 }

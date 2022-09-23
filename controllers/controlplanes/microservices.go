@@ -35,7 +35,7 @@ const (
 	controllerCredentialsSecretName   = "controller-credentials"
 	emailSecretKey                    = "email"
 	passwordSecretKey                 = "password"
-	controllerDBCredentialsSecretName = "controller-db-credentials"
+	controllerDBCredentialsSecretName = "controller-db-credentials" //nolint:gosec
 	controllerDBUserSecretKey         = "username"
 	controllerDBDBNameSecretKey       = "dbname"
 	controllerDBPasswordSecretKey     = "password"
@@ -100,15 +100,19 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 	if cfg.replicas == 0 {
 		cfg.replicas = 1
 	}
+
 	if cfg.image == "" {
 		cfg.image = util.GetControllerImage()
 	}
+
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
+
 	if cfg.ecnViewerPort == 0 {
 		cfg.ecnViewerPort = 80
 	}
+
 	if cfg.pidBaseDir == "" {
 		cfg.pidBaseDir = "/tmp"
 	}
@@ -169,7 +173,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/api/v3/status",
-							Port: intstr.FromInt(51121),
+							Port: intstr.FromInt(51121), //nolint:gomnd
 						},
 					},
 					InitialDelaySeconds: 10,
@@ -328,6 +332,7 @@ func filterPortManagerConfig(cfg *portManagerConfig) {
 	if cfg.image == "" {
 		cfg.image = util.GetPortManagerImage()
 	}
+
 	if cfg.proxyImage == "" {
 		cfg.proxyImage = util.GetProxyImage()
 	}
@@ -335,6 +340,7 @@ func filterPortManagerConfig(cfg *portManagerConfig) {
 
 func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 	filterPortManagerConfig(cfg)
+
 	return &microservice{
 		mustRecreateOnRollout: true,
 		name:                  portManagerDeploymentName,
@@ -464,9 +470,11 @@ func filterRouterConfig(cfg routerMicroserviceConfig) routerMicroserviceConfig {
 	if cfg.image == "" {
 		cfg.image = util.GetRouterImage()
 	}
+
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
+
 	return cfg
 }
 
@@ -533,7 +541,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 				readinessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Port: intstr.FromInt(9090),
+							Port: intstr.FromInt(9090), //nolint:gomnd
 							Path: "/healthz",
 						},
 					},
