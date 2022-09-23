@@ -52,6 +52,7 @@ func (r *ControlPlaneReconciler) reconcileReady() op.Reconciliation {
 
 func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 	r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s", r.cp.Name))
+
 	ctx := context.Background()
 	// Error chan for reconcile routines
 	reconcilerCount := 3

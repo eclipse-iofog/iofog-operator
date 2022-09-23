@@ -106,6 +106,7 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 
 		return ctrl.Result{}, err
 	}
+
 	podNames := getPodNames(podList.Items)
 
 	if !reflect.DeepEqual(podNames, instance.Status.PodNames) {
@@ -129,9 +130,10 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func getPodNames(pods []corev1.Pod) []string {
 	podNames := make([]string, len(pods))
-	for idx := range pods {
-		podNames[idx] = pods[idx].Name
+	for i := range pods {
+		podNames[i] = pods[i].Name
 	}
+
 	return podNames
 }
 

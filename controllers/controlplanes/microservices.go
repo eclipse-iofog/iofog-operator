@@ -127,6 +127,7 @@ func getControllerPort(msvc *microservice) (int, error) {
 
 func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConfig) *microservice {
 	filterControllerConfig(cfg)
+
 	msvc := &microservice{
 		availableDelay: 5,
 		name:           "controller",
@@ -296,6 +297,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 			},
 		},
 	}
+
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
 		msvc.mustRecreateOnRollout = true
@@ -315,6 +317,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 			SubPath:   "prod_database.sqlite",
 		})
 	}
+
 	return msvc
 }
 

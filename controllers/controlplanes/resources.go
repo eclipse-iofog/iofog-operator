@@ -64,11 +64,13 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			MaxSurge:       &maxSurge,
 		},
 	}
+
 	if ms.mustRecreateOnRollout {
 		strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}
 	}
+
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
@@ -111,6 +113,7 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 		}
 		*containers = append(*containers, cont)
 	}
+
 	return dep
 }
 

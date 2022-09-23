@@ -48,15 +48,19 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if !ok {
 		return fmt.Errorf("password secret key %s not found in secret %s", passwordSecretKey, controllerCredentialsSecretName)
 	}
+
 	oldPassword, err := DecodeBase64(string(passwordBytes))
 	if err != nil {
 		return fmt.Errorf("password %s in secret %s is not a valid base64 string", string(passwordBytes), controllerCredentialsSecretName)
 	}
+
 	emailBytes, ok := found.Data[emailSecretKey]
 	if !ok {
 		return fmt.Errorf("email secret key %s not found in secret %s", emailSecretKey, controllerCredentialsSecretName)
 	}
+
 	email := string(emailBytes)
+
 	if err := iofogClient.Login(iofogclient.LoginRequest{
 		Email:    email,
 		Password: oldPassword,
@@ -83,6 +87,7 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
+
 	// Restart required pods
 	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
 		return err
@@ -190,6 +195,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	if err != nil {
 		return op.ReconcileWithError(err)
 	}
+
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
 	iofogClient, fin := r.getIofogClient(host, ctrlPort)
 	if fin.IsFinal() {
@@ -225,6 +231,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
+
 		routerProxy = cpv3.RouterIngress{
 			Address:      routerAddr,
 			MessagePort:  router.MessagePort,
@@ -278,15 +285,18 @@ func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogcl
 	if err != nil {
 		return nil, op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
 	}
+
 	iofogClient := iofogclient.New(iofogclient.Options{
 		BaseURL: parsedURL,
 		Timeout: 1,
 	})
+
 	if _, err = iofogClient.GetStatus(); err != nil {
 		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
 
 		return nil, op.ReconcileWithRequeue(requeueDuration)
 	}
+
 	return iofogClient, op.Continue()
 }
 
@@ -369,7 +379,9 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	// Wait for external IP of LB Service
 
 	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in router reconcile for ControlPlane %s", r.cp.Name))
-	address := ""
+
+	var address string
+
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {

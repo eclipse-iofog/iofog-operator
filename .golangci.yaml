@@ -61,7 +61,7 @@ linters-settings:
     # The longest distance, in source lines, that is being considered a "small scope".
     # Variables used in at most this many lines will be ignored.
     # Default: 5
-    max-distance: 20
+    max-distance: 50
     # The minimum length of a variable's name that is considered "long".
     # Variable names that are at least this long will be ignored.
     # Default: 3
@@ -106,7 +106,7 @@ linters:
     - gocritic
     - gocyclo
     - godot
-    - godox
+#    - godox
 #    - goerr113
     - gofmt
     - gofumpt

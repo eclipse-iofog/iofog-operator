@@ -22,6 +22,7 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 		if i == 0 {
 			versions[i].Storage = true
 		}
+
 		versions[i].Schema = &extsv1.CustomResourceValidation{
 			OpenAPIV3Schema: &extsv1.JSONSchemaProps{
 				Properties:             map[string]extsv1.JSONSchemaProps{},
@@ -117,10 +118,12 @@ func IsSupportedCustomResource(crd *extsv1.CustomResourceDefinition) bool {
 	if crd.Name == cpCR.Name {
 		return sameVersionsSupported(cpCR, crd)
 	}
+
 	appCR := NewAppCustomResource()
 	if crd.Name == appCR.Name {
 		return sameVersionsSupported(appCR, crd)
 	}
+
 	return false
 }
 

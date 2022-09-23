@@ -45,7 +45,7 @@ func init() { //nolint:gochecknoinits
 	// +kubebuilder:scaffold:scheme
 } //nolint:wsl
 
-// getWatchNamespace returns the Namespace the operator should be watching for changes
+// getWatchNamespace returns the Namespace the operator should be watching for changes.
 func getWatchNamespace() string {
 	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
 	// which specifies the Namespace to watch.

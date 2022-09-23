@@ -51,12 +51,14 @@ func (r *ControlPlaneReconciler) restartPodsForDeployment(deploymentName, namesp
 	// Set replicas to 0
 	desiredReplicas := int32(0)
 	found.Spec.Replicas = &desiredReplicas
+
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
 
 	// Set replicas to previous value
 	found.Spec.Replicas = &originValue
+
 	return r.Client.Update(context.TODO(), found)
 }
 
@@ -69,9 +71,11 @@ func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 
 	// Check if this resource already exists
 	found := &appsv1.Deployment{}
+
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+
 		err = r.Client.Create(context.TODO(), dep)
 		if err != nil {
 			return err
@@ -94,14 +98,16 @@ func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 }
 
 func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) error {
-	for idx := range ms.volumes {
-		if ms.volumes[idx].VolumeSource.PersistentVolumeClaim == nil {
+	for i := range ms.volumes {
+		if ms.volumes[i].VolumeSource.PersistentVolumeClaim == nil {
 			continue
 		}
+
 		storageSize, err := resource.ParseQuantity("1Gi")
 		if err != nil {
 			return err
 		}
+
 		pvc := corev1.PersistentVolumeClaim{
 			Spec: corev1.PersistentVolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{
@@ -114,7 +120,8 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 				},
 			},
 		}
-		pvc.ObjectMeta.Name = ms.volumes[idx].Name
+
+		pvc.ObjectMeta.Name = ms.volumes[i].Name
 		pvc.ObjectMeta.Namespace = r.cp.Namespace
 		// Set ControlPlane instance as the owner and controller
 		if err := controllerutil.SetControllerReference(&r.cp, &pvc, r.Scheme); err != nil {
@@ -123,9 +130,11 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 
 		// Check if this resource already exists
 		found := &corev1.PersistentVolumeClaim{}
+
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, found)
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new PersistentVolumeClaim", "PersistentVolumeClaim.Namespace", pvc.Namespace, "PersistentVolumeClaim.Name", pvc.Name)
+
 			err = r.Client.Create(context.TODO(), &pvc)
 			if err != nil {
 				return err
@@ -140,6 +149,7 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) 
 		// Resource already exists - don't requeue
 		r.log.Info("Skip reconcile: Secret already exists", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
 	}
+
 	return nil
 }
 
@@ -168,6 +178,7 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update 
 
 		// Check if this resource already exists
 		r.log.Info(fmt.Sprintf("Checking if secret %s exists", secret.ObjectMeta.Name))
+
 		found := &corev1.Secret{}
 
 		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
@@ -233,6 +244,7 @@ func (r *ControlPlaneReconciler) createService(ms *microservice) error {
 		// Resource already exists - don't requeue
 		r.log.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
 	}
+
 	return nil
 }
 
@@ -253,6 +265,7 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 				"pullSecret", ms.imagePullSecret)
 			return err
 		}
+
 		svcAcc.ImagePullSecrets = []corev1.LocalObjectReference{
 			{Name: ms.imagePullSecret},
 		}
@@ -419,5 +432,6 @@ func DecodeBase64(encoded string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(decodedBytes), nil
 }
