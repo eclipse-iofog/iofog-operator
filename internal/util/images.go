@@ -15,7 +15,7 @@ package util
 
 import "fmt"
 
-// Set by linker
+// Set by linker.
 var (
 	repo = "undefined"
 

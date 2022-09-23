@@ -272,7 +272,7 @@ func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createRole(ms *microservice) error {
+func (r *ControlPlaneReconciler) createRole(ms *microservice) error { //nolint:dupl
 	role := newRole(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
@@ -302,7 +302,7 @@ func (r *ControlPlaneReconciler) createRole(ms *microservice) error {
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error {
+func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error { //nolint:dupl
 	crb := newRoleBinding(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
