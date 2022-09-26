@@ -1,4 +1,7 @@
 linters-settings:
+  cyclop:
+    max-complexity: 30
+    skip-tests: true
   depguard:
     list-type: blacklist
     packages:
@@ -35,8 +38,6 @@ linters-settings:
     min-complexity: 36
   goimports:
 #    local-prefixes: github.com/golangci/golangci-lint
-  golint:
-    min-confidence: 0
   gomnd:
     settings:
       mnd:
@@ -53,52 +54,124 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+  nestif:
+    min-complexity: 10
+
+  varnamelen:
+    # The longest distance, in source lines, that is being considered a "small scope".
+    # Variables used in at most this many lines will be ignored.
+    # Default: 5
+    max-distance: 50
+    # The minimum length of a variable's name that is considered "long".
+    # Variable names that are at least this long will be ignored.
+    # Default: 3
+    min-name-length: 2
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
     - bodyclose
-    - deadcode
+    - containedctx
+    - contextcheck
+    - cyclop
+#    - deadcode
+    - decorder
     - depguard
     - dogsled
-#    - dupl
+    - dupl
+#    - dupword
+    - durationcheck
     - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exhaustive
+#    - exhaustivestruct
+#    - exhaustruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
     - funlen
-#    - gochecknoinits
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
     - goconst
     - gocritic
     - gocyclo
+    - godot
+#    - godox
+#    - goerr113
     - gofmt
+    - gofumpt
+    - goheader
     - goimports
-    - golint
-#    - gomnd
+#    - golint
+    - gomnd
+    - gomoddirectives
+    - gomodguard
     - goprintffuncname
-#    - gosec
+    - gosec
     - gosimple
     - govet
+    - grouper
+#    - ifshort
+    - importas
     - ineffassign
-    - interfacer
+    - interfacebloat
+#    - interfacer
+    - ireturn
     - lll
-#    - misspell
+#    - loggercheck
+    - maintidx
+    - makezero
+#    - maligned
+    - misspell
     - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+#    - nonamedreturns
+#    - nosnakecase
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
     - rowserrcheck
-    - scopelint
+#    - scopelint
+    - sqlclosecheck
     - staticcheck
-    - structcheck
+#    - structcheck
     - stylecheck
+    - tagliatelle
+    - tenv
+#    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
+    - usestdlibvars
+#    - varcheck
+    - varnamelen
+    - wastedassign
     - whitespace
-#    - gochecknoglobals
-    - gocognit
-#    - godox
-#    - maligned
-    - prealloc
+#    - wrapcheck
+    - wsl
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -115,7 +188,7 @@ issues:
     - linters:
       - gosec
       text: "G[202]"
-      text: "G[101]"
+#      text: "G[101]"
 
 
 run:
@@ -126,6 +199,8 @@ run:
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.31.x # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.49.x # use the fixed version to not introduce new linters unexpectedly
   prepare:
     - echo "here I can run custom commands, but no preparation needed for this repo"
+
+

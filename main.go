@@ -20,45 +20,46 @@ import (
 	"flag"
 	"os"
 
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	appscontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/apps"
+	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	appscontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/apps"
-	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes"
 	// +kubebuilder:scaffold:imports
 )
 
-var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
-)
+var scheme = runtime.NewScheme() //nolint:gochecknoglobals
 
-func init() {
+func init() { //nolint:gochecknoinits
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(appsv3.AddToScheme(scheme))
 	utilruntime.Must(cpv3.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
-}
+} //nolint:wsl
 
-// getWatchNamespace returns the Namespace the operator should be watching for changes
-func getWatchNamespace() (ns string) {
+// getWatchNamespace returns the Namespace the operator should be watching for changes.
+func getWatchNamespace() string {
 	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
 	// which specifies the Namespace to watch.
 	// An empty value means the operator is running with cluster scope.
-	ns, _ = os.LookupEnv("WATCH_NAMESPACE")
-	return
+	ns, _ := os.LookupEnv("WATCH_NAMESPACE")
+
+	return ns
 }
 
 func main() {
+	setupLog := ctrl.Log.WithName("setup")
+
 	var metricsAddr string
+
 	var enableLeaderElection bool
+
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
@@ -88,6 +89,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
+
 	if err = (&controlplanescontroller.ControlPlaneReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("ControlPlane"),
@@ -99,6 +101,7 @@ func main() {
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
+
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
