@@ -114,8 +114,6 @@ jobs:
       keyFilePath="$(Agent.TempDirectory)/azure-gcp.json"
       gcloud components install gke-gcloud-auth-plugin
       gcloud components list
-#      gke-gcloud-auth-plugin --version
-
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
