@@ -118,8 +118,6 @@ jobs:
 #        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 #        sudo apt-get update && sudo apt-get install -y google-cloud-sdk
 #      fi
-
-#      gcloud components update
       gcloud components install gke-gcloud-auth-plugin
       gcloud components list
 #      gke-gcloud-auth-plugin --version
