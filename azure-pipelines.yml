@@ -112,16 +112,10 @@ jobs:
   - bash: |
       set -e
       keyFilePath="$(Agent.TempDirectory)/azure-gcp.json"
-#      if [[ -z $(which gcloud) ]]; then
-#        CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-#        echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-#        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-#        sudo apt-get update && sudo apt-get install -y google-cloud-sdk
-#      fi
       gcloud components install gke-gcloud-auth-plugin
       gcloud components list
 #      gke-gcloud-auth-plugin --version
-      
+
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
