@@ -1,5 +1,7 @@
 OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
+GO111MODULE=off
+
 VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 LDFLAGS += -X $(PREFIX).portManagerTag=v3.0.0-beta1
@@ -51,7 +53,7 @@ fmt: ## Run gofmt against code
 	@gofmt -s -w .
 
 lint: golangci-lint fmt ## Lint the source
-	@$(GOLANGCI_LINT) run --timeout 5m0s
+	 @$(GOLANGCI_LINT) run --timeout 5m0s
 
 gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."

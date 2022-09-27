@@ -194,7 +194,8 @@ issues:
 run:
   skip-files:
    - ".*_test.go"
-  modules-download-mode: vendor
+
+  modules-download-mode: mod
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
