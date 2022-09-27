@@ -76,6 +76,7 @@ jobs:
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
+      kubectl config get-contexts
     displayName: 'Connect to cluster'
 
 
