@@ -1,11 +1,10 @@
-FROM golang:1.17-alpine as builder
+FROM golang:1.19-alpine as builder
 
 WORKDIR /operator
 
 RUN apk add --update --no-cache bash curl git make
 
 COPY ./go.* ./
-COPY ./vendor/ ./vendor/
 COPY ./Makefile ./
 RUN make controller-gen
 
