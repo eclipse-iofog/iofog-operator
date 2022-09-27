@@ -90,46 +90,46 @@ jobs:
     displayName: 'Trying contexts'
 
 
-#
-#  - task: GoTool@0
-#    inputs:
-#      version: '1.19.1'
-#      goPath: $(GOPATH)
-#      goBin: $(GOBIN)
-#    displayName: 'Install Golang'
-#
-#  - bash: |
-#      VERS=$(echo $(commit) | cut -c1-20)
-#      if [[ $(ref) == refs/tags* ]]; then
-#        VERS=$(echo $(ref) | sed "s|refs/tags/v||g")
-#      fi
-#      echo "##vso[task.setvariable variable=version]$VERS"
-#    displayName: 'Set version variable'
-#
-#
-#
-#
-#
-#
-#  - script: |
-#      set -e
-#      make lint
-#    displayName: 'Lint source'
-#
-#  - task: Docker@2
-#    displayName: 'build and push docker image'
-#    inputs:
-#      containerRegistry: 'Edgeworx GCP'
-#      repository: $(repository)
-#      command: 'buildAndPush'
-#      Dockerfile: './Dockerfile'
-#      buildContext: './'
-#      tags: |
-#        $(version)
-#        $(branch)
-#        $(branch)-$(build)
-#        latest
-#
+
+  - task: GoTool@0
+    inputs:
+      version: '1.19.1'
+      goPath: $(GOPATH)
+      goBin: $(GOBIN)
+    displayName: 'Install Golang'
+
+  - bash: |
+      VERS=$(echo $(commit) | cut -c1-20)
+      if [[ $(ref) == refs/tags* ]]; then
+        VERS=$(echo $(ref) | sed "s|refs/tags/v||g")
+      fi
+      echo "##vso[task.setvariable variable=version]$VERS"
+    displayName: 'Set version variable'
+
+
+
+
+
+
+  - script: |
+      set -e
+      make lint
+    displayName: 'Lint source'
+
+  - task: Docker@2
+    displayName: 'build and push docker image'
+    inputs:
+      containerRegistry: 'Edgeworx GCP'
+      repository: $(repository)
+      command: 'buildAndPush'
+      Dockerfile: './Dockerfile'
+      buildContext: './'
+      tags: |
+        $(version)
+        $(branch)
+        $(branch)-$(build)
+        latest
+
 ##  - script: |
 ##      set -e
 ##      sudo make kubectl
@@ -137,43 +137,43 @@ jobs:
 #
 #
 #
-#  - script: |
-#      set -e
-#      sudo make bats
-#    displayName: 'Install bats'
-#
-#
-#  - script: |
-#      set -e
-#      IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
-#      cd config/operator
-#      kustomize edit set image "$IMAGE"
-#      kustomize build . > /tmp/deployment.yaml
-#      cp /tmp/deployment.yaml ./deployment.yaml
-#      cat ./deployment.yaml | grep "image: $IMAGE"
-#    displayName: 'Kustomize'
-#
-#  - script: |
-#      set -e
-#      cp test/conf/env.sh.tpl test/conf/env.sh
-#      sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
-#      sed -i "s/<<OP_VERSION>>/$(version)/g" test/conf/env.sh
-#      make feature
-#    displayName: 'Feature tests'
-#
-#  - script: |
-#      set -e
-#      kubectl delete ns $(jobuuid)
-#    displayName: 'Cleanup tests'
-#    condition: failed()
-#
-#  - script: |
-#      set -e
-#      echo $(version) > $(Build.ArtifactStagingDirectory)/version.txt
-#    displayName: 'Create version artefact'
-#
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-#      ArtifactName: 'operator'
-#    displayName: 'Publish artefacts'
+  - script: |
+      set -e
+      sudo make bats
+    displayName: 'Install bats'
+
+
+  - script: |
+      set -e
+      IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
+      cd config/operator
+      kustomize edit set image "$IMAGE"
+      kustomize build . > /tmp/deployment.yaml
+      cp /tmp/deployment.yaml ./deployment.yaml
+      cat ./deployment.yaml | grep "image: $IMAGE"
+    displayName: 'Kustomize'
+
+  - script: |
+      set -e
+      cp test/conf/env.sh.tpl test/conf/env.sh
+      sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
+      sed -i "s/<<OP_VERSION>>/$(version)/g" test/conf/env.sh
+      make feature
+    displayName: 'Feature tests'
+
+  - script: |
+      set -e
+      kubectl delete ns $(jobuuid)
+    displayName: 'Cleanup tests'
+    condition: failed()
+
+  - script: |
+      set -e
+      echo $(version) > $(Build.ArtifactStagingDirectory)/version.txt
+    displayName: 'Create version artefact'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'operator'
+    displayName: 'Publish artefacts'
