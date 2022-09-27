@@ -85,7 +85,7 @@ jobs:
   - script: |
       set -e
       sudo make kubectl
-      kubectl version -j
+      kubectl version
     displayName: 'Install kubectl'
 
   - script: |
