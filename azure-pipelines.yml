@@ -80,6 +80,12 @@ jobs:
     displayName: 'Connect to cluster'
 
 
+  - bash: |
+      set -e
+
+      kubectl config get-contexts
+    displayName: 'Trying contexts'
+
 
 #
 #  - task: GoTool@0
