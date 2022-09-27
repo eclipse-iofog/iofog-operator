@@ -20,5 +20,4 @@ RUN cp ./bin/iofog-operator /bin
 FROM alpine:3.7
 WORKDIR /
 COPY --from=builder /bin/iofog-operator /bin/
-
 ENTRYPOINT ["/bin/iofog-operator", "--enable-leader-election"]

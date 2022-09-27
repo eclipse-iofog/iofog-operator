@@ -2,6 +2,10 @@
 
 set -e
 
+echo "kubectl version"
+kubectl version
+
+
 # Export variables
 CONF=test/conf/env.sh
 if [ -f "$CONF" ]; then
