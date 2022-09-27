@@ -4,7 +4,7 @@ set -e
 
 echo "kubectl version"
 kubectl version
-
+export USE_GKE_GCLOUD_AUTH_PLUGIN=False
 
 # Export variables
 CONF=test/conf/env.sh

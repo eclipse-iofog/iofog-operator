@@ -35,10 +35,11 @@ variables:
 jobs:
 - job: Operator
   pool:
-    vmImage: 'Ubuntu-18.04'
+    vmImage: 'Ubuntu-22.04'
 
   steps:
   - script: |
+      echo 'test1'
       set -e
       mkdir -p '$(GOBIN)'
       mkdir -p '$(GOPATH)/pkg'
@@ -83,6 +84,7 @@ jobs:
   - script: |
       set -e
       sudo make kubectl
+      kubectl version -j
     displayName: 'Install kubectl'
 
   - script: |

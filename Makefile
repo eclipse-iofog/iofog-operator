@@ -91,6 +91,8 @@ ifeq (, $(shell which kubectl))
 	chmod +x kubectl ;\
 	mv kubectl /usr/local/bin/ ;\
 	rm -rf $$KCTL_TMP_DIR ;\
+	echo "Installed kubectl";\
+	kubectl version;\
 	}
 endif
 
