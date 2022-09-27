@@ -87,12 +87,11 @@ ifeq (, $(shell which kubectl))
 	set -e ;\
 	KCTL_TMP_DIR=$$(mktemp -d) ;\
 	cd $$KCTL_TMP_DIR ;\
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.6/bin/"$(OS)"/amd64/kubectl ;\
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/"$(OS)"/amd64/kubectl ;\
 	chmod +x kubectl ;\
 	mv kubectl /usr/local/bin/ ;\
 	rm -rf $$KCTL_TMP_DIR ;\
 	echo "Installed kubectl";\
-	kubectl version;\
 	}
 endif
 

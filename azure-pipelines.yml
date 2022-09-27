@@ -82,16 +82,22 @@ jobs:
         $(branch)-$(build)
         latest
 
-  - script: |
-      set -e
-      sudo make kubectl
-      kubectl version
-    displayName: 'Install kubectl'
+#  - script: |
+#      set -e
+#      sudo make kubectl
+#    displayName: 'Install kubectl'
+
+
 
   - script: |
       set -e
       sudo make bats
     displayName: 'Install bats'
+
+  - task: KubectlInstaller@0
+    displayName: Kubectl installer
+    inputs:
+      kubectlVersion: 1.25.2
 
   - script: |
       set -e
