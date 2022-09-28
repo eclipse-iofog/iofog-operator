@@ -100,7 +100,7 @@ jobs:
       echo "^^^^^^"
       
       echo "the envar: $USE_GKE_GCLOUD_AUTH_PLUGIN"
-    displayName: 'kubectl: cat bashrc'
+    displayName: 'kubectl: cat bashrc 2'
 
 
   - bash: |
