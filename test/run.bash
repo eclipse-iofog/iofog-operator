@@ -6,6 +6,11 @@ echo "kubectl version"
 kubectl version
 export USE_GKE_GCLOUD_AUTH_PLUGIN=False
 
+echo "gke-gcloud-auth-plugin: $(gke-gcloud-auth-plugin version)"
+gke-gcloud-auth-plugin --version
+
+echo "done"
+
 # Export variables
 CONF=test/conf/env.sh
 if [ -f "$CONF" ]; then

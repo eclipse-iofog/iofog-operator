@@ -91,6 +91,9 @@ jobs:
       set -e
       # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       kubectl config get-contexts
+      
+      echo "Trying namespaces"
+      kubectl get namespaces
     displayName: 'Trying contexts'
 
 
@@ -112,74 +115,74 @@ jobs:
 
 
 
-
-
-
-  - script: |
-      set -e
-      make lint
-    displayName: 'Lint source'
-
-  - task: Docker@2
-    displayName: 'build and push docker image'
-    inputs:
-      containerRegistry: 'Edgeworx GCP'
-      repository: $(repository)
-      command: 'buildAndPush'
-      Dockerfile: './Dockerfile'
-      buildContext: './'
-      tags: |
-        $(version)
-        $(branch)
-        $(branch)-$(build)
-        latest
-
-##  - script: |
-##      set -e
-##      sudo make kubectl
-##    displayName: 'Install kubectl'
 #
 #
 #
-  - script: |
-      set -e
-      sudo make bats
-    displayName: 'Install bats'
-
-
-  - script: |
-      set -e
-      IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
-      cd config/operator
-      kustomize edit set image "$IMAGE"
-      kustomize build . > /tmp/deployment.yaml
-      cp /tmp/deployment.yaml ./deployment.yaml
-      cat ./deployment.yaml | grep "image: $IMAGE"
-    displayName: 'Kustomize'
-
-  - script: |
-      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-      set -e
-      cp test/conf/env.sh.tpl test/conf/env.sh
-      sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
-      sed -i "s/<<OP_VERSION>>/$(version)/g" test/conf/env.sh
-      make feature
-    displayName: 'Feature tests'
-
-  - script: |
-      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-      set -e
-      kubectl delete ns $(jobuuid)
-    displayName: 'Cleanup tests'
-    condition: failed()
-
-  - script: |
-      set -e
-      echo $(version) > $(Build.ArtifactStagingDirectory)/version.txt
-    displayName: 'Create version artefact'
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'operator'
-    displayName: 'Publish artefacts'
+#  - script: |
+#      set -e
+#      make lint
+#    displayName: 'Lint source'
+#
+#  - task: Docker@2
+#    displayName: 'build and push docker image'
+#    inputs:
+#      containerRegistry: 'Edgeworx GCP'
+#      repository: $(repository)
+#      command: 'buildAndPush'
+#      Dockerfile: './Dockerfile'
+#      buildContext: './'
+#      tags: |
+#        $(version)
+#        $(branch)
+#        $(branch)-$(build)
+#        latest
+#
+###  - script: |
+###      set -e
+###      sudo make kubectl
+###    displayName: 'Install kubectl'
+##
+##
+##
+#  - script: |
+#      set -e
+#      sudo make bats
+#    displayName: 'Install bats'
+#
+#
+#  - script: |
+#      set -e
+#      IMAGE="gcr.io/focal-freedom-236620/operator:$(version)"
+#      cd config/operator
+#      kustomize edit set image "$IMAGE"
+#      kustomize build . > /tmp/deployment.yaml
+#      cp /tmp/deployment.yaml ./deployment.yaml
+#      cat ./deployment.yaml | grep "image: $IMAGE"
+#    displayName: 'Kustomize'
+#
+#  - script: |
+#      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#      set -e
+#      cp test/conf/env.sh.tpl test/conf/env.sh
+#      sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
+#      sed -i "s/<<OP_VERSION>>/$(version)/g" test/conf/env.sh
+#      make feature
+#    displayName: 'Feature tests'
+#
+#  - script: |
+#      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#      set -e
+#      kubectl delete ns $(jobuuid)
+#    displayName: 'Cleanup tests'
+#    condition: failed()
+#
+#  - script: |
+#      set -e
+#      echo $(version) > $(Build.ArtifactStagingDirectory)/version.txt
+#    displayName: 'Create version artefact'
+#
+#  - task: PublishBuildArtifacts@1
+#    inputs:
+#      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#      ArtifactName: 'operator'
+#    displayName: 'Publish artefacts'
