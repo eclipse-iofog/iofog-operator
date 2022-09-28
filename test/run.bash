@@ -2,14 +2,11 @@
 
 set -e
 
+echo "============"
 echo "kubectl get namespaces"
 kubectl get namespaces
 
-
-echo "gke-gcloud-auth-plugin: $(gke-gcloud-auth-plugin version)"
-gke-gcloud-auth-plugin --version
-
-echo "done"
+echo "============"
 
 # Export variables
 CONF=test/conf/env.sh
