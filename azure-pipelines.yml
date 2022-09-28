@@ -77,7 +77,9 @@ jobs:
       
       gke-gcloud-auth-plugin --version
       
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
+      
+      
       
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
@@ -88,6 +90,12 @@ jobs:
       kubectl get namespaces
 
     displayName: 'Connect to cluster'
+
+
+  - bash: |
+      set -e
+      cat ~/.bashrc
+    displayName: 'kubectl: cat bashrc'
 
 
   - bash: |
