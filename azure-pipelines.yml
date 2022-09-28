@@ -94,6 +94,7 @@ jobs:
 
   - bash: |
       set -e
+      echo "do we have bashrc"
       cat ~/.bashrc
     displayName: 'kubectl: cat bashrc'
 
