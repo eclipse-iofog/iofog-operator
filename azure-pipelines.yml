@@ -89,7 +89,7 @@ jobs:
 
   - bash: |
       set -e
-#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       kubectl config get-contexts
     displayName: 'Trying contexts'
 
@@ -158,7 +158,7 @@ jobs:
     displayName: 'Kustomize'
 
   - script: |
-#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       set -e
       cp test/conf/env.sh.tpl test/conf/env.sh
       sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
@@ -167,7 +167,7 @@ jobs:
     displayName: 'Feature tests'
 
   - script: |
-#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       set -e
       kubectl delete ns $(jobuuid)
     displayName: 'Cleanup tests'
