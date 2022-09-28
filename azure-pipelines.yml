@@ -78,6 +78,7 @@ jobs:
       gke-gcloud-auth-plugin --version
       
       echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
+      source "~/.bashrc"
       
       
       
@@ -94,14 +95,15 @@ jobs:
 
   - bash: |
       set -e
-      echo "do we have bashrc"
+      echo "do we have bashrc?"
       cat ~/.bashrc
+      echo "^^^^^^"
     displayName: 'kubectl: cat bashrc'
 
 
   - bash: |
       set -e
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      
       kubectl config get-contexts
       
       echo "Trying namespaces"
