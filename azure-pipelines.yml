@@ -78,7 +78,7 @@ jobs:
       gke-gcloud-auth-plugin --version
       
       echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
-      source "~/.bashrc"
+      source ~/.bashrc
       
       
       
