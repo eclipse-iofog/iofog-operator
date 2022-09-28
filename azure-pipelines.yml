@@ -77,7 +77,7 @@ jobs:
       
       gke-gcloud-auth-plugin --version
       
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+      export USE_GKE_GCLOUD_AUTH_PLUGIN=False
       
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
@@ -92,7 +92,6 @@ jobs:
 
   - bash: |
       set -e
-      # export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       kubectl config get-contexts
       
       echo "Trying namespaces"
