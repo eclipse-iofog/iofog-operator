@@ -2,9 +2,9 @@
 
 set -e
 
-echo "kubectl version"
-kubectl version
-export USE_GKE_GCLOUD_AUTH_PLUGIN=False
+echo "kubectl get namespaces"
+kubectl get namespaces
+
 
 echo "gke-gcloud-auth-plugin: $(gke-gcloud-auth-plugin version)"
 gke-gcloud-auth-plugin --version

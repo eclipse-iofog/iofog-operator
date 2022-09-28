@@ -27,7 +27,7 @@ variables:
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
   repository: 'focal-freedom-236620/operator'
-#  USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
+  USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
   build: $(Build.BuildId)
   ref: $(Build.SourceBranch)
   branch: $(Build.SourceBranchName)
@@ -77,8 +77,8 @@ jobs:
       
       gke-gcloud-auth-plugin --version
       
-      echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
-      source ~/.bashrc
+      # echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
+      # source ~/.bashrc
       
       
       
@@ -99,8 +99,8 @@ jobs:
       cat ~/.bashrc
       echo "^^^^^^"
       
-      echo "the envar: $USE_GKE_GCLOUD_AUTH_PLUGIN"
-    displayName: 'kubectl: cat bashrc 2'
+      echo "the envar: >> ${USE_GKE_GCLOUD_AUTH_PLUGIN} <<"
+    displayName: 'kubectl: cat bashrc 3'
 
 
   - bash: |
