@@ -27,7 +27,7 @@ variables:
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
   repository: 'focal-freedom-236620/operator'
-  USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
+#  USE_GKE_GCLOUD_AUTH_PLUGIN: 'True'
   build: $(Build.BuildId)
   ref: $(Build.SourceBranch)
   branch: $(Build.SourceBranchName)
@@ -75,19 +75,21 @@ jobs:
 
       sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
       
+      gke-gcloud-auth-plugin --version
+      
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
       
       which gcloud
-#      gke-gcloud-auth-plugin --version
+      gke-gcloud-auth-plugin --version
 
     displayName: 'Connect to cluster'
 
 
   - bash: |
       set -e
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       kubectl config get-contexts
     displayName: 'Trying contexts'
 
@@ -156,7 +158,7 @@ jobs:
     displayName: 'Kustomize'
 
   - script: |
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       set -e
       cp test/conf/env.sh.tpl test/conf/env.sh
       sed -i "s/<<NAMESPACE>>/$(jobuuid)/g" test/conf/env.sh
@@ -165,7 +167,7 @@ jobs:
     displayName: 'Feature tests'
 
   - script: |
-      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+#      export USE_GKE_GCLOUD_AUTH_PLUGIN=True
       set -e
       kubectl delete ns $(jobuuid)
     displayName: 'Cleanup tests'
