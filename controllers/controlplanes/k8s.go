@@ -17,14 +17,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *ControlPlaneReconciler) deploymentExists(ctx context.Context, namespace, name string) (bool, error) {
+func (r *ControlPlaneReconciler) deploymentExists(namespace, name string) (bool, error) {
 	key := types.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
 	}
 	dep := &appsv1.Deployment{}
 
-	err := r.Client.Get(ctx, key, dep)
+	err := r.Client.Get(context.TODO(), key, dep)
 	if err == nil {
 		return true, nil
 	}
@@ -36,10 +36,10 @@ func (r *ControlPlaneReconciler) deploymentExists(ctx context.Context, namespace
 	return false, err
 }
 
-func (r *ControlPlaneReconciler) restartPodsForDeployment(ctx context.Context, deploymentName, namespace string) error {
+func (r *ControlPlaneReconciler) restartPodsForDeployment(deploymentName, namespace string) error {
 	// Check if this resource already exists
 	found := &appsv1.Deployment{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: deploymentName, Namespace: namespace}, found); err != nil {
+	if err := r.Client.Get(context.TODO(), types.NamespacedName{Name: deploymentName, Namespace: namespace}, found); err != nil {
 		return err
 	}
 
@@ -52,17 +52,17 @@ func (r *ControlPlaneReconciler) restartPodsForDeployment(ctx context.Context, d
 	desiredReplicas := int32(0)
 	found.Spec.Replicas = &desiredReplicas
 
-	if err := r.Client.Update(ctx, found); err != nil {
+	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
 
 	// Set replicas to previous value
 	found.Spec.Replicas = &originValue
 
-	return r.Client.Update(ctx, found)
+	return r.Client.Update(context.TODO(), found)
 }
 
-func (r *ControlPlaneReconciler) createDeployment(ctx context.Context, ms *microservice) error {
+func (r *ControlPlaneReconciler) createDeployment(ms *microservice) error {
 	dep := newDeployment(r.cp.ObjectMeta.Namespace, ms)
 	// Set ControlPlane instance as the owner and controller
 	if err := controllerutil.SetControllerReference(&r.cp, dep, r.Scheme); err != nil {
@@ -72,11 +72,11 @@ func (r *ControlPlaneReconciler) createDeployment(ctx context.Context, ms *micro
 	// Check if this resource already exists
 	found := &appsv1.Deployment{}
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 
-		err = r.Client.Create(ctx, dep)
+		err = r.Client.Create(context.TODO(), dep)
 		if err != nil {
 			return err
 		}
@@ -90,14 +90,14 @@ func (r *ControlPlaneReconciler) createDeployment(ctx context.Context, ms *micro
 	// Resource already exists - update it
 	r.log.Info("Updating existing Deployment", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 
-	if err := r.Client.Update(ctx, dep); err != nil {
+	if err := r.Client.Update(context.TODO(), dep); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ctx context.Context, ms *microservice) error {
+func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ms *microservice) error {
 	for i := range ms.volumes {
 		if ms.volumes[i].VolumeSource.PersistentVolumeClaim == nil {
 			continue
@@ -131,11 +131,11 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ctx context.Contex
 		// Check if this resource already exists
 		found := &corev1.PersistentVolumeClaim{}
 
-		err = r.Client.Get(ctx, types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, found)
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, found)
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new PersistentVolumeClaim", "PersistentVolumeClaim.Namespace", pvc.Namespace, "PersistentVolumeClaim.Name", pvc.Name)
 
-			err = r.Client.Create(ctx, &pvc)
+			err = r.Client.Create(context.TODO(), &pvc)
 			if err != nil {
 				return err
 			}
@@ -153,11 +153,11 @@ func (r *ControlPlaneReconciler) createPersistentVolumeClaims(ctx context.Contex
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createSecrets(ctx context.Context, ms *microservice) error {
-	return r.createOrUpdateSecrets(ctx, ms, false)
+func (r *ControlPlaneReconciler) createSecrets(ms *microservice) error {
+	return r.createOrUpdateSecrets(ms, false)
 }
 
-func (r *ControlPlaneReconciler) createOrUpdateSecrets(ctx context.Context, ms *microservice, update bool) error {
+func (r *ControlPlaneReconciler) createOrUpdateSecrets(ms *microservice, update bool) error {
 	defer func() {
 		if recoverResult := recover(); recoverResult != nil {
 			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for Controlplane %s", recoverResult, r.cp.Name))
@@ -181,13 +181,13 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ctx context.Context, ms *
 
 		found := &corev1.Secret{}
 
-		err := r.Client.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 		r.log.Info(fmt.Sprintf("secret %s: Exists: %s Error: %v", secret.ObjectMeta.Name, found.Name, err))
 
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Secret", "Secret.Namespace", secret.Namespace, "Service.Name", secret.Name)
 
-			err = r.Client.Create(ctx, secret)
+			err = r.Client.Create(context.TODO(), secret)
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ctx context.Context, ms *
 		if update {
 			r.log.Info("Updating secret...", "Secret.Namespace", found.Namespace, "Secret.Name", found.Name)
 
-			err = r.Client.Update(ctx, secret)
+			err = r.Client.Update(context.TODO(), secret)
 			if err != nil {
 				return err
 			}
@@ -218,7 +218,7 @@ func (r *ControlPlaneReconciler) createOrUpdateSecrets(ctx context.Context, ms *
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createService(ctx context.Context, ms *microservice) error {
+func (r *ControlPlaneReconciler) createService(ms *microservice) error {
 	svcs := newServices(r.cp.ObjectMeta.Namespace, ms)
 	for _, svc := range svcs {
 		// Set ControlPlane instance as the owner and controller
@@ -229,11 +229,11 @@ func (r *ControlPlaneReconciler) createService(ctx context.Context, ms *microser
 		// Check if this resource already exists
 		found := &corev1.Service{}
 
-		err := r.Client.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
+		err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
 		if err != nil && k8serrors.IsNotFound(err) {
 			r.log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
 
-			err = r.Client.Create(ctx, svc)
+			err = r.Client.Create(context.TODO(), svc)
 			if err != nil {
 				return err
 			}
@@ -251,13 +251,13 @@ func (r *ControlPlaneReconciler) createService(ctx context.Context, ms *microser
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createServiceAccount(ctx context.Context, ms *microservice) error {
+func (r *ControlPlaneReconciler) createServiceAccount(ms *microservice) error {
 	svcAcc := newServiceAccount(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set image pull secret for the service account
 	if ms.imagePullSecret != "" {
 		secret := &corev1.Secret{}
-		err := r.Client.Get(ctx, types.NamespacedName{
+		err := r.Client.Get(context.TODO(), types.NamespacedName{
 			Namespace: svcAcc.Namespace,
 			Name:      ms.imagePullSecret,
 		}, secret)
@@ -284,11 +284,11 @@ func (r *ControlPlaneReconciler) createServiceAccount(ctx context.Context, ms *m
 	// Check if this resource already exists
 	found := &corev1.ServiceAccount{}
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: svcAcc.Name, Namespace: svcAcc.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Service Account", "ServiceAccount.Namespace", svcAcc.Namespace, "ServiceAccount.Name", svcAcc.Name)
 		// TODO: Find out why the IsAlreadyExists() check is necessary here. Happens when CP redeployed
-		if err = r.Client.Create(ctx, svcAcc); err != nil && !k8serrors.IsAlreadyExists(err) {
+		if err = r.Client.Create(context.TODO(), svcAcc); err != nil && !k8serrors.IsAlreadyExists(err) {
 			return err
 		}
 
@@ -304,7 +304,7 @@ func (r *ControlPlaneReconciler) createServiceAccount(ctx context.Context, ms *m
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createRole(ctx context.Context, ms *microservice) error { //nolint:dupl
+func (r *ControlPlaneReconciler) createRole(ms *microservice) error { //nolint:dupl
 	role := newRole(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
@@ -315,11 +315,11 @@ func (r *ControlPlaneReconciler) createRole(ctx context.Context, ms *microservic
 	// Check if this resource already exists
 	found := &rbacv1.Role{}
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role ", "Role.Namespace", role.Namespace, "Role.Name", role.Name)
 
-		err = r.Client.Create(ctx, role)
+		err = r.Client.Create(context.TODO(), role)
 		if err != nil {
 			return err
 		}
@@ -336,7 +336,7 @@ func (r *ControlPlaneReconciler) createRole(ctx context.Context, ms *microservic
 	return nil
 }
 
-func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *microservice) error { //nolint:dupl
+func (r *ControlPlaneReconciler) createRoleBinding(ms *microservice) error { //nolint:dupl
 	crb := newRoleBinding(r.cp.ObjectMeta.Namespace, ms)
 
 	// Set ControlPlane instance as the owner and controller
@@ -347,11 +347,11 @@ func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *micr
 	// Check if this resource already exists
 	found := &rbacv1.RoleBinding{}
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: crb.Name, Namespace: crb.Namespace}, found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		r.log.Info("Creating a new Role Binding", "RoleBinding.Namespace", crb.Namespace, "RoleBinding.Name", crb.Name)
 
-		err = r.Client.Create(ctx, crb)
+		err = r.Client.Create(context.TODO(), crb)
 		if err != nil {
 			return err
 		}

@@ -2,12 +2,6 @@
 
 set -e
 
-echo "============"
-echo "kubectl get namespaces"
-kubectl get namespaces
-
-echo "============"
-
 # Export variables
 CONF=test/conf/env.sh
 if [ -f "$CONF" ]; then

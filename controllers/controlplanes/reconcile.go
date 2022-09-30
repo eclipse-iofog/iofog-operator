@@ -29,16 +29,16 @@ const (
 	portManagerDeploymentName = "port-manager"
 )
 
-func reconcileRoutine(ctx context.Context, recon func(ctx context.Context) op.Reconciliation, reconChan chan op.Reconciliation) {
-	reconChan <- recon(ctx)
+func reconcileRoutine(recon func() op.Reconciliation, reconChan chan op.Reconciliation) {
+	reconChan <- recon()
 }
 
-func (r *ControlPlaneReconciler) updateIofogUserPassword(ctx context.Context, iofogClient *iofogclient.Client) error {
+func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclient.Client) error {
 	r.log.Info(fmt.Sprintf("Updating user password %s for ControlPlane %s", r.cp.Spec.User.Password, r.cp.Name))
 	// Retrieve old password from secrets
 	found := &corev1.Secret{}
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
 	if err != nil {
 		return err
 	}
@@ -83,32 +83,32 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(ctx context.Context, io
 		passwordSecretKey: r.cp.Spec.User.Password,
 		emailSecretKey:    r.cp.Spec.User.Email,
 	}
-	if err := r.Client.Update(ctx, found); err != nil {
+	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
 
 	// Restart required pods
-	if err := r.restartPodsForDeployment(ctx, portManagerDeploymentName, r.cp.Namespace); err != nil {
+	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ctx context.Context, ms *microservice) (shouldRestartPod bool, err error) {
+func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) (shouldRestartPod bool, err error) {
 	for i := range ms.secrets {
 		secret := &ms.secrets[i]
 
 		if secret.Name == controllerDBCredentialsSecretName {
 			found := &corev1.Secret{}
 
-			err := r.Client.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
 					return false, err
 				}
 				// Create secret
-				err = r.Client.Create(ctx, secret)
+				err = r.Client.Create(context.TODO(), secret)
 				if err != nil {
 					return false, err
 				}
@@ -117,7 +117,7 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ctx context.Contex
 			}
 			// Secret already exists
 			// Update secret
-			err = r.Client.Update(ctx, secret)
+			err = r.Client.Update(context.TODO(), secret)
 			if err != nil {
 				return false, err
 			}
@@ -129,7 +129,7 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ctx context.Contex
 	return false, nil
 }
 
-func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) op.Reconciliation {
+func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Configure Controller
 	config := &controllerMicroserviceConfig{
 		replicas:          r.cp.Spec.Replicas.Controller,
@@ -150,41 +150,41 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	ms := newControllerMicroservice(r.cp.Namespace, config)
 
 	// Service Account
-	if err := r.createServiceAccount(ctx, ms); err != nil {
+	if err := r.createServiceAccount(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Handle DB credentials secret
-	shouldRestartPods, err := r.reconcileDBCredentialsSecret(ctx, ms)
+	shouldRestartPods, err := r.reconcileDBCredentialsSecret(ms)
 	if err != nil {
 		return op.ReconcileWithError(err)
 	}
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
 
-	if err := r.createSecrets(ctx, ms); err != nil {
+	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
 
 		return op.ReconcileWithError(err)
 	}
 
 	// Service
-	if err := r.createService(ctx, ms); err != nil {
+	if err := r.createService(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// PVC
-	if err := r.createPersistentVolumeClaims(ctx, ms); err != nil {
+	if err := r.createPersistentVolumeClaims(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
-	alreadyExists, err := r.deploymentExists(ctx, r.cp.Namespace, ms.name)
+	alreadyExists, err := r.deploymentExists(r.cp.Namespace, ms.name)
 	if err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Deployment
-	if err := r.createDeployment(ctx, ms); err != nil {
+	if err := r.createDeployment(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
@@ -213,7 +213,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 			return op.ReconcileWithRequeue(requeueDuration)
 		}
 		// If the error is invalid credentials, update user password
-		if err := r.updateIofogUserPassword(ctx, iofogClient); err != nil {
+		if err := r.updateIofogUserPassword(iofogClient); err != nil {
 			r.log.Info(fmt.Sprintf("Could not update user for ControlPlane %s: %s", r.cp.Name, err.Error()))
 
 			return op.ReconcileWithError(err)
@@ -230,7 +230,6 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	var routerProxy cpv3.RouterIngress
 
 	if strings.EqualFold(r.cp.Spec.Services.Router.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		//nolint:contextcheck // Ultimately the k8sClient should be refactored to accept Context
 		routerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
@@ -259,7 +258,6 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
 
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		//nolint:contextcheck // Ultimately the k8sClient should be refactored to accept Context
 		host, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
@@ -275,7 +273,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	if shouldRestartPods {
 		r.log.Info(fmt.Sprintf("Restarting pods for ControlPlane %s", r.cp.Name))
 
-		if err := r.restartPodsForDeployment(ctx, ms.name, r.cp.Namespace); err != nil {
+		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
 			return op.ReconcileWithError(err)
 		}
 	}
@@ -307,7 +305,7 @@ func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogcl
 	return iofogClient, op.Continue()
 }
 
-func (r *ControlPlaneReconciler) reconcilePortManager(ctx context.Context) op.Reconciliation {
+func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {
 	ms := newPortManagerMicroservice(&portManagerConfig{
 		image:            r.cp.Spec.Images.PortManager,
 		proxyImage:       r.cp.Spec.Images.Proxy,
@@ -319,36 +317,36 @@ func (r *ControlPlaneReconciler) reconcilePortManager(ctx context.Context) op.Re
 	})
 
 	// Service Account
-	if err := r.createServiceAccount(ctx, ms); err != nil {
+	if err := r.createServiceAccount(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 	// Role
-	if err := r.createRole(ctx, ms); err != nil {
+	if err := r.createRole(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 	// RoleBinding
-	if err := r.createRoleBinding(ctx, ms); err != nil {
+	if err := r.createRoleBinding(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for port-manager reconcile for Controlplane %s", r.cp.Name))
 
-	if err := r.createSecrets(ctx, ms); err != nil {
+	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for port-manager reconcile for Controlplane %s", err, r.cp.Name))
 
 		return op.ReconcileWithError(err)
 	}
 
 	// Deployment
-	if err := r.createDeployment(ctx, ms); err != nil {
+	if err := r.createDeployment(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	return op.Continue()
 }
 
-func (r *ControlPlaneReconciler) reconcileRouter(ctx context.Context) op.Reconciliation {
+func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	// Configure
 	volumeMountPath := "/etc/qpid-dispatch-certs/"
 	ms := newRouterMicroservice(routerMicroserviceConfig{
@@ -358,22 +356,22 @@ func (r *ControlPlaneReconciler) reconcileRouter(ctx context.Context) op.Reconci
 	})
 
 	// Service Account
-	if err := r.createServiceAccount(ctx, ms); err != nil {
+	if err := r.createServiceAccount(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Role
-	if err := r.createRole(ctx, ms); err != nil {
+	if err := r.createRole(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Role binding
-	if err := r.createRoleBinding(ctx, ms); err != nil {
+	if err := r.createRoleBinding(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
 	// Service
-	if err := r.createService(ctx, ms); err != nil {
+	if err := r.createService(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
 
@@ -390,7 +388,6 @@ func (r *ControlPlaneReconciler) reconcileRouter(ctx context.Context) op.Reconci
 	var address string
 
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
-		//nolint:contextcheck // Ultimately the k8sClient should be refactored to accept Context
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
@@ -413,7 +410,7 @@ func (r *ControlPlaneReconciler) reconcileRouter(ctx context.Context) op.Reconci
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
 
-	if err := r.createSecrets(ctx, ms); err != nil {
+	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for router reconcile for Controlplane %s", err, r.cp.Name))
 
 		return op.ReconcileWithError(err)
@@ -422,7 +419,7 @@ func (r *ControlPlaneReconciler) reconcileRouter(ctx context.Context) op.Reconci
 	// Deployment
 	r.log.Info(fmt.Sprintf("Creating deployment for router reconcile for Controlplane %s", r.cp.Name))
 
-	if err := r.createDeployment(ctx, ms); err != nil {
+	if err := r.createDeployment(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create deployment %v for router reconcile for Controlplane %s", err, r.cp.Name))
 
 		return op.ReconcileWithError(err)
