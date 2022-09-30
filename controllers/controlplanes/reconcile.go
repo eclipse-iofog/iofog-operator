@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	net2 "k8s.io/apimachinery/pkg/util/net"
 )
 
 const (
@@ -284,7 +282,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 }
 
 func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogclient.Client, op.Reconciliation) {
-	baseURL := net2.JoinSchemeNamePort("http", host, strconv.Itoa(port))
+	baseURL := fmt.Sprintf("http://%s:%d/api/v3", host, port) //nolint:nosprintfhostport
 
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
