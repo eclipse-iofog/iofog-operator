@@ -174,11 +174,11 @@ jobs:
       make feature
     displayName: 'Feature tests'
 
-  - script: |
-      set -e
-      kubectl delete ns $(jobuuid)
-    displayName: 'Cleanup tests'
-    condition: failed()
+#  - script: |
+#      set -e
+#      kubectl delete ns $(jobuuid)
+#    displayName: 'Cleanup tests'
+#    condition: failed()
 
   - script: |
       set -e
