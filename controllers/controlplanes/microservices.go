@@ -18,13 +18,15 @@ import (
 	"strconv"
 	"strings"
 
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
-	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
+	// "k8s.io/apimachinery/pkg/api/resource"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 )
 
 const (
@@ -33,7 +35,7 @@ const (
 	controllerCredentialsSecretName   = "controller-credentials"
 	emailSecretKey                    = "email"
 	passwordSecretKey                 = "password"
-	controllerDBCredentialsSecretName = "controller-db-credentials" //nolint:gosec
+	controllerDBCredentialsSecretName = "controller-db-credentials"
 	controllerDBUserSecretKey         = "username"
 	controllerDBDBNameSecretKey       = "dbname"
 	controllerDBPasswordSecretKey     = "password"
@@ -98,19 +100,15 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 	if cfg.replicas == 0 {
 		cfg.replicas = 1
 	}
-
 	if cfg.image == "" {
 		cfg.image = util.GetControllerImage()
 	}
-
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
-
 	if cfg.ecnViewerPort == 0 {
 		cfg.ecnViewerPort = 80
 	}
-
 	if cfg.pidBaseDir == "" {
 		cfg.pidBaseDir = "/tmp"
 	}
@@ -120,13 +118,11 @@ func getControllerPort(msvc *microservice) (int, error) {
 	if len(msvc.services) == 0 || len(msvc.services[0].ports) == 0 {
 		return 0, errors.New("controller microservice does not have requisite ports")
 	}
-
 	return msvc.services[0].ports[0], nil
 }
 
 func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConfig) *microservice {
 	filterControllerConfig(cfg)
-
 	msvc := &microservice{
 		availableDelay: 5,
 		name:           "controller",
@@ -173,7 +169,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/api/v3/status",
-							Port: intstr.FromInt(51121), //nolint:gomnd
+							Port: intstr.FromInt(51121),
 						},
 					},
 					InitialDelaySeconds: 10,
@@ -296,7 +292,6 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 			},
 		},
 	}
-
 	// Add PVC details if no external DB provided
 	if cfg.db.Host == "" {
 		msvc.mustRecreateOnRollout = true
@@ -316,7 +311,6 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 			SubPath:   "prod_database.sqlite",
 		})
 	}
-
 	return msvc
 }
 
@@ -334,7 +328,6 @@ func filterPortManagerConfig(cfg *portManagerConfig) {
 	if cfg.image == "" {
 		cfg.image = util.GetPortManagerImage()
 	}
-
 	if cfg.proxyImage == "" {
 		cfg.proxyImage = util.GetProxyImage()
 	}
@@ -342,7 +335,6 @@ func filterPortManagerConfig(cfg *portManagerConfig) {
 
 func newPortManagerMicroservice(cfg *portManagerConfig) *microservice {
 	filterPortManagerConfig(cfg)
-
 	return &microservice{
 		mustRecreateOnRollout: true,
 		name:                  portManagerDeploymentName,
@@ -472,17 +464,14 @@ func filterRouterConfig(cfg routerMicroserviceConfig) routerMicroserviceConfig {
 	if cfg.image == "" {
 		cfg.image = util.GetRouterImage()
 	}
-
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
-
 	return cfg
 }
 
 func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 	cfg = filterRouterConfig(cfg)
-
 	return &microservice{
 		name: routerName,
 		labels: map[string]string{
@@ -515,6 +504,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 			},
 		},
 		volumes: []corev1.Volume{
+
 			{
 				Name: routerName + "-internal",
 				VolumeSource: corev1.VolumeSource{
@@ -543,7 +533,7 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 				readinessProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Port: intstr.FromInt(9090), //nolint:gomnd
+							Port: intstr.FromInt(9090),
 							Path: "/healthz",
 						},
 					},
@@ -611,6 +601,5 @@ func getTrafficPolicy(serviceType string) string {
 	if strings.EqualFold(serviceType, string(corev1.ServiceTypeLoadBalancer)) {
 		return string(corev1.ServiceExternalTrafficPolicyTypeLocal)
 	}
-
 	return ""
 }

@@ -10,7 +10,6 @@ func GetConfig() string {
 		"<HTTP_PORT>", strconv.Itoa(HTTPPort),
 		"<INTERIOR_PORT>", strconv.Itoa(InteriorPort),
 		"<EDGE_PORT>", strconv.Itoa(EdgePort))
-
 	return replacer.Replace(rawRouterConfig)
 }
 

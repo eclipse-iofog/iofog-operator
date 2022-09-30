@@ -5,25 +5,23 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	k8sclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s"
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
-	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 	"github.com/skupperproject/skupper-cli/pkg/certs"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	net2 "k8s.io/apimachinery/pkg/util/net"
+
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 )
 
 const (
 	loadBalancerTimeout       = 360
-	requeueDuration           = time.Second * 5
 	errProxyRouterMissing     = "missing Proxy.Router data for non LoadBalancer Router service"
 	errParseControllerURL     = "failed to parse Controller endpoint as URL (%s): %s"
 	portManagerDeploymentName = "port-manager"
@@ -37,7 +35,6 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	r.log.Info(fmt.Sprintf("Updating user password %s for ControlPlane %s", r.cp.Spec.User.Password, r.cp.Name))
 	// Retrieve old password from secrets
 	found := &corev1.Secret{}
-
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: controllerCredentialsSecretName, Namespace: r.cp.Namespace}, found)
 	if err != nil {
 		return err
@@ -47,25 +44,20 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if !ok {
 		return fmt.Errorf("password secret key %s not found in secret %s", passwordSecretKey, controllerCredentialsSecretName)
 	}
-
 	oldPassword, err := DecodeBase64(string(passwordBytes))
 	if err != nil {
 		return fmt.Errorf("password %s in secret %s is not a valid base64 string", string(passwordBytes), controllerCredentialsSecretName)
 	}
-
 	emailBytes, ok := found.Data[emailSecretKey]
 	if !ok {
 		return fmt.Errorf("email secret key %s not found in secret %s", emailSecretKey, controllerCredentialsSecretName)
 	}
-
 	email := string(emailBytes)
-
 	if err := iofogClient.Login(iofogclient.LoginRequest{
 		Email:    email,
 		Password: oldPassword,
 	}); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to log in with old credentials for ControlPlane %s: %s %s", r.cp.Name, email, oldPassword))
-
 		return err
 	}
 	// Update password
@@ -73,11 +65,9 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err != nil {
 		return fmt.Errorf("new password %s for ControlPlane %s is not a valid base64 string", r.cp.Name, r.cp.Spec.User.Password)
 	}
-
 	if err := r.updateIofogUser(iofogClient, oldPassword, newPassword); err != nil {
 		return err
 	}
-
 	// Update secret
 	found.StringData = map[string]string{
 		passwordSecretKey: r.cp.Spec.User.Password,
@@ -86,22 +76,18 @@ func (r *ControlPlaneReconciler) updateIofogUserPassword(iofogClient *iofogclien
 	if err := r.Client.Update(context.TODO(), found); err != nil {
 		return err
 	}
-
 	// Restart required pods
 	if err := r.restartPodsForDeployment(portManagerDeploymentName, r.cp.Namespace); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) (shouldRestartPod bool, err error) {
-	for i := range ms.secrets {
-		secret := &ms.secrets[i]
-
+	for idx := range ms.secrets {
+		secret := &ms.secrets[idx]
 		if secret.Name == controllerDBCredentialsSecretName {
 			found := &corev1.Secret{}
-
 			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
@@ -112,7 +98,6 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 				if err != nil {
 					return false, err
 				}
-
 				return false, nil
 			}
 			// Secret already exists
@@ -125,7 +110,6 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ms *microservice) 
 			return true, nil
 		}
 	}
-
 	return false, nil
 }
 
@@ -161,10 +145,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	}
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for controller reconcile for Controlplane %s", r.cp.Name))
-
 	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for controller reconcile for Controlplane %s", err, r.cp.Name))
-
 		return op.ReconcileWithError(err)
 	}
 
@@ -190,17 +172,15 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// The deployment was just created, requeue to hide latency
 	if !alreadyExists {
-		return op.ReconcileWithRequeue(requeueDuration)
+		return op.ReconcileWithRequeue(time.Second * 5)
 	}
 	// Instantiate Controller client
 	ctrlPort, err := getControllerPort(ms)
 	if err != nil {
 		return op.ReconcileWithError(err)
 	}
-
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
 	iofogClient, fin := r.getIofogClient(host, ctrlPort)
-
 	if fin.IsFinal() {
 		return fin
 	}
@@ -209,13 +189,11 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	if err := r.createIofogUser(iofogClient); err != nil {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
-
-			return op.ReconcileWithRequeue(requeueDuration)
+			return op.ReconcileWithRequeue(time.Second * 3)
 		}
 		// If the error is invalid credentials, update user password
 		if err := r.updateIofogUserPassword(iofogClient); err != nil {
 			r.log.Info(fmt.Sprintf("Could not update user for ControlPlane %s: %s", r.cp.Name, err.Error()))
-
 			return op.ReconcileWithError(err)
 		}
 	}
@@ -228,13 +206,11 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// Get Router or Router Proxy
 	var routerProxy cpv3.RouterIngress
-
 	if strings.EqualFold(r.cp.Spec.Services.Router.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		routerAddr, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, routerName, loadBalancerTimeout)
 		if err != nil {
 			return op.ReconcileWithError(err)
 		}
-
 		routerProxy = cpv3.RouterIngress{
 			Address:      routerAddr,
 			MessagePort:  router.MessagePort,
@@ -245,10 +221,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		routerProxy = r.cp.Spec.Ingresses.Router
 	} else {
 		err := fmt.Errorf("reconcile Controller failed: %s", errProxyRouterMissing)
-
 		return op.ReconcileWithError(err)
 	}
-
 	if err := r.createDefaultRouter(iofogClient, routerProxy); err != nil {
 		return op.ReconcileWithError(err)
 	}
@@ -256,7 +230,6 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 	// Wait for Controller LB to actually work
 
 	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
-
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		host, err := k8sClient.WaitForLoadBalancer(r.cp.Namespace, controllerName, loadBalancerTimeout)
 		if err != nil {
@@ -265,43 +238,35 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		// Check LB connection works
 		if _, fin := r.getIofogClient(host, ctrlPort); fin.IsFinal() {
 			r.log.Info(fmt.Sprintf("LB Connection works for ControlPlane %s", r.cp.Name))
-
 			return fin
 		}
 	}
 
 	if shouldRestartPods {
 		r.log.Info(fmt.Sprintf("Restarting pods for ControlPlane %s", r.cp.Name))
-
 		if err := r.restartPodsForDeployment(ms.name, r.cp.Namespace); err != nil {
 			return op.ReconcileWithError(err)
 		}
 	}
 
 	r.log.Info(fmt.Sprintf("op.Continue in iofog-controller reconcile for ControlPlane %s", r.cp.Name))
-
 	return op.Continue()
 }
 
 func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogclient.Client, op.Reconciliation) {
-	baseURL := net2.JoinSchemeNamePort("http", host, strconv.Itoa(port))
-
+	baseURL := fmt.Sprintf("http://%s:%d/api/v3", host, port)
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, op.ReconcileWithError(fmt.Errorf(errParseControllerURL, baseURL, err.Error()))
 	}
-
 	iofogClient := iofogclient.New(iofogclient.Options{
 		BaseURL: parsedURL,
 		Timeout: 1,
 	})
-
 	if _, err = iofogClient.GetStatus(); err != nil {
 		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
-
-		return nil, op.ReconcileWithRequeue(requeueDuration)
+		return nil, op.ReconcileWithRequeue(time.Second * 3)
 	}
-
 	return iofogClient, op.Continue()
 }
 
@@ -331,10 +296,8 @@ func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {
 
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for port-manager reconcile for Controlplane %s", r.cp.Name))
-
 	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for port-manager reconcile for Controlplane %s", err, r.cp.Name))
-
 		return op.ReconcileWithError(err)
 	}
 
@@ -342,7 +305,6 @@ func (r *ControlPlaneReconciler) reconcilePortManager() op.Reconciliation {
 	if err := r.createDeployment(ms); err != nil {
 		return op.ReconcileWithError(err)
 	}
-
 	return op.Continue()
 }
 
@@ -384,9 +346,7 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 	// Wait for external IP of LB Service
 
 	r.log.Info(fmt.Sprintf("Waiting for IP/LB Service in router reconcile for ControlPlane %s", r.cp.Name))
-
-	var address string
-
+	address := ""
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeLoadBalancer)) {
 		address, err = k8sClient.WaitForLoadBalancer(r.cp.ObjectMeta.Namespace, ms.name, loadBalancerTimeout)
 		if err != nil {
@@ -396,10 +356,8 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 		address = r.cp.Spec.Ingresses.Router.Address
 	} else {
 		err = fmt.Errorf("reconcile Router failed: %s", errProxyRouterMissing)
-
 		return op.ReconcileWithError(err)
 	}
-
 	r.log.Info(fmt.Sprintf("Found address %s for router reconcile for Controlplane %s", address, r.cp.Name))
 
 	// Secrets
@@ -409,30 +367,24 @@ func (r *ControlPlaneReconciler) reconcileRouter() op.Reconciliation {
 
 	// Create secrets
 	r.log.Info(fmt.Sprintf("Creating secrets for router reconcile for Controlplane %s", r.cp.Name))
-
 	if err := r.createSecrets(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create secrets %v for router reconcile for Controlplane %s", err, r.cp.Name))
-
 		return op.ReconcileWithError(err)
 	}
 
 	// Deployment
 	r.log.Info(fmt.Sprintf("Creating deployment for router reconcile for Controlplane %s", r.cp.Name))
-
 	if err := r.createDeployment(ms); err != nil {
 		r.log.Info(fmt.Sprintf("Failed to create deployment %v for router reconcile for Controlplane %s", err, r.cp.Name))
-
 		return op.ReconcileWithError(err)
 	}
 
 	r.log.Info(fmt.Sprintf("op.Continue for router reconcile for Controlplane %s", r.cp.Name))
-
 	return op.Continue()
 }
 
 func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address string) (err error) {
 	r.log.Info(fmt.Sprintf("Creating routerSecrets definition for router reconcile for Controlplane %s", r.cp.Name))
-
 	defer func() {
 		if recoverResult := recover(); recoverResult != nil {
 			r.log.Info(fmt.Sprintf("Recover result %v for creating secrets for router reconcile for Controlplane %s", recoverResult, r.cp.Name))
@@ -440,10 +392,8 @@ func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address s
 		}
 	}()
 	// CA
-
-	r.log.Info(fmt.Sprintf("Generating CA Secret secrets for router reconcile for Controlplane %s", r.cp.Name))
-
 	caName := "router-ca"
+	r.log.Info(fmt.Sprintf("Generating CA Secret secrets for router reconcile for Controlplane %s", r.cp.Name))
 	caSecret := certs.GenerateCASecret(caName, caName)
 	caSecret.ObjectMeta.Namespace = r.cp.ObjectMeta.Namespace
 	ms.secrets = append(ms.secrets, caSecret)
@@ -457,7 +407,6 @@ func (r *ControlPlaneReconciler) createRouterSecrets(ms *microservice, address s
 	}
 
 	r.log.Info(fmt.Sprintf("Secrets generated for Controlplane %s", r.cp.Name))
-
 	return err
 }
 
@@ -466,6 +415,5 @@ func newK8sClient() (*k8sclient.Client, error) {
 	if kubeConf == "" {
 		return k8sclient.NewInCluster()
 	}
-
 	return k8sclient.New(kubeConf)
 }

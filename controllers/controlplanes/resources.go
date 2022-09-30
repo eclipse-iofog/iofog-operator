@@ -39,19 +39,17 @@ func newServices(namespace string, ms *microservice) (svcs []*corev1.Service) {
 			},
 		}
 		// Add ports
-		for i, port := range msvcSvc.ports {
+		for idx, port := range msvcSvc.ports {
 			svcPort := corev1.ServicePort{
-				Name:       msvcSvc.name + strconv.Itoa(i),
+				Name:       msvcSvc.name + strconv.Itoa(idx),
 				Port:       int32(port),
 				TargetPort: intstr.FromInt(port),
 				Protocol:   corev1.Protocol("TCP"),
 			}
 			svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
 		}
-
 		svcs = append(svcs, svc)
 	}
-
 	return svcs
 }
 
@@ -65,13 +63,11 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			MaxSurge:       &maxSurge,
 		},
 	}
-
 	if ms.mustRecreateOnRollout {
 		strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}
 	}
-
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ms.name,
@@ -96,10 +92,9 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 			},
 		},
 	}
-
 	containers := &dep.Spec.Template.Spec.Containers
-	for i := range ms.containers {
-		msCont := &ms.containers[i]
+	for idx := range ms.containers {
+		msCont := &ms.containers[idx]
 		cont := corev1.Container{
 			Name:            msCont.name,
 			Image:           msCont.image,
@@ -114,7 +109,6 @@ func newDeployment(namespace string, ms *microservice) *appsv1.Deployment {
 		}
 		*containers = append(*containers, cont)
 	}
-
 	return dep
 }
 

@@ -22,20 +22,22 @@ import (
 	"fmt"
 	"reflect"
 
-	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 )
 
-// ApplicationReconciler reconciles a Application object.
+// ApplicationReconciler reconciles a Application object
 type ApplicationReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -49,52 +51,42 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 	log := r.Log.WithValues("application", request.NamespacedName)
 
 	instance := &appsv3.Application{}
-
 	err := r.Client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-
 		return ctrl.Result{}, err
 	}
 
 	found := &appsv1.Deployment{}
-
 	err = r.Client.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		dep, err := r.deploymentForApp(instance)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-
 		err = r.Client.Create(ctx, dep)
 		if err != nil {
 			log.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-
 			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Deployment")
-
 		return ctrl.Result{}, err
 	}
 
 	count := instance.Spec.Replicas
 	log.Info("Scaling", "Current count: ", *found.Spec.Replicas)
 	log.Info("Scaling", "Desired count: ", count)
-
 	if *found.Spec.Replicas != count {
 		found.Spec.Replicas = &count
-
 		err = r.Client.Update(ctx, found)
 		if err != nil {
 			log.Error(err, "Failed to update Deployment", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
-
 			return ctrl.Result{}, err
 		}
 
@@ -102,23 +94,18 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 	}
 
 	podList := &corev1.PodList{}
-
 	err = r.Client.List(ctx, podList)
 	if err != nil {
 		log.Error(err, "Failed to list pods", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
-
 		return ctrl.Result{}, err
 	}
-
 	podNames := getPodNames(podList.Items)
 
 	if !reflect.DeepEqual(podNames, instance.Status.PodNames) {
 		instance.Status.PodNames = podNames
-
 		err := r.Client.Update(ctx, instance)
 		if err != nil {
 			log.Error(err, "failed to update node status", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
-
 			return ctrl.Result{}, err
 		}
 	}
@@ -134,10 +121,9 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func getPodNames(pods []corev1.Pod) []string {
 	podNames := make([]string, len(pods))
-	for i := range pods {
-		podNames[i] = pods[i].Name
+	for idx := range pods {
+		podNames[idx] = pods[idx].Name
 	}
-
 	return podNames
 }
 
@@ -150,30 +136,21 @@ func labelsForIOFog(name string) map[string]string {
 func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*appsv1.Deployment, error) {
 	labels := labelsForIOFog(app.Name)
 
-	microservices, err := json.Marshal(app.Spec.Microservices)
-	if err != nil {
-		return nil, err
-	}
-
-	routes, err := json.Marshal(app.Spec.Routes)
-	if err != nil {
-		return nil, err
-	}
-
+	microservices, _ := json.Marshal(app.Spec.Microservices)
+	routes, _ := json.Marshal(app.Spec.Routes)
 	annotations := map[string]string{
 		"microservices": string(microservices),
 		"routes":        string(routes),
 	}
 
 	containers := make([]corev1.Container, len(app.Spec.Microservices))
-
-	for i := range app.Spec.Microservices {
-		microservice := &app.Spec.Microservices[i]
+	for idx := range app.Spec.Microservices {
+		microservice := &app.Spec.Microservices[idx]
 		container := corev1.Container{
 			Name:  microservice.Name,
 			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
 		}
-		containers[i] = container
+		containers[idx] = container
 	}
 
 	dep := &appsv1.Deployment{
