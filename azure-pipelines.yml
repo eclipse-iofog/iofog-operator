@@ -23,7 +23,7 @@ pr:
 
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
-  GOROOT: '/usr/local/go1.17.9'
+  GOROOT: '/usr/local/go1.19.1'
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
   repository: 'focal-freedom-236620/operator'
@@ -48,7 +48,7 @@ jobs:
 
   - task: GoTool@0
     inputs:
-      version: '1.17.9'
+      version: '1.19.1'
       goPath: $(GOPATH)
       goBin: $(GOBIN)
     displayName: 'Install Golang'
