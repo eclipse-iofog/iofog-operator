@@ -124,10 +124,10 @@ jobs:
 
 
 
-  - script: |
-      set -e
-      make lint
-    displayName: 'Lint source'
+#  - script: |
+#      set -e
+#      make lint
+#    displayName: 'Lint source'
 
   - task: Docker@2
     displayName: 'build and push docker image'
