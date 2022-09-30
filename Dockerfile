@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine as builder
+FROM golang:1.19-alpine as builder
 
 WORKDIR /operator
 
@@ -18,7 +18,7 @@ COPY ./hack/ ./hack/
 RUN make build
 RUN cp ./bin/iofog-operator /bin
 
-FROM alpine:3.7
+FROM alpine:3.16
 WORKDIR /
 COPY --from=builder /bin/iofog-operator /bin/
 
