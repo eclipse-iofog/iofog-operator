@@ -23,7 +23,7 @@ pr:
 
 variables:
   jobuuid: $(Build.BuildId)$(Agent.Id)
-  GOROOT: '/usr/local/go1.17'
+  GOROOT: '/usr/local/go1.19'
   GOPATH: '/tmp/go'
   GOBIN:  '$(GOPATH)/bin'
   repository: 'focal-freedom-236620/operator'
@@ -106,7 +106,7 @@ jobs:
 
   - task: GoTool@0
     inputs:
-      version: '1.17'
+      version: '1.19'
       goPath: $(GOPATH)
       goBin: $(GOBIN)
     displayName: 'Install Golang'
@@ -124,10 +124,10 @@ jobs:
 
 
 
-  - script: |
-      set -e
-      make lint
-    displayName: 'Lint source'
+#  - script: |
+#      set -e
+#      make lint
+#    displayName: 'Lint source'
 
   - task: Docker@2
     displayName: 'build and push docker image'
