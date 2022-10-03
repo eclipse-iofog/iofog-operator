@@ -3,7 +3,7 @@
 set -e
 
 echo "========================="
-kubectl
+kubectl get namespaces
 echo "========================="
 
 

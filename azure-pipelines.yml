@@ -77,32 +77,10 @@ jobs:
       
       gke-gcloud-auth-plugin --version
       
-      # echo "export USE_GKE_GCLOUD_AUTH_PLUGIN=True" > ~/.bashrc
-      # source ~/.bashrc
-      
-      
-      
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
-      
-
-      echo "Trying namespaces"
-      kubectl get namespaces
-
     displayName: 'Connect to cluster'
-
-
-  - bash: |
-      set -e
-      
-      kubectl config get-contexts
-      
-      echo "Trying namespaces"
-      kubectl get namespaces
-    displayName: 'kubectl: Trying contexts'
-
-
 
   - task: GoTool@0
     inputs:
@@ -119,15 +97,10 @@ jobs:
       echo "##vso[task.setvariable variable=version]$VERS"
     displayName: 'Set version variable'
 
-
-
-
-
-
-#  - script: |
-#      set -e
-#      make lint
-#    displayName: 'Lint source'
+  - script: |
+      set -e
+      make lint
+    displayName: 'Lint source'
 
   - task: Docker@2
     displayName: 'build and push docker image'
@@ -143,13 +116,6 @@ jobs:
         $(branch)-$(build)
         latest
 
-##  - script: |
-##      set -e
-##      sudo make kubectl
-##    displayName: 'Install kubectl'
-#
-#
-#
   - script: |
       set -e
       sudo make bats
@@ -174,11 +140,11 @@ jobs:
       make feature
     displayName: 'Feature tests'
 
-#  - script: |
-#      set -e
-#      kubectl delete ns $(jobuuid)
-#    displayName: 'Cleanup tests'
-#    condition: failed()
+  - script: |
+      set -e
+      kubectl delete ns $(jobuuid)
+    displayName: 'Cleanup tests'
+    condition: failed()
 
   - script: |
       set -e
