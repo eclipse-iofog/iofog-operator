@@ -57,12 +57,12 @@ func (r *ControlPlaneReconciler) Reconcile(ctx context.Context, request ctrl.Req
 	}
 
 	// Reconcile based on state
-	reconciler, err := r.getReconcileFunc() //nolint:contextcheck
+	reconciler, err := r.getReconcileFunc(ctx)
 	if err != nil {
 		return op.RequeueWithError(err)
 	}
 
-	recon := reconciler()
+	recon := reconciler(ctx)
 
 	return recon.Result()
 }
