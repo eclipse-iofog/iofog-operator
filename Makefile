@@ -85,7 +85,7 @@ ifeq (, $(shell which kubectl))
 	set -e ;\
 	KCTL_TMP_DIR=$$(mktemp -d) ;\
 	cd $$KCTL_TMP_DIR ;\
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.6/bin/"$(OS)"/amd64/kubectl ;\
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/"$(OS)"/amd64/kubectl ;\
 	chmod +x kubectl ;\
 	mv kubectl /usr/local/bin/ ;\
 	rm -rf $$KCTL_TMP_DIR ;\
@@ -96,7 +96,7 @@ golangci-lint: ## Install golangci
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0 ;\
 	}
 GOLANGCI_LINT=$(GOBIN)/golangci-lint
 else
