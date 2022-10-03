@@ -54,33 +54,35 @@ jobs:
     inputs:
       kubectlVersion: 1.25.2
 
+
   - script: |
       set -e
       sudo make kustomize
     displayName: 'Install kustomize'
+
 
   - task: DownloadSecureFile@1
     displayName: 'Download secure file'
     inputs:
       secureFile: 'azure-gcp.json'
 
+
   - bash: |
       set -e
       keyFilePath="$(Agent.TempDirectory)/azure-gcp.json"
-      gcloud components list
       
+      # Install gcloud-auth-plugin
       echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-      
       curl -f https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-
       sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
       
-      gke-gcloud-auth-plugin --version
+      gcloud components list
       
       gcloud --quiet auth activate-service-account --key-file="${keyFilePath}"
       gcloud --quiet config set project $(gcp.project.name)
       gcloud --quiet container clusters get-credentials $(gcp.cluster.name) --region $(gcp.cluster.region)
     displayName: 'Connect to cluster'
+
 
   - task: GoTool@0
     inputs:
@@ -88,6 +90,7 @@ jobs:
       goPath: $(GOPATH)
       goBin: $(GOBIN)
     displayName: 'Install Golang'
+
 
   - bash: |
       VERS=$(echo $(commit) | cut -c1-20)
@@ -97,10 +100,12 @@ jobs:
       echo "##vso[task.setvariable variable=version]$VERS"
     displayName: 'Set version variable'
 
+
   - script: |
       set -e
       make lint
     displayName: 'Lint source'
+
 
   - task: Docker@2
     displayName: 'build and push docker image'
@@ -132,6 +137,7 @@ jobs:
       cat ./deployment.yaml | grep "image: $IMAGE"
     displayName: 'Kustomize'
 
+
   - script: |
       set -e
       cp test/conf/env.sh.tpl test/conf/env.sh
@@ -140,11 +146,13 @@ jobs:
       make feature
     displayName: 'Feature tests'
 
+
   - script: |
       set -e
       kubectl delete ns $(jobuuid)
     displayName: 'Cleanup tests'
     condition: failed()
+
 
   - script: |
       set -e
