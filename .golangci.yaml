@@ -5,11 +5,11 @@ linters-settings:
   depguard:
     list-type: blacklist
     packages:
-      # logging is allowed only by logutils.Log, logrus
-      # is allowed to use only in logutils package
-#      - github.com/sirupsen/logrus
+    # logging is allowed only by logutils.Log, logrus
+    # is allowed to use only in logutils package
+    #      - github.com/sirupsen/logrus
     packages-with-error-message:
-#      - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
+  #      - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
   dupl:
     threshold: 100
   funlen:
@@ -37,7 +37,7 @@ linters-settings:
   gocyclo:
     min-complexity: 36
   goimports:
-#    local-prefixes: github.com/golangci/golangci-lint
+  #    local-prefixes: github.com/golangci/golangci-lint
   gomnd:
     settings:
       mnd:
@@ -79,12 +79,12 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-#    - deadcode
+    #    - deadcode
     - decorder
     - depguard
     - dogsled
     - dupl
-#    - dupword
+    #    - dupword
     - durationcheck
     - errcheck
     - errchkjson
@@ -92,8 +92,8 @@ linters:
     - errorlint
     - execinquery
     - exhaustive
-#    - exhaustivestruct
-#    - exhaustruct
+    #    - exhaustivestruct
+    #    - exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert
@@ -106,13 +106,13 @@ linters:
     - gocritic
     - gocyclo
     - godot
-#    - godox
-#    - goerr113
+    #    - godox
+    #    - goerr113
     - gofmt
     - gofumpt
     - goheader
     - goimports
-#    - golint
+    #    - golint
     - gomnd
     - gomoddirectives
     - gomodguard
@@ -121,17 +121,17 @@ linters:
     - gosimple
     - govet
     - grouper
-#    - ifshort
+    #    - ifshort
     - importas
     - ineffassign
     - interfacebloat
-#    - interfacer
+    #    - interfacer
     - ireturn
     - lll
-#    - loggercheck
+    #    - loggercheck
     - maintidx
     - makezero
-#    - maligned
+    #    - maligned
     - misspell
     - nakedret
     - nestif
@@ -140,8 +140,8 @@ linters:
     - nlreturn
     - noctx
     - nolintlint
-#    - nonamedreturns
-#    - nosnakecase
+    #    - nonamedreturns
+    #    - nosnakecase
     - nosprintfhostport
     - paralleltest
     - prealloc
@@ -150,14 +150,14 @@ linters:
     - reassign
     - revive
     - rowserrcheck
-#    - scopelint
+    #    - scopelint
     - sqlclosecheck
     - staticcheck
-#    - structcheck
+    #    - structcheck
     - stylecheck
     - tagliatelle
     - tenv
-#    - testableexamples
+    #    - testableexamples
     - testpackage
     - thelper
     - tparallel
@@ -166,11 +166,11 @@ linters:
     - unparam
     - unused
     - usestdlibvars
-#    - varcheck
+    #    - varcheck
     - varnamelen
     - wastedassign
     - whitespace
-#    - wrapcheck
+    #    - wrapcheck
     - wsl
 
 issues:
@@ -185,16 +185,12 @@ issues:
         - dupl
         - funlen
 
-    - linters:
-      - gosec
-      text: "G[202]"
-#      text: "G[101]"
 
 
 run:
   skip-files:
-   - ".*_test.go"
-  modules-download-mode: vendor
+    - ".*_test.go"
+
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration

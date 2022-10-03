@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,12 +17,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	net2 "k8s.io/apimachinery/pkg/util/net"
 )
 
 const (
 	loadBalancerTimeout       = 360
-	requeueDuration           = time.Second * 5
 	errProxyRouterMissing     = "missing Proxy.Router data for non LoadBalancer Router service"
 	errParseControllerURL     = "failed to parse Controller endpoint as URL (%s): %s"
 	portManagerDeploymentName = "port-manager"
@@ -190,7 +187,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 
 	// The deployment was just created, requeue to hide latency
 	if !alreadyExists {
-		return op.ReconcileWithRequeue(requeueDuration)
+		return op.ReconcileWithRequeue(time.Second * 5) //nolint:gomnd
 	}
 	// Instantiate Controller client
 	ctrlPort, err := getControllerPort(ms)
@@ -210,7 +207,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not create user for ControlPlane %s: %s", r.cp.Name, err.Error()))
 
-			return op.ReconcileWithRequeue(requeueDuration)
+			return op.ReconcileWithRequeue(time.Second * 3) //nolint:gomnd
 		}
 		// If the error is invalid credentials, update user password
 		if err := r.updateIofogUserPassword(iofogClient); err != nil {
@@ -284,7 +281,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController() op.Reconciliation {
 }
 
 func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogclient.Client, op.Reconciliation) {
-	baseURL := net2.JoinSchemeNamePort("http", host, strconv.Itoa(port))
+	baseURL := fmt.Sprintf("http://%s:%d/api/v3", host, port) //nolint:nosprintfhostport
 
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -299,7 +296,7 @@ func (r *ControlPlaneReconciler) getIofogClient(host string, port int) (*iofogcl
 	if _, err = iofogClient.GetStatus(); err != nil {
 		r.log.Info(fmt.Sprintf("Could not get Controller status for ControlPlane %s: %s", r.cp.Name, err.Error()))
 
-		return nil, op.ReconcileWithRequeue(requeueDuration)
+		return nil, op.ReconcileWithRequeue(time.Second * 3) //nolint:gomnd
 	}
 
 	return iofogClient, op.Continue()
