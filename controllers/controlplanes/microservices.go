@@ -39,6 +39,8 @@ const (
 	controllerDBPasswordSecretKey     = "password"
 	controllerDBHostSecretKey         = "host"
 	controllerDBPortSecretKey         = "port"
+	controllerS2STokensSecretName     = "controller-s2s-tokens" //nolint:gosec
+	proxyBrokerTokenSecretKey         = "proxy-broker-token"
 )
 
 type service struct {
@@ -92,6 +94,8 @@ type controllerMicroserviceConfig struct {
 	pidBaseDir        string
 	ecnViewerPort     int
 	ecnViewerURL      string
+	proxyBrokerURL    string
+	proxyBrokerToken  string
 }
 
 func filterControllerConfig(cfg *controllerMicroserviceConfig) {
@@ -160,6 +164,16 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					controllerDBPortSecretKey:     strconv.Itoa(cfg.db.Port),
 					controllerDBUserSecretKey:     cfg.db.User,
 					controllerDBPasswordSecretKey: cfg.db.Password,
+				},
+			},
+			{
+				Type: corev1.SecretTypeOpaque,
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      controllerS2STokensSecretName,
+				},
+				StringData: map[string]string{
+					proxyBrokerTokenSecretKey: cfg.proxyBrokerToken,
 				},
 			},
 		},
@@ -281,6 +295,21 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					{
 						Name:  "VIEWER_URL",
 						Value: cfg.ecnViewerURL,
+					},
+					{
+						Name:  "PROXY_BROKER_URL",
+						Value: cfg.proxyBrokerURL,
+					},
+					{
+						Name: "PROXY_BROKER_TOKEN",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: controllerS2STokensSecretName,
+								},
+								Key: proxyBrokerTokenSecretKey,
+							},
+						},
 					},
 				},
 				// resources: corev1.ResourceRequirements{
