@@ -96,6 +96,7 @@ type controllerMicroserviceConfig struct {
 	ecnViewerURL      string
 	proxyBrokerURL    string
 	proxyBrokerToken  string
+	portRouterImage   string
 }
 
 func filterControllerConfig(cfg *controllerMicroserviceConfig) {
@@ -275,6 +276,14 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 					{
 						Name:  "SystemImages_Router_2",
 						Value: cfg.routerImage,
+					},
+					{
+						Name:  "SystemImages_PortRouter_1",
+						Value: cfg.portRouterImage,
+					},
+					{
+						Name:  "SystemImages_PortRouter_2",
+						Value: cfg.portRouterImage,
 					},
 					{
 						Name:  "PORT_ALLOC_ADDRESS",

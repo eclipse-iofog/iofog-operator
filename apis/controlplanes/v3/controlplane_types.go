@@ -76,6 +76,7 @@ type Images struct {
 	Router      string `json:"router,omitempty"`
 	PortManager string `json:"portManager,omitempty"`
 	Proxy       string `json:"proxy,omitempty"`
+	PortRouter  string `json:"portRouter,omitempty"`
 }
 
 type Database struct {
