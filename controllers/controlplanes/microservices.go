@@ -39,8 +39,8 @@ const (
 	controllerDBPasswordSecretKey     = "password"
 	controllerDBHostSecretKey         = "host"
 	controllerDBPortSecretKey         = "port"
-	controllerS2STokensSecretName     = "controller-s2s-tokens"
-	proxyBrokerTokenSecretKey         = "proxy-broker-token"
+	controllerS2STokensSecretName     = "controller-s2s-tokens" //nolint:gosec
+	proxyBrokerTokenSecretKey         = "proxy-broker-token"    //nolint:gosec
 )
 
 type service struct {
