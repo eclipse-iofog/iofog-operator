@@ -143,6 +143,8 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		ecnViewerPort:     r.cp.Spec.Controller.EcnViewerPort,
 		ecnViewerURL:      r.cp.Spec.Controller.EcnViewerURL,
 		portProvider:      r.cp.Spec.Controller.PortProvider,
+		proxyBrokerURL:    r.cp.Spec.Controller.ProxyBrokerURL,
+		proxyBrokerToken:  r.cp.Spec.Controller.ProxyBrokerToken,
 	}
 	ms := newControllerMicroservice(r.cp.Namespace, config)
 

@@ -118,6 +118,8 @@ type Controller struct {
 	PortProvider      string `json:"portProvider,omitempty"`
 	ECNName           string `json:"ecn,omitempty"`
 	PortAllocatorHost string `json:"portAllocatorHost,omitempty"`
+	ProxyBrokerURL    string `json:"proxyBrokerUrl,omitempty"`
+	ProxyBrokerToken  string `json:"proxyBrokerToken,omitempty"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane.
