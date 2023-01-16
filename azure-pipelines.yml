@@ -25,7 +25,7 @@ variables:
 jobs:
 - job: Operator
   pool:
-    vmImage: 'Ubuntu-18.04'
+    vmImage: 'Ubuntu-22.04'
 
   steps:
   - script: |
@@ -38,7 +38,7 @@ jobs:
 
   - task: GoTool@0
     inputs:
-      version: '1.17.9'
+      version: '1.18'
       goPath: $(GOPATH)
       goBin: $(GOBIN)
     displayName: 'Install Golang'
