@@ -111,11 +111,7 @@ golangci-lint: ## Install golangci
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
-	GOLANGCI_TMP_DIR=$$(mktemp -d) ;\
-	cd $$GOLANGCI_TMP_DIR ;\
-	go mod init tmp ;\
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
-	rm -rf $$GOLANGCI_TMP_DIR ;\
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1 ;\
 	}
 GOLANGCI_LINT=$(GOBIN)/golangci-lint
 else

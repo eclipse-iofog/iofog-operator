@@ -60,7 +60,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
+#    - deadcode
     - depguard
     - dogsled
 #    - dupl
@@ -72,27 +72,27 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
+#    - golint
 #    - gomnd
     - goprintffuncname
 #    - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
+#    - interfacer
     - lll
 #    - misspell
     - nakedret
-    - rowserrcheck
-    - scopelint
+#    - rowserrcheck
+#    - scopelint
     - staticcheck
-    - structcheck
+#    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
+#    - varcheck
     - whitespace
 #    - gochecknoglobals
     - gocognit
@@ -112,20 +112,24 @@ issues:
         - dupl
         - funlen
 
-    - linters:
-      - gosec
-      text: "G[202]"
-      text: "G[101]"
+#    - linters:
+#       - gosec
+#       text: "G[202]"
+#       text: "G[101]"
 
 
 run:
   skip-files:
    - ".*_test.go"
   modules-download-mode: vendor
+  skip-dirs:
+    # auto-generated
+    # vendors
+    - vendor
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.31.x # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.50.1 # use the fixed version to not introduce new linters unexpectedly
   prepare:
     - echo "here I can run custom commands, but no preparation needed for this repo"
