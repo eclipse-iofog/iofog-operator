@@ -23,12 +23,13 @@ import (
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 )
 
-type reconcileFunc = func() op.Reconciliation
+type reconcileFunc = func(ctx context.Context) op.Reconciliation
 
-func (r *ControlPlaneReconciler) getReconcileFunc() (reconcileFunc, error) {
+func (r *ControlPlaneReconciler) getReconcileFunc(ctx context.Context) (reconcileFunc, error) {
 	if r.cp.IsReady() {
 		return r.reconcileReady, nil
 	}
+
 	if r.cp.IsDeploying() {
 		return r.reconcileDeploying, nil
 	}
@@ -37,34 +38,37 @@ func (r *ControlPlaneReconciler) getReconcileFunc() (reconcileFunc, error) {
 	if err := r.Status().Update(context.Background(), &r.cp); err != nil {
 		return nil, err
 	}
+
 	return r.reconcileDeploying, nil
 }
 
-func (r *ControlPlaneReconciler) reconcileReady() op.Reconciliation {
+func (r *ControlPlaneReconciler) reconcileReady(ctx context.Context) op.Reconciliation {
 	// Do nothing
 	r.log.Info(fmt.Sprintf("reconcileReady() ControlPlane %s", r.cp.Name))
+
 	return op.Reconcile()
 }
 
-func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
+func (r *ControlPlaneReconciler) reconcileDeploying(ctx context.Context) op.Reconciliation {
 	r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s", r.cp.Name))
-	ctx := context.Background()
+
 	// Error chan for reconcile routines
 	reconcilerCount := 3
 	reconChan := make(chan op.Reconciliation, reconcilerCount)
 
 	// Reconcile Router
-	go reconcileRoutine(r.reconcileRouter, reconChan)
+	go reconcileRoutine(ctx, r.reconcileRouter, reconChan)
 
 	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(r.reconcileIofogController, reconChan)
+	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
 
 	// Reconcile Port Manager
-	go reconcileRoutine(r.reconcilePortManager, reconChan)
+	go reconcileRoutine(ctx, r.reconcilePortManager, reconChan)
 
 	// Wait for all parallel recons and evaluate results
 	finRecon := op.Reconciliation{}
-	for idx := 0; idx < reconcilerCount; idx++ {
+
+	for i := 0; i < reconcilerCount; i++ {
 		recon := <-reconChan
 		if recon.Err != nil {
 			if finRecon.Err == nil {
@@ -72,7 +76,7 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 				finRecon.Err = recon.Err
 			} else {
 				// Append
-				finRecon.Err = fmt.Errorf("%s\n%s", finRecon.Err.Error(), recon.Err.Error())
+				finRecon.Err = fmt.Errorf("%s\n%s", finRecon.Err.Error(), recon.Err.Error()) //nolint:errorlint
 			}
 		}
 		// End overrides all
@@ -87,8 +91,10 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 			}
 		}
 	}
+
 	if finRecon.IsFinal() {
 		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s isFinal", r.cp.Name))
+
 		return finRecon
 	}
 
@@ -97,15 +103,21 @@ func (r *ControlPlaneReconciler) reconcileDeploying() op.Reconciliation {
 		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s setReady", r.cp.Name))
 		r.cp.SetConditionReady(&r.log) // temporary logger
 		r.log.Info(fmt.Sprintf("reconcileDeploying() ControlPlane %s -- write status update, new conditions %v", r.cp.Name, r.cp.Status.Conditions))
+
 		if err := r.Status().Update(ctx, &r.cp); err != nil {
 			r.log.Error(err, fmt.Sprintf("reconcileDeploying() ControlPlane %s -- failed to update status", r.cp.Name))
+
 			return op.ReconcileWithError(err)
 		}
+
 		if err := r.Update(ctx, &r.cp); err != nil {
 			return op.ReconcileWithError(err)
 		}
+
 		r.log.Info(fmt.Sprintf("Control Plane %s is ready", r.cp.Name))
+
 		return op.Reconcile()
 	}
+
 	return op.Continue()
 }
