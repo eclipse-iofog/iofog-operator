@@ -1,6 +1,6 @@
 module github.com/eclipse-iofog/iofog-operator/v3
 
-go 1.17
+go 1.18
 
 require (
 	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.0.0-beta2.0.20220405032908-feceb5c7b126
