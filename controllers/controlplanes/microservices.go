@@ -350,7 +350,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-sqlite",
-			MountPath: "/usr/local/lib/node_modules/iofogcontroller/src/data/sqlite_files/",
+			MountPath: "/usr/local/lib/node_modules/@iofog/iofogcontroller/src/data/sqlite_files/",
 			SubPath:   "prod_database.sqlite",
 		})
 	}
