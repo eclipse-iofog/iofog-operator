@@ -34,10 +34,10 @@ function testDeployOperator() {
   kctl describe pods -l name=iofog-operator | grep "$OP_VERSION"
   local TXTS=(
     "successfully acquired lease"
-    'Starting Controller	{"reconciler group": "iofog.org", "reconciler kind": "Application"}'
-    'Starting workers	{"reconciler group": "iofog.org", "reconciler kind": "Application", "worker count": 1}'
-    'Starting Controller	{"reconciler group": "iofog.org", "reconciler kind": "ControlPlane"}'
-    'Starting workers	{"reconciler group": "iofog.org", "reconciler kind": "ControlPlane", "worker count": 1}'
+    'Starting Controller	{"controller": "application", "controllerGroup": "iofog.org", "controllerKind": "Application"}'
+    'Starting Controller	{"controller": "controlplane", "controllerGroup": "iofog.org", "controllerKind": "ControlPlane"}'
+    'Starting workers	{"controller": "application", "controllerGroup": "iofog.org", "controllerKind": "Application", "worker count": 1}'
+    'Starting workers	{"controller": "controlplane", "controllerGroup": "iofog.org", "controllerKind": "ControlPlane", "worker count": 1}'
   )
   for TXT in "${TXTS[@]}"; do
     waitCmdGrep 30 "kctl logs -l name=iofog-operator" "$TXT"
