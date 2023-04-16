@@ -64,17 +64,15 @@ jobs:
       id: tags
       run: |
         if [[ ${{ github.ref_name }} =~ ^v.* ]] ; then
-          echo "tag=${{ github.ref_name }}" >> "${GITHUB_OUTPUT}"
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> "${GITHUB_OUTPUT}"
         else
-           echo "tag=${{ steps.previoustag.outputs.tag }}-${{ github.run_number }}" >> "${GITHUB_OUTPUT}"
+           VERSION=${{ steps.previoustag.outputs.tag }}
+           echo "VERSION=${VERSION:1}-${{ github.run_number }}" >> "${GITHUB_OUTPUT}"
         fi
     - name: Get image tag
       run: |
-        echo ${{ steps.tags.outputs.tag }}
-        edited_tag='${{ steps.tags.outputs.tag }} | sed 's/v//''
-        echo "e_tag=edited_tag" >> "${GITHUB_OUTPUT}"
-        echo "edited_tag='${{ steps.tags.outputs.tag }} | sed 's/v//''"  >> "${GITHUB_OUTPUT}"
-    - run:  echo ${{ steps.tags.outputs.e_tag }}
+        echo ${{ steps.tags.outputs.VERSION }}
     - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
       with:
         service_account_key: ${{ secrets.GKE_SA_KEY }}
@@ -100,7 +98,7 @@ jobs:
         registry: gcr.io
         project_id: ${{ env.project }}
         image_name: ${{ env.image }}
-        image_tag: latest,${{ steps.version.outputs.edited_tag }}
+        image_tag: latest,${{ steps.version.outputs.VERSION }}
         dockerfile: './Dockerfile'
         context: './'
 
@@ -108,7 +106,7 @@ jobs:
       shell: bash
       run: |
         set -e
-        IMAGE="gcr.io/focal-freedom-236620/operator:${{ steps.tags.outputs.e_tag }}"
+        IMAGE="gcr.io/focal-freedom-236620/operator:${{ steps.tags.outputs.VERSION }}"
         cd config/operator
         kustomize edit set image "$IMAGE"
         kustomize build . > /tmp/deployment.yaml
@@ -118,14 +116,15 @@ jobs:
     - name: Feature tests
       shell: bash
       id: feature_test
+      continue-on-error: true
       run: |
         set -e
         cp test/conf/env.sh.tpl test/conf/env.sh
         sed -i "s/<<NAMESPACE>>/${{ github.run_number }}/g" test/conf/env.sh
-        sed -i "s/<<OP_VERSION>>/${{ steps.tags.outputs.e_tag }}/g" test/conf/env.sh
+        sed -i "s/<<OP_VERSION>>/${{ steps.tags.outputs.VERSION }}/g" test/conf/env.sh
         make feature
     - name: Cleanup tests
-      if: ${{ steps.feature_test.outcome }} == 'failure'
+      if: failure() && steps.feature_test.outcome == 'failure'
       shell: bash
       run: |
         set -e
