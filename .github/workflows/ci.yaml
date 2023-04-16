@@ -1,0 +1,143 @@
+name: CI
+on:
+  push: 
+    branches:
+      - develop
+      - release*
+    tags: [v*]
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+  pull_request:
+  # Sequence of patterns matched against refs/heads
+    branches:    
+      - develop
+      - release*
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+env:
+  project: 'focal-freedom-236620'
+  image: 'operator'
+
+jobs:
+  Tests:
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      packages: 'write'
+    name: Tests
+    steps:
+    - uses: actions/checkout@v3
+      with:
+          fetch-depth: 0
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.18'
+    - run: go version
+    - uses: azure/setup-kubectl@v3
+      # with:
+      #   version: '1.25.2' # default is latest stable
+      id: install
+    # - uses: imranismail/setup-kustomize@v2
+     # Set up kustomize
+    - name: Set up Kustomize
+      run: |-
+        curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
+        chmod u+x ./kustomize
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.50.1
+        args: --timeout=5m0s
+    - run: sudo make bats
+    - name: 'Get Previous tag'
+      id: previoustag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      with:
+        fallback: 0.0.0
+    - name: Set image tag
+      shell: bash
+      id: tags
+      run: |
+        if [[ ${{ github.ref_name }} =~ ^v.* ]] ; then
+          echo "tag=${{ github.ref_name }}" >> "${GITHUB_OUTPUT}"
+        else
+           echo "tag=${{ steps.previoustag.outputs.tag }}-${{ github.run_number }}" >> "${GITHUB_OUTPUT}"
+        fi
+    - name: Get image tag
+      run: |
+        echo ${{ steps.tags.outputs.tag }}
+        edited_tag='${{ steps.tags.outputs.tag }} | sed 's/v//''
+        echo "e_tag=edited_tag" >> "${GITHUB_OUTPUT}"
+        echo "edited_tag='${{ steps.tags.outputs.tag }} | sed 's/v//''"  >> "${GITHUB_OUTPUT}"
+    - run:  echo ${{ steps.tags.outputs.e_tag }}
+    - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
+      with:
+        service_account_key: ${{ secrets.GKE_SA_KEY }}
+        project_id: 'focal-freedom-236620' # ${{ secrets.GKE_PROJECT }}
+
+    # Configure Docker to use the gcloud command-line tool as a credential
+    # helper for authentication
+    - run: |-
+        gcloud --quiet auth configure-docker
+
+    # Get the GKE credentials so we can deploy to the cluster
+    - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
+      with:
+        cluster_name: 'iofogctl-ci' #${{ env.GKE_CLUSTER }}
+        location: 'us-central1-a' #${{ env.GKE_ZONE }}
+        credentials: ${{ secrets.GKE_SA_KEY }}
+    - name: Build and Push to GCR
+      if: ${{ steps.tags.outcome }} == 'success'
+      id: build_push_gcr
+      uses: RafikFarhad/push-to-gcr-github-action@v5-beta
+      with:
+        gcloud_service_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
+        registry: gcr.io
+        project_id: ${{ env.project }}
+        image_name: ${{ env.image }}
+        image_tag: latest,${{ steps.version.outputs.edited_tag }}
+        dockerfile: './Dockerfile'
+        context: './'
+
+    - name: Kustomize
+      shell: bash
+      run: |
+        set -e
+        IMAGE="gcr.io/focal-freedom-236620/operator:${{ steps.tags.outputs.e_tag }}"
+        cd config/operator
+        kustomize edit set image "$IMAGE"
+        kustomize build . > /tmp/deployment.yaml
+        cp /tmp/deployment.yaml ./deployment.yaml
+        cat ./deployment.yaml | grep "image: $IMAGE"
+    
+    - name: Feature tests
+      shell: bash
+      id: feature_test
+      run: |
+        set -e
+        cp test/conf/env.sh.tpl test/conf/env.sh
+        sed -i "s/<<NAMESPACE>>/${{ github.run_number }}/g" test/conf/env.sh
+        sed -i "s/<<OP_VERSION>>/${{ steps.tags.outputs.e_tag }}/g" test/conf/env.sh
+        make feature
+    - name: Cleanup tests
+      if: ${{ steps.feature_test.outcome }} == 'failure'
+      shell: bash
+      run: |
+        set -e
+        kubectl delete ns ${{ github.run_number }}
+
+    
+    # - run: make test
+    # - name: Bootstrap tests
+    #   run: test/bootstrap.bash
+    # - name: Setup test environment
+    #   run: test/setup.bash
+    # - name: Run Tests
+    #   run: test/run.bash
+    # - name: Tear down test environment
+    #   run:  test/teardown.bash
