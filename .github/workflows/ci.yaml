@@ -25,13 +25,13 @@ env:
   GKE_ZONE: 'us-central1-a'
 
 jobs:
-  Tests:
+  Operator:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
       packages: 'write'
-    name: Tests
+    name: Operator
     steps:
     - uses: actions/checkout@v3
       with:
@@ -40,17 +40,17 @@ jobs:
       with:
         go-version: '1.19'
     - run: go version
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.50.1
+        args: --timeout=5m0s
     - uses: azure/setup-kubectl@v3
       id: install
     - name: Set up Kustomize
       run: |-
         curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
         chmod u+x ./kustomize
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.50.1
-        args: --timeout=5m0s
     - run: sudo make bats
     - name: 'Get Previous tag'
       id: previoustag
@@ -147,14 +147,3 @@ jobs:
       with:
           name: operator
           path:  ${{ github.workspace }}/artifact/version.txt
-
-    
-    # - run: make test
-    # - name: Bootstrap tests
-    #   run: test/bootstrap.bash
-    # - name: Setup test environment
-    #   run: test/setup.bash
-    # - name: Run Tests
-    #   run: test/run.bash
-    # - name: Tear down test environment
-    #   run:  test/teardown.bash
