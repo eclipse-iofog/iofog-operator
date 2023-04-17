@@ -20,11 +20,11 @@ on:
       - LICENSE
 env:
   project: 'focal-freedom-236620'
-  image: 'operator'
+  image_name: 'operator'
 
 jobs:
   Tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -39,11 +39,7 @@ jobs:
         go-version: '1.18'
     - run: go version
     - uses: azure/setup-kubectl@v3
-      # with:
-      #   version: '1.25.2' # default is latest stable
       id: install
-    # - uses: imranismail/setup-kustomize@v2
-     # Set up kustomize
     - name: Set up Kustomize
       run: |-
         curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
@@ -78,11 +74,6 @@ jobs:
         service_account_key: ${{ secrets.GKE_SA_KEY }}
         project_id: 'focal-freedom-236620' # ${{ secrets.GKE_PROJECT }}
 
-    # Configure Docker to use the gcloud command-line tool as a credential
-    # helper for authentication
-    - run: |-
-        gcloud --quiet auth configure-docker
-
     # Get the GKE credentials so we can deploy to the cluster
     - uses: google-github-actions/get-gke-credentials@fb08709ba27618c31c09e014e1d8364b02e5042e
       with:
@@ -97,8 +88,8 @@ jobs:
         gcloud_service_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
         registry: gcr.io
         project_id: ${{ env.project }}
-        image_name: ${{ env.image }}
-        image_tag: latest,${{ steps.version.outputs.VERSION }}
+        image_name: ${{ env.image_name }}
+        image_tag: latest, ${{ steps.tags.outputs.VERSION }}
         dockerfile: './Dockerfile'
         context: './'
 
@@ -116,7 +107,6 @@ jobs:
     - name: Feature tests
       shell: bash
       id: feature_test
-      continue-on-error: true
       run: |
         set -e
         cp test/conf/env.sh.tpl test/conf/env.sh
@@ -129,6 +119,14 @@ jobs:
       run: |
         set -e
         kubectl delete ns ${{ github.run_number }}
+    - run: mkdir -p ${{ github.workspace }}/artifact
+    - run: echo ${{ steps.tags.outputs.VERSION }} > ${{ github.workspace }}/artifact/version.txt
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+          name: operator
+          path:  ${{ github.workspace }}/artifact/version.txt
 
     
     # - run: make test
