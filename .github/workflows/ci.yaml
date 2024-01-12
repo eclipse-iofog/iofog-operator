@@ -141,7 +141,6 @@ jobs:
         kubectl delete ns ${{ github.run_number }}
     - run: mkdir -p ${{ github.workspace }}/artifact
     - run: echo ${{ steps.tags.outputs.VERSION }} > ${{ github.workspace }}/artifact/version.txt
-
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
