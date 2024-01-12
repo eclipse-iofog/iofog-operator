@@ -43,4 +43,5 @@ make test
 ```
 export KUBECONFIG=~/.kube/config
 bin/iofog-operator
+
 ```
