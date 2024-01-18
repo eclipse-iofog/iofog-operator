@@ -133,12 +133,12 @@ jobs:
         sed -i "s/<<NAMESPACE>>/${{ github.run_number }}/g" test/conf/env.sh
         sed -i "s/<<OP_VERSION>>/${{ steps.tags.outputs.VERSION }}/g" test/conf/env.sh
         make feature
-    - name: Cleanup tests
-      if: failure() && steps.feature_test.outcome == 'failure'
-      shell: bash
-      run: |
-        set -e
-        kubectl delete ns ${{ github.run_number }}
+#    - name: Cleanup tests
+#      if: failure() && steps.feature_test.outcome == 'failure'
+#      shell: bash
+#      run: |
+#        set -e
+#        kubectl delete ns ${{ github.run_number }}
     - run: mkdir -p ${{ github.workspace }}/artifact
     - run: echo ${{ steps.tags.outputs.VERSION }} > ${{ github.workspace }}/artifact/version.txt
     - name: Upload Artifact
