@@ -265,7 +265,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 		availableDelay: 5,
 		name:           "controller",
 		labels: map[string]string{
-			"datasance.com/component": "controller",
+			"iofog.org/component": "controller",
 		},
 		rbacRules: []rbacv1.PolicyRule{
 			{
@@ -587,7 +587,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-sqlite",
-			MountPath: "/home/runner/.npm-global/lib/node_modules/@datasance/iofogcontroller/src/data/sqlite_files/",
+			MountPath: "/home/runner/.npm-global/lib/node_modules/@eclipse-iofog/iofogcontroller/src/data/sqlite_files/",
 			// SubPath:   "prod_database.sqlite",
 		})
 	}
@@ -605,7 +605,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-cert",
-			MountPath: "/etc/pot/controller-cert/",
+			MountPath: "/etc/iofog/controller-cert/",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
@@ -615,17 +615,17 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_CERT",
-			Value: "/etc/pot/controller-cert/tls.crt",
+			Value: "/etc/iofog/controller-cert/tls.crt",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_KEY",
-			Value: "/etc/pot/controller-cert/tls.key",
+			Value: "/etc/iofog/controller-cert/tls.key",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_INTERMEDIATE_CERT",
-			Value: "/etc/pot/controller-cert/ca.crt",
+			Value: "/etc/iofog/controller-cert/ca.crt",
 		})
 
 	}
@@ -765,10 +765,10 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 	return &microservice{
 		name: routerName,
 		labels: map[string]string{
-			"datasance.com/component": routerName,
-			"application":             "interior-router",
-			"skupper.io/component":    "router",
-			"skupper.io/type":         "site",
+			"iofog.org/component":  routerName,
+			"application":          "interior-router",
+			"skupper.io/component": "router",
+			"skupper.io/type":      "site",
 		},
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",
@@ -1075,7 +1075,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 		volumeClaimTemplates:   []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "js-data"}, Spec: pvcSpec}},
 		imagePullSecret:        cfg.imagePullSecret,
 		replicas:               cfg.replicas,
-		labels:                 map[string]string{"datasance.com/component": "nats"},
+		labels:                 map[string]string{"iofog.org/component": "nats"},
 		services: []service{
 			{name: nats.HeadlessServiceName, serviceType: "ClusterIP", headless: true, ports: headlessPorts},
 			{name: nats.ClientServiceName, serviceType: cfg.serviceType, serviceAnnotations: cfg.serviceAnnotations, trafficPolicy: getTrafficPolicy(cfg.serviceType, cfg.externalTrafficPolicy), ports: clientPorts},
@@ -1170,10 +1170,10 @@ func newRouterMicroserviceWithName(cfg routerMicroserviceConfig, name string) *m
 	return &microservice{
 		name: name,
 		labels: map[string]string{
-			"datasance.com/component": routerName,
-			"application":             "interior-router",
-			"skupper.io/component":    "router",
-			"skupper.io/type":         "site",
+			"iofog.org/component":  routerName,
+			"application":          "interior-router",
+			"skupper.io/component": "router",
+			"skupper.io/type":      "site",
 		},
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",

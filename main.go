@@ -74,7 +74,7 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{
 		Scheme:           scheme,
 		LeaderElection:   enableLeaderElection,
-		LeaderElectionID: "pot.datasance",
+		LeaderElectionID: "eclipse.iofog",
 		Metrics:          server.Options{BindAddress: metricsAddr},
 		Cache: cache.Options{
 			DefaultNamespaces: map[string]cache.Config{

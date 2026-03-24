@@ -114,7 +114,7 @@ func EnsureNatsSecrets(ctx context.Context, getSecret func(context.Context, type
 		if s.Annotations == nil {
 			s.Annotations = make(map[string]string)
 		}
-		s.Annotations["datasance.com/nats-replicas"] = strconv.Itoa(replicas)
+		s.Annotations["iofog.org/nats-replicas"] = strconv.Itoa(replicas)
 		out = append(out, s)
 	}
 
@@ -127,7 +127,7 @@ func EnsureNatsSecrets(ctx context.Context, getSecret func(context.Context, type
 		if s.Annotations == nil {
 			s.Annotations = make(map[string]string)
 		}
-		s.Annotations["datasance.com/nats-replicas"] = strconv.Itoa(replicas)
+		s.Annotations["iofog.org/nats-replicas"] = strconv.Itoa(replicas)
 		out = append(out, s)
 	}
 

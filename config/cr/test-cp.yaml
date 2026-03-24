@@ -1,0 +1,113 @@
+apiVersion: iofog.org/v3
+kind: ControlPlane
+metadata:
+  name: pot
+spec:
+  replicas:
+    controller: 1
+    nats: 2  # NATS server replicas (min 2 when NATS enabled)
+  database:
+    provider: ""
+    user: ""
+    host: ""
+    port: 0
+    password: ""
+    databaseName: ""
+    # ssl:
+    # ca: 
+  auth:
+    url: http://localhost:8111/
+    realm: test
+    realmKey: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA71x+2SeqLK1DYLTZ3+S9Cl4wIcnMHKt1kc4ZtdciuTEoepcbg3MVUocsrGu6GWnE7B76GXyzgTXdtJfFzygOl6c01KQGF1/GuYU+2tCtbcWJtULal9BGPLYJGMo0jyHdSTbZGgURxBtpgPwLf05TVbrgqBZmydxoqJSlAvC9SNSAH5zFBCgCYCAyPmTOJlKNMR7+a7qyaE1XzRc6xpO8IWF+9SR9S2Xg3FIKiWuko6wnGgqqmHqB0nvL0e+2i5QWFfWkovlEdwxsWTlEzQVCvIVqZlW3b8D/csGApmmsiJdr4GP3ix7rNchlPIn1/9o1J0UKITQDA2j3nXJbpW9CnQIDAQAB
+    ssl: "false"
+    controllerClient: pot-controller
+    controllerSecret: fiMf1LRW6og1MCCX1GAyDfQEvgMDrdVi
+    viewerClient: ecn-viewer
+  # events:
+  #   auditEnabled:
+  #   retentionDays:
+  #   cleanupInterval:
+  #   captureIpAddress:
+  images:
+    # pullSecret: 
+    controller: emirhandurmus/controller:3.7.0
+    router: ghcr.io/datasance/router:3.6.0
+    nats: ghcr.io/datasance/nats:2.12.4  # NATS server image (optional)
+  services:
+    controller:
+      type:  LoadBalancer # LoadBalancer / ClusterIP / Node Port .. If it is Cluster IP ingress for Controller need to be defined
+      # annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
+      #   #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    router:
+      type: LoadBalancer
+      # annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
+      #   #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    nats:
+      type: LoadBalancer  # or LoadBalancer when using external NATS clients
+      # annotations: {}
+    natsServer:  # nats-server service (client + monitor ports, non-TLS); separate from nats for in-cluster config
+      type: ClusterIP
+      annotations: {}
+  nats:  # optional; when omitted NATS is enabled with defaults
+    enabled: true  # set to false to disable NATS and not register a hub
+    jetStream:
+      storageSize: "10Gi"  # PVC and max_file_store
+      memoryStoreSize: "1Gi"  # max_memory_store
+      # storageClassName: ""
+  vault:  # optional; when set, operator creates a Secret from provider config and injects VAULT_* env vars into the controller
+    enabled: true
+    provider: openbao  # hashicorp, openbao, vault, aws, aws-secrets-manager, azure, azure-key-vault, google, google-secret-manager
+    basePath: "pot/iofog-test/secrets"  # $namespace is replaced with the ControlPlane namespace
+    # Provide only the block for your selected provider. Operator creates Secret "controller-vault-credentials" from these values.
+    hashicorp:
+      address: "http://192.168.139.3:8200"
+      token: "s.JCqRS37hu1VOy7PX3QRVdSY2"   # Vault token (sensitive; consider External Secrets to populate the CR)
+      mount: "kv"
+    # aws:
+    #   region: "us-east-1"
+    #   accessKeyId: ""
+    #   accessKey: ""
+    # azure:
+    #   url: "https://your-vault.vault.azure.net"
+    #   tenantId: ""
+    #   clientId: ""
+    #   clientSecret: ""
+    # google:
+    #   projectId: ""
+    #   credentials: ""  # path to service account key or JSON content
+  # controller:
+  #   pidBaseDir: ""
+  #   ecnViewerPort: 0
+  #   ecnViewerUrl:
+  #   https: # true or false  ..default is false
+  #   secretName: #name of secret it has to be same with the one that defined in the controller ingress struct
+  #   logLevel:
+  # ingresses:
+  #   controller:
+  #     annotations:
+  #       # cert-manager.io/cluster-issuer: letsencrypt
+  #       # nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+  #       # nginx.ingress.kubernetes.io/backend-protocol: "https"
+  #     ingressClassName: 
+  #     host: 
+  #     secretName: 
+  #   router:
+  #     address: 
+  #     messagePort: 5671
+  #     interiorPort: 55671
+  #     edgePort: 45671
+  #   nats:  # required when using ingress for NATS (address = hostname)
+  #     address: 
+  #     serverPort: 4222
+  #     clusterPort: 6222
+  #     leafPort: 7422
+  #     mqttPort: 8883
+  #     httpPort: 8222
+# status:
+#   conditions:
+#     - lastTransitionTime: "2022-04-10T22:44:09Z"
+#       message: ""
+#       reason: "initial_status"
+#       status: "True"
+#       type: "deploying"
+

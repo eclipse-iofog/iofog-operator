@@ -5,10 +5,10 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "datasance.com/v3",
+          "apiVersion": "iofog.org/v3",
           "kind": "ControlPlane",
           "metadata": {
-            "name": "pot"
+            "name": "iofog"
           },
           "spec": {
             "auth": {
@@ -117,7 +117,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2026-03-24T22:46:58Z"
+    createdAt: "2026-03-24T23:54:34Z"
     operators.operatorframework.io/builder: operator-sdk-v1.37.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: iofog-operator.v3.7.1
@@ -128,11 +128,11 @@ spec:
     owned:
     - description: Application defines an ioFog application.
       kind: Application
-      name: applications.datasance.com
+      name: applications.iofog.org
       version: v3
     - description: ControlPlane deploys and manages the ioFog control plane.
       kind: ControlPlane
-      name: controlplanes.datasance.com
+      name: controlplanes.iofog.org
       version: v3
   description: ioFog Control Plane on Kubernetes
   displayName: iofog-operator
@@ -194,8 +194,8 @@ spec:
   - datasance
   - pot
   links:
-  - name: Datasance PoT // Iofog Operator
-    url: https://datasance.com
+  - name: Eclipse ioFog// Iofog Operator
+    url: https://iofog.org
   maturity: stable
   minKubeVersion: 1.18.0
   provider:

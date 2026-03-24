@@ -42,7 +42,7 @@ rules:
     verbs:
       - '*'
   - apiGroups:
-      - datasance.com
+      - iofog.org
     resources:
       - applications
       - apps
@@ -55,7 +55,7 @@ rules:
       - update
       - watch
   - apiGroups:
-      - datasance.com
+      - iofog.org
     resources:
       - apps/status
       - applications/status
@@ -66,7 +66,7 @@ rules:
       - patch
       - update
   - apiGroups:
-      - datasance.com
+      - iofog.org
     resources:
       - controlplanes
     verbs:
@@ -78,7 +78,7 @@ rules:
       - update
       - watch
   - apiGroups:
-      - datasance.com
+      - iofog.org
     resources:
       - controlplanes/status
       - controlplanes/finalizers

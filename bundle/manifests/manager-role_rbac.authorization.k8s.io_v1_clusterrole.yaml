@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - applications
   verbs:
@@ -29,7 +29,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - applications/finalizers
   verbs:
@@ -37,7 +37,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - applications/status
   verbs:
@@ -45,7 +45,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - apps
   verbs:
@@ -57,7 +57,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - apps/finalizers
   verbs:
@@ -65,7 +65,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - apps/status
   verbs:
@@ -73,7 +73,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - controlplanes
   verbs:
@@ -85,7 +85,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - controlplanes/finalizers
   verbs:
@@ -93,7 +93,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - datasance.com
+  - iofog.org
   resources:
   - controlplanes/status
   verbs:

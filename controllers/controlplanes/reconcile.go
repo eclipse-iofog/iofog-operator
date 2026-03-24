@@ -338,7 +338,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	if strings.EqualFold(r.cp.Spec.Services.Controller.Type, string(corev1.ServiceTypeClusterIP)) {
 		// Retrieve the Ingress resource
 		ingress := &networkingv1.Ingress{}
-		err := r.Client.Get(ctx, types.NamespacedName{Name: "pot-controller", Namespace: r.cp.Namespace}, ingress)
+		err := r.Client.Get(ctx, types.NamespacedName{Name: "iofog-controller", Namespace: r.cp.Namespace}, ingress)
 		if err != nil {
 			return op.ReconcileWithError(fmt.Errorf("failed to get Ingress resource: %w", err))
 		}
@@ -697,7 +697,7 @@ func (r *ControlPlaneReconciler) reconcileNats(ctx context.Context) op.Reconcili
 	existingSiteServer := &corev1.Secret{}
 	err = r.Client.Get(ctx, types.NamespacedName{Name: nats.NatsSiteServerSecret, Namespace: namespace}, existingSiteServer)
 	if err == nil {
-		annotatedReplicas := existingSiteServer.Annotations["datasance.com/nats-replicas"]
+		annotatedReplicas := existingSiteServer.Annotations["iofog.org/nats-replicas"]
 		if annotatedReplicas != desiredReplicasStr {
 			for _, name := range []string{nats.NatsSiteServerSecret, nats.NatsMqttServerSecret} {
 				delErr := r.Client.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}})

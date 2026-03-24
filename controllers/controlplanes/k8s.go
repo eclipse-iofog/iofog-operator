@@ -569,7 +569,7 @@ func shouldUpdate(entry ConfigEntry) bool {
 	}
 }
 
-// getConfigVersion extracts the pot-config version from the router metadata
+// getConfigVersion extracts the iofog-config version from the router metadata
 func getConfigVersion(config string) (string, error) {
 	var entries []ConfigEntry
 	if err := json.Unmarshal([]byte(config), &entries); err != nil {
@@ -596,7 +596,7 @@ func getConfigVersion(config string) (string, error) {
 			if err := json.Unmarshal([]byte(metadata), &metadataMap); err != nil {
 				return "", fmt.Errorf("failed to parse metadata: %w", err)
 			}
-			if version, ok := metadataMap["pot-config"].(string); ok {
+			if version, ok := metadataMap["iofog-config"].(string); ok {
 				return version, nil
 			}
 		}

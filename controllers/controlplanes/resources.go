@@ -25,17 +25,17 @@ import (
 
 const (
 	standardLabelManagedBy = "iofog-operator"
-	standardLabelName      = "pot"
+	standardLabelName      = "iofog"
 )
 
-// getStandardLabels returns Kubernetes and Datasance standard labels for operator-created resources.
+// getStandardLabels returns Kubernetes and Eclipse ioFog standard labels for operator-created resources.
 func getStandardLabels(component, instanceName string) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/name":       standardLabelName,
 		"app.kubernetes.io/instance":   instanceName,
 		"app.kubernetes.io/component":  component,
 		"app.kubernetes.io/managed-by": standardLabelManagedBy,
-		"datasance.com/component":      component,
+		"iofog.org/component":          component,
 	}
 }
 
@@ -113,7 +113,7 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 
 	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "pot-controller",
+			Name:        "iofog-controller",
 			Namespace:   namespace,
 			Labels:      labels,
 			Annotations: cfg.annotations,

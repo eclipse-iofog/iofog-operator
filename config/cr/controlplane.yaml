@@ -1,7 +1,7 @@
-apiVersion: datasance.com/v3
+apiVersion: iofog.org/v3
 kind: ControlPlane
 metadata:
-  name: pot
+  name: iofog
 spec:
   replicas:
     controller: 2
