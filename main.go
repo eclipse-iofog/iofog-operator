@@ -20,16 +20,19 @@ import (
 	"flag"
 	"os"
 
-	appsv3 "github.com/datasance/iofog-operator/v3/apis/apps/v3"
-	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
-	appscontroller "github.com/datasance/iofog-operator/v3/controllers/apps"
-	controlplanescontroller "github.com/datasance/iofog-operator/v3/controllers/controlplanes"
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	appscontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/apps"
+	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -68,13 +71,17 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "44586fd0.datasance.com",
-		Namespace:          getWatchNamespace(),
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{
+		Scheme:           scheme,
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "pot.datasance",
+		Metrics:          server.Options{BindAddress: metricsAddr},
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				getWatchNamespace(): {},
+			},
+		},
+		// WebhookServer:    wb.NewServer(webhook.Options{Port: 9443}),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -34,16 +34,10 @@ metadata:
             "images": {
               "pullSecret": null,
               "controller": null,
-              "portManager": null,
-              "proxy": null,
               "router": null
             },
             "services": {
               "controller": {
-                "type": null,
-                "annotations": null
-              },
-              "proxy": {
                 "type": null,
                 "annotations": null
               },
@@ -57,7 +51,8 @@ metadata:
               "ecnViewerPort": 0,
               "ecnViewerUrl": null,
               "https": null,
-              "secretName": null
+              "secretName": null,
+              "logLevel": "debug"
             },
             "ingresses": {
               "controller": {
@@ -68,15 +63,9 @@ metadata:
               },
               "router": {
                 "address": null,
-                "messagePort": 5672,
-                "interiorPort": 55672,
-                "edgePort": 45672
-              },
-              "httpProxy": {
-                "address": null
-              },
-              "tcpProxy": {
-                "address": null
+                "messagePort": 5671,
+                "interiorPort": 55671,
+                "edgePort": 45671
               }
             }
           },
@@ -98,7 +87,16 @@ metadata:
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ControlPlane deploys and manages the ioFog control plane.
+      kind: ControlPlane
+      name: controlplanes.datasance.com
+      version: v3
+    - description: Application defines an ioFog application.
+      kind: Application
+      name: applications.datasance.com
+      version: v3
   description: ioFog Control Plane on Kubernetes
   displayName: iofog-operator
   icon:

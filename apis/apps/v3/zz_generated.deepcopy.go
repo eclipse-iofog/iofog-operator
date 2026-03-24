@@ -21,7 +21,7 @@ limitations under the License.
 package v3
 
 import (
-	"github.com/datasance/iofog-go-sdk/v3/pkg/apps"
+	"github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/apps"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -94,10 +94,10 @@ func (in *ApplicationSpec) DeepCopyInto(out *ApplicationSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.Routes != nil {
-		in, out := &in.Routes, &out.Routes
-		*out = make([]apps.Route, len(*in))
-		copy(*out, *in)
+	if in.NatsConfig != nil {
+		in, out := &in.NatsConfig, &out.NatsConfig
+		*out = new(apps.ApplicationNatsConfig)
+		**out = **in
 	}
 }
 

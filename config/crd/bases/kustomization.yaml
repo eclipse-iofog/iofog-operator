@@ -1,0 +1,3 @@
+resources:
+- datasance.com_applications.yaml
+- datasance.com_controlplanes.yaml

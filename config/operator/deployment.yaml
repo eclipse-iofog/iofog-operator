@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,7 +21,7 @@ spec:
         - iofog-operator
         args:
         - --enable-leader-election
-        image: ghcr.io/datasance/operator:3.4.6
+        image: ghcr.io/eclipse-iofog/operator:latest
         imagePullPolicy: Always
         name: iofog-operator
         env:

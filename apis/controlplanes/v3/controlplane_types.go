@@ -54,30 +54,96 @@ type ControlPlaneSpec struct {
 	Images Images `json:"images,omitempty"`
 	// Controller contains runtime configuration for ioFog Controller
 	Controller Controller `json:"controller,omitempty"`
+	// // Router contains runtime configuration for ioFog Router
+	// Router Router `json:"router,omitempty"`
+	// Events contains runtime configuration for ioFog Controller events
+	Events Events `json:"events,omitempty"`
+	// Nats contains NATS hub configuration (StatefulSet, JetStream, etc.). When omitted, NATS is enabled with defaults.
+	Nats *Nats `json:"nats,omitempty"`
+	// Vault is optional. When set, the Controller uses the configured vault provider for secrets. Operator creates a Secret from provider-specific config and injects env vars.
+	Vault *Vault `json:"vault,omitempty"`
+}
+
+// Vault configures vault integration for the Controller. Optional; when omitted, no vault env vars are set.
+// Provide only the block for the selected provider (hashicorp, aws, azure, or google). The operator creates a Secret from it and injects env vars.
+type Vault struct {
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+	// Provider: hashicorp, openbao, vault, aws, aws-secrets-manager, azure, azure-key-vault, google, google-secret-manager.
+	// +optional
+	Provider string `json:"provider,omitempty"`
+	// BasePath for secrets in vault; $namespace is replaced with the ControlPlane namespace (e.g. pot/$namespace/secrets).
+	// +optional
+	BasePath string `json:"basePath,omitempty"`
+	// Hashicorp (and openbao/vault) provider config. Set when provider is hashicorp, openbao, or vault.
+	// +optional
+	Hashicorp *VaultHashicorp `json:"hashicorp,omitempty"`
+	// Aws provider config. Set when provider is aws or aws-secrets-manager.
+	// +optional
+	Aws *VaultAws `json:"aws,omitempty"`
+	// Azure provider config. Set when provider is azure or azure-key-vault.
+	// +optional
+	Azure *VaultAzure `json:"azure,omitempty"`
+	// Google provider config. Set when provider is google or google-secret-manager.
+	// +optional
+	Google *VaultGoogle `json:"google,omitempty"`
+}
+
+// VaultHashicorp holds HashiCorp Vault (or OpenBao) configuration. Operator stores these in a Secret and maps to VAULT_HASHICORP_* env vars.
+type VaultHashicorp struct {
+	Address string `json:"address,omitempty"`
+	Token   string `json:"token,omitempty"`
+	Mount   string `json:"mount,omitempty"`
+}
+
+// VaultAws holds AWS Secrets Manager configuration. Operator stores these in a Secret and maps to VAULT_AWS_* env vars.
+type VaultAws struct {
+	Region      string `json:"region,omitempty"`
+	AccessKeyId string `json:"accessKeyId,omitempty"`
+	AccessKey   string `json:"accessKey,omitempty"`
+}
+
+// VaultAzure holds Azure Key Vault configuration. Operator stores these in a Secret and maps to VAULT_AZURE_* env vars.
+type VaultAzure struct {
+	URL          string `json:"url,omitempty"`
+	TenantId     string `json:"tenantId,omitempty"`
+	ClientId     string `json:"clientId,omitempty"`
+	ClientSecret string `json:"clientSecret,omitempty"`
+}
+
+// VaultGoogle holds Google Secret Manager configuration. Operator stores these in a Secret and maps to VAULT_GOOGLE_* env vars.
+type VaultGoogle struct {
+	ProjectId   string `json:"projectId,omitempty"`
+	Credentials string `json:"credentials,omitempty"` // path to service account key file or JSON content
 }
 
 type Replicas struct {
 	Controller int32 `json:"controller,omitempty"`
+	// Nats is the number of NATS server replicas (default 2, min 2 when NATS enabled).
+	// +kubebuilder:validation:Minimum=2
+	Nats int32 `json:"nats,omitempty"`
 }
 
 type Services struct {
 	Controller Service `json:"controller,omitempty"`
 	Router     Service `json:"router,omitempty"`
-	Proxy      Service `json:"proxy,omitempty"`
+	Nats       Service `json:"nats,omitempty"`
+	NatsServer Service `json:"natsServer,omitempty"`
 }
 
 type Service struct {
 	Type        string            `json:"type,omitempty"`
 	Address     string            `json:"address,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// ExternalTrafficPolicy for LoadBalancer/NodePort: "Local" or "Cluster". When omitted, LoadBalancer defaults to Local, others to Cluster. Use "Cluster" on local K8s (e.g. OrbStack) if Local causes issues.
+	ExternalTrafficPolicy string `json:"externalTrafficPolicy,omitempty"`
 }
 
 type Images struct {
-	PullSecret  string `json:"pullSecret,omitempty"`
-	Controller  string `json:"controller,omitempty"`
-	Router      string `json:"router,omitempty"`
-	PortManager string `json:"portManager,omitempty"`
-	Proxy       string `json:"proxy,omitempty"`
+	PullSecret string `json:"pullSecret,omitempty"`
+	Controller string `json:"controller,omitempty"`
+	Router     string `json:"router,omitempty"`
+	Nats       string `json:"nats,omitempty"`
 }
 
 type Auth struct {
@@ -90,13 +156,22 @@ type Auth struct {
 	ViewerClient     string `json:"viewerClient"`
 }
 
+type Events struct {
+	AuditEnabled     *bool `json:"auditEnabled,omitempty"`
+	RetentionDays    int   `json:"retentionDays,omitempty"`
+	CleanupInterval  int   `json:"cleanupInterval,omitempty"`
+	CaptureIpAddress *bool `json:"captureIpAddress,omitempty"`
+}
+
 type Database struct {
-	Provider     string `json:"provider"`
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	User         string `json:"user"`
-	Password     string `json:"password"`
-	DatabaseName string `json:"databaseName"`
+	Provider     string  `json:"provider"`
+	Host         string  `json:"host"`
+	Port         int     `json:"port"`
+	User         string  `json:"user"`
+	Password     string  `json:"password"`
+	DatabaseName string  `json:"databaseName"`
+	SSL          *bool   `json:"ssl,omitempty"`
+	CA           *string `json:"ca,omitempty"`
 }
 
 type User struct {
@@ -125,24 +200,54 @@ type Ingress struct {
 	Address string `json:"address,omitempty"`
 }
 
+// NatsIngress specifies the external address and ports for NATS hub registration (required when using ingress).
+// Ports are optional and default to: server 4222, cluster 6222, leaf 7422, mqtt 8883, http 8222.
+type NatsIngress struct {
+	Address     string `json:"address,omitempty"`
+	ServerPort  int    `json:"serverPort,omitempty"`
+	ClusterPort int    `json:"clusterPort,omitempty"`
+	LeafPort    int    `json:"leafPort,omitempty"`
+	MqttPort    int    `json:"mqttPort,omitempty"`
+	HttpPort    int    `json:"httpPort,omitempty"`
+}
+
 type Ingresses struct {
 	Controller ControllerIngress `json:"controller,omitempty"`
 	Router     RouterIngress     `json:"router,omitempty"`
-	HTTPProxy  Ingress           `json:"httpProxy,omitempty"`
-	TCPProxy   Ingress           `json:"tcpProxy,omitempty"`
+	Nats       NatsIngress       `json:"nats,omitempty"`
 }
 
 type Controller struct {
-	PidBaseDir        string `json:"pidBaseDir,omitempty"`
-	EcnViewerPort     int    `json:"ecnViewerPort,omitempty"`
-	EcnViewerURL      string `json:"ecnViewerUrl,omitempty"`
-	PortProvider      string `json:"portProvider,omitempty"`
-	ECNName           string `json:"ecn,omitempty"`
-	Https             *bool  `json:"https,omitempty"`
-	SecretName        string `json:"secretName,omitempty"`
-	PortAllocatorHost string `json:"portAllocatorHost,omitempty"`
-	ProxyBrokerURL    string `json:"proxyBrokerUrl,omitempty"`
-	ProxyBrokerToken  string `json:"proxyBrokerToken,omitempty"`
+	PidBaseDir    string `json:"pidBaseDir,omitempty"`
+	EcnViewerPort int    `json:"ecnViewerPort,omitempty"`
+	EcnViewerURL  string `json:"ecnViewerUrl,omitempty"`
+	ECNName       string `json:"ecn,omitempty"`
+	Https         *bool  `json:"https,omitempty"`
+	SecretName    string `json:"secretName,omitempty"`
+	LogLevel      string `json:"logLevel,omitempty"`
+}
+
+// type Router struct {
+// 	HA *bool `json:"ha,omitempty"`
+// }
+
+// NatsJetStream configures JetStream storage.
+type NatsJetStream struct {
+	// StorageSize is used for the PVC size and max_file_store in server.conf (default 10Gi).
+	StorageSize string `json:"storageSize,omitempty"`
+	// MemoryStoreSize is used for max_memory_store in server.conf only (default 1Gi).
+	MemoryStoreSize string `json:"memoryStoreSize,omitempty"`
+	// StorageClassName for the JetStream PVC (optional).
+	StorageClassName string `json:"storageClassName,omitempty"`
+}
+
+// Nats configures the NATS hub (StatefulSet, JetStream, services).
+// When Enabled is omitted, NATS is enabled. When false, no NATS resources are created and no hub is registered.
+type Nats struct {
+	// Enabled toggles NATS deployment. When omitted, treated as true.
+	Enabled *bool `json:"enabled,omitempty"`
+	// JetStream storage and memory limits.
+	JetStream NatsJetStream `json:"jetStream,omitempty"`
 }
 
 // ControlPlaneStatus defines the observed state of ControlPlane.

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	op "github.com/datasance/iofog-go-sdk/v3/pkg/k8s/operator"
+	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 )
 
 type reconcileFunc = func(ctx context.Context) op.Reconciliation
@@ -64,11 +64,11 @@ func (r *ControlPlaneReconciler) reconcileDeploying(ctx context.Context) op.Reco
 	// Reconcile Router
 	go reconcileRoutine(ctx, r.reconcileRouter, reconChan)
 
-	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
+	// Reconcile NATS (when enabled)
+	go reconcileRoutine(ctx, r.reconcileNats, reconChan)
 
-	// Reconcile Port Manager
-	go reconcileRoutine(ctx, r.reconcilePortManager, reconChan)
+	// Reconcile Iofog Controller
+	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
 
 	// Wait for all parallel recons and evaluate results
 	finRecon := op.Reconciliation{}
@@ -137,11 +137,11 @@ func (r *ControlPlaneReconciler) reconcileUpdating(ctx context.Context) op.Recon
 	// Reconcile Router
 	go reconcileRoutine(ctx, r.reconcileRouter, reconChan)
 
-	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
+	// Reconcile NATS (when enabled)
+	go reconcileRoutine(ctx, r.reconcileNats, reconChan)
 
-	// Reconcile Port Manager
-	go reconcileRoutine(ctx, r.reconcilePortManager, reconChan)
+	// Reconcile Iofog Controller
+	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
 
 	// Wait for all parallel recons and evaluate results
 	finRecon := op.Reconciliation{}

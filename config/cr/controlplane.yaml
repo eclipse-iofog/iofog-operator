@@ -5,13 +5,16 @@ metadata:
 spec:
   replicas:
     controller: 2
+    nats: 2  # NATS server replicas (min 2 when NATS enabled)
   database:
     provider:
     user: 
     host: 
     port: 
     password: 
-    databaseName: 
+    databaseName:
+    ssl:
+    ca: 
   auth:
     url: 
     realm: 
@@ -19,32 +22,45 @@ spec:
     ssl: 
     controllerClient: 
     controllerSecret: 
-    viewerClient: 
+    viewerClient:
+  events:
+    auditEnabled:
+    retentionDays:
+    cleanupInterval:
+    captureIpAddress:
   images:
     pullSecret: 
-    controller: 
-    portManager: 
-    proxy: 
+    controller:
     router: 
+    nats: ghcr.io/eclipse-iofog/nats:2.12.4  # NATS server image (optional)
   services:
     controller:
       type:  # LoadBalancer / ClusterIP / Node Port .. If it is Cluster IP ingress for Controller need to be defined
-      annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
-        #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-    proxy:
-      type:  
       annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
         #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     router:
       type:  
       annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
         #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    nats:
+      type: ClusterIP  # or LoadBalancer when using external NATS clients
+      annotations: {}
+    natsServer:  # nats-server service (client + monitor ports, non-TLS); separate from nats for in-cluster config
+      type: ClusterIP
+      annotations: {}
+  nats:  # optional; when omitted NATS is enabled with defaults
+    enabled: true  # set to false to disable NATS and not register a hub
+    jetStream:
+      storageSize: "10Gi"  # PVC and max_file_store
+      memoryStoreSize: "1Gi"  # max_memory_store
+      storageClassName: ""
   controller:
     pidBaseDir: ""
     ecnViewerPort: 0
-    ecnViewerUrl: 
+    ecnViewerUrl:
     https: # true or false  ..default is false
     secretName: #name of secret it has to be same with the one that defined in the controller ingress struct
+    logLevel:
   ingresses:
     controller:
       annotations:
@@ -56,13 +72,16 @@ spec:
       secretName: 
     router:
       address: 
-      messagePort: 5672
-      interiorPort: 55672
-      edgePort: 45672
-    httpProxy:
-      address:
-    tcpProxy:
+      messagePort: 5671
+      interiorPort: 55671
+      edgePort: 45671
+    nats:  # required when using ingress for NATS (address = hostname)
       address: 
+      serverPort: 4222
+      clusterPort: 6222
+      leafPort: 7422
+      mqttPort: 8883
+      httpPort: 8222
 status:
   conditions:
     - lastTransitionTime: "2022-04-10T22:44:09Z"

@@ -1,13 +1,11 @@
 OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
-VERSION = $(shell cat PROJECT | grep "version:" | sed "s/^version: //g")
+VERSION = $(shell grep "^version:" PROJECT | head -1 | sed 's/^version: *//' | tr -d '"' | tr -d ' ')
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
-LDFLAGS += -X $(PREFIX).portManagerTag=v3.1.2
-LDFLAGS += -X $(PREFIX).kubeletTag=v3.0.1
-LDFLAGS += -X $(PREFIX).proxyTag=v3.0.2
-LDFLAGS += -X $(PREFIX).routerTag=v3.2.0
-LDFLAGS += -X $(PREFIX).controllerTag=v3.4.1
-LDFLAGS += -X $(PREFIX).repo=ghcr.io/datasance
+LDFLAGS += -X $(PREFIX).routerTag=3.7.0
+LDFLAGS += -X $(PREFIX).controllerTag=3.7.2
+LDFLAGS += -X $(PREFIX).natsTag=2.12.4
+LDFLAGS += -X $(PREFIX).repo=ghcr.io/eclipse-iofog
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
@@ -16,9 +14,19 @@ GOARGS=-gcflags="all=-N -l"
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= operator:latest
+REGISTRY ?= ghcr.io/eclipse-iofog
+VERSION_TAG ?= 3.7.2
+IMG ?= $(REGISTRY)/operator:$(VERSION_TAG)
+BUNDLE_IMG ?= $(REGISTRY)/operator-bundle:$(VERSION_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
+
+# Local testing (no image build)
+KUBECONFIG ?= $(HOME)/.kube/config
+TEST_NAMESPACE ?= iofog-test
+CR_PATH ?= config/cr/
+KUBECTL ?= kubectl
+export KUBECONFIG
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -37,17 +45,36 @@ all: build
 .PHONY: build
 build: GOARGS += -ldflags "$(LDFLAGS)"
 build: fmt gen ## Build operator binary
-	go build $(GOARGS) -o bin/iofog-operator main.go
+	GOARCH=$(GOARCH) GOOS=$(GOOS) go build $(GOARGS) -o bin/iofog-operator main.go
 
 install: manifests kustomize ## Install CRDs into a cluster
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
 
 uninstall: manifests kustomize ## Uninstall CRDs from a cluster
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete -f -
 
 deploy: manifests kustomize ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	cd config/operator && $(KUSTOMIZE) edit set image ghcr.io/eclipse-iofog/operator=$(IMG)
+	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+
+.PHONY: local-prep
+local-prep: install build ## Install CRDs and build operator for local testing (uses KUBECONFIG)
+
+.PHONY: create-namespace
+create-namespace: ## Create TEST_NAMESPACE if it does not exist (uses KUBECONFIG)
+	$(KUBECTL) get namespace $(TEST_NAMESPACE) >/dev/null 2>&1 || $(KUBECTL) create namespace $(TEST_NAMESPACE)
+
+.PHONY: deploy-cr
+deploy-cr: create-namespace ## Deploy CR(s) from CR_PATH into TEST_NAMESPACE (uses KUBECONFIG)
+	$(KUSTOMIZE) build $(CR_PATH) | $(KUBECTL) apply -f - -n $(TEST_NAMESPACE)
+
+.PHONY: run
+run: build ## Run operator locally (uses KUBECONFIG, optional WATCH_NAMESPACE=TEST_NAMESPACE)
+	WATCH_NAMESPACE=$(TEST_NAMESPACE) ./bin/iofog-operator
+
+.PHONY: test-local
+test-local: local-prep deploy-cr ## Install CRDs, build operator, deploy CR; then run: make run
+	@echo "Run the operator in another terminal: make run"
 
 manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -62,7 +89,7 @@ gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 docker:
-	docker build -t $(IMG) .
+	docker build -t $(REGISTRY)/$(IMG) .
 
 unit: ## Run unit tests
 	set -o pipefail; go list ./... | xargs -n1 go test  $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
@@ -101,7 +128,7 @@ golangci-lint: ## Install golangci
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0 ;\
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 ;\
 	}
 GOLANGCI_LINT=$(GOBIN)/golangci-lint
 else
@@ -112,7 +139,7 @@ controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0 ;\
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
@@ -133,9 +160,14 @@ endif
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	cd config/operator && $(KUSTOMIZE) edit set image ghcr.io/eclipse-iofog/operator=$(IMG)
+	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION_TAG) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+
+
+.PHONY: bundle-build
+bundle-build: ## Build the bundle image.
+	docker buildx build --platform=linux/amd64 -f bundle.Dockerfile -t $(REGISTRY)/$(BUNDLE_IMG) .
 
 help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
