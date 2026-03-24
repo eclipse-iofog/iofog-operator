@@ -55,10 +55,6 @@ jobs:
     - name: Get image tag
       run: |
         echo ${{ steps.tags.outputs.VERSION }}
-    - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
-      with:
-        service_account_key: ${{ secrets.GKE_SA_KEY }}
-        project_id: ${{ env.PROJECT }}
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
