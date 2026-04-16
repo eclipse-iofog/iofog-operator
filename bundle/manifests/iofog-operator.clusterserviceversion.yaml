@@ -117,10 +117,10 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2026-03-24T23:54:34Z"
+    createdAt: "2026-04-16T12:11:23Z"
     operators.operatorframework.io/builder: operator-sdk-v1.37.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-  name: iofog-operator.v3.7.1
+  name: iofog-operator.v3.7.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -173,7 +173,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: iofog-operator
-                image: ghcr.io/eclipse-iofog/operator:3.7.1
+                image: ghcr.io/eclipse-iofog/operator:3.7.2
                 imagePullPolicy: Always
                 name: iofog-operator
                 resources: {}
@@ -199,5 +199,5 @@ spec:
   maturity: stable
   minKubeVersion: 1.18.0
   provider:
-    name: Datasance
-  version: 3.7.1
+    name: Eclipse ioFog
+  version: 3.7.2

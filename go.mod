@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.3
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.7.0-beta.0
+	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.7.0
 	github.com/go-logr/logr v1.4.2
 	golang.org/x/oauth2 v0.27.0
 	k8s.io/api v0.32.1

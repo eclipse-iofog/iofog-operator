@@ -65,6 +65,9 @@ func (r *ControlPlaneReconciler) reconcileDBCredentialsSecret(ctx context.Contex
 
 		if secret.Name == controllerDBCredentialsSecretName {
 			secret.Labels = mergeLabels(stdLabels, secret.Labels)
+			if setErr := controllerutil.SetControllerReference(&r.cp, secret, r.Scheme); setErr != nil {
+				return false, setErr
+			}
 			found := &corev1.Secret{}
 
 			err := r.Client.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)

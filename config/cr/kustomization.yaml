@@ -1,4 +1,2 @@
 resources:
-- controlplane.yaml
-# resources:
-# - test-cp.yaml
+  - controlplane.yaml

@@ -3,7 +3,7 @@ OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 VERSION = $(shell grep "^version:" PROJECT | head -1 | sed 's/^version: *//' | tr -d '"' | tr -d ' ')
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 LDFLAGS += -X $(PREFIX).routerTag=3.7.0
-LDFLAGS += -X $(PREFIX).controllerTag=3.7.2
+LDFLAGS += -X $(PREFIX).controllerTag=3.7.3
 LDFLAGS += -X $(PREFIX).natsTag=2.12.4
 LDFLAGS += -X $(PREFIX).repo=ghcr.io/eclipse-iofog
 
@@ -15,7 +15,7 @@ endif
 
 # Image URL to use all building/pushing image targets
 REGISTRY ?= ghcr.io/eclipse-iofog
-VERSION_TAG ?= 3.7.1
+VERSION_TAG ?= 3.7.2
 IMG ?= $(REGISTRY)/operator:$(VERSION_TAG)
 BUNDLE_IMG ?= $(REGISTRY)/operator-bundle:$(VERSION_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)

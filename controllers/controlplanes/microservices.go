@@ -1089,6 +1089,11 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 			{Name: "jetstream-key", VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: cfg.jetStreamKeySecret}}},
 			{Name: "sys-user-creds", VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: nats.HubSystemUserCredsSecret, Items: []corev1.KeyToPath{{Key: nats.HubSystemUserCredsDataKey, Path: "admin-hub.creds"}}}}},
 		},
+		securityContext: &corev1.PodSecurityContext{
+			RunAsUser:  ptr.To[int64](10000), // UID
+			RunAsGroup: ptr.To[int64](10000), // GID
+			FSGroup:    ptr.To[int64](10000), // FSGroup
+		},
 		containers: []container{
 			{
 				name:            "nats",
