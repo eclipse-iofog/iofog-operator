@@ -2,13 +2,101 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "datasance.com/v3",
+          "kind": "ControlPlane",
+          "metadata": {
+            "name": "pot"
+          },
+          "spec": {
+            "replicas": {
+              "controller": 2
+            },
+            "database": {
+              "provider": null,
+              "user": null,
+              "host": null,
+              "port": null,
+              "password": null,
+              "databaseName": null
+            },
+            "auth": {
+              "url": null,
+              "realm": null,
+              "realmKey": null,
+              "ssl": null,
+              "controllerClient": null,
+              "controllerSecret": null,
+              "viewerClient": null
+            },
+            "images": {
+              "pullSecret": null,
+              "controller": null,
+              "router": null
+            },
+            "services": {
+              "controller": {
+                "type": null,
+                "annotations": null
+              },
+              "router": {
+                "type": null,
+                "annotations": null
+              }
+            },
+            "controller": {
+              "pidBaseDir": "",
+              "ecnViewerPort": 0,
+              "ecnViewerUrl": null,
+              "https": null,
+              "secretName": null,
+              "logLevel": "debug"
+            },
+            "ingresses": {
+              "controller": {
+                "annotations": null,
+                "ingressClassName": null,
+                "host": null,
+                "secretName": null
+              },
+              "router": {
+                "address": null,
+                "messagePort": 5671,
+                "interiorPort": 55671,
+                "edgePort": 45671
+              }
+            }
+          },
+          "status": {
+            "conditions": [
+              {
+                "lastTransitionTime": "2022-04-10T22:44:09Z",
+                "message": "",
+                "reason": "initial_status",
+                "status": "True",
+                "type": "deploying"
+              }
+            ]
+          }
+        }
+      ]
     capabilities: Basic Install
   name: iofog-operator.v0.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ControlPlane deploys and manages the ioFog control plane.
+      kind: ControlPlane
+      name: controlplanes.datasance.com
+      version: v3
+    - description: Application defines an ioFog application.
+      kind: Application
+      name: applications.datasance.com
+      version: v3
   description: ioFog Control Plane on Kubernetes
   displayName: iofog-operator
   icon:
@@ -29,10 +117,13 @@ spec:
     type: AllNamespaces
   keywords:
   - iofog
+  - datasance
+  - pot
   links:
-  - name: Iofog Operator
-    url: https://iofog-operator.domain
-  maturity: alpha
+  - name: Datasance PoT // Iofog Operator
+    url: https://datasance.com
+  maturity: stable
+  minKubeVersion: 1.18.0
   provider:
-    name: Edgeworx
+    name: Datasance
   version: 0.0.0

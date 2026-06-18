@@ -1,0 +1,3 @@
+# Used by "make install" and "make uninstall". CRD manifests are in bases/.
+resources:
+- bases

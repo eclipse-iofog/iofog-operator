@@ -1,0 +1,203 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "datasance.com/v3",
+          "kind": "ControlPlane",
+          "metadata": {
+            "name": "pot"
+          },
+          "spec": {
+            "auth": {
+              "controllerClient": null,
+              "controllerSecret": null,
+              "realm": null,
+              "realmKey": null,
+              "ssl": null,
+              "url": null,
+              "viewerClient": null
+            },
+            "controller": {
+              "ecnViewerPort": 0,
+              "ecnViewerUrl": null,
+              "https": null,
+              "logLevel": null,
+              "pidBaseDir": "",
+              "secretName": null
+            },
+            "database": {
+              "ca": null,
+              "databaseName": null,
+              "host": null,
+              "password": null,
+              "port": null,
+              "provider": null,
+              "ssl": null,
+              "user": null
+            },
+            "events": {
+              "auditEnabled": null,
+              "captureIpAddress": null,
+              "cleanupInterval": null,
+              "retentionDays": null
+            },
+            "images": {
+              "controller": null,
+              "nats": "ghcr.io/datasance/nats:2.12.4",
+              "pullSecret": null,
+              "router": null
+            },
+            "ingresses": {
+              "controller": {
+                "annotations": null,
+                "host": null,
+                "ingressClassName": null,
+                "secretName": null
+              },
+              "nats": {
+                "address": null,
+                "clusterPort": 6222,
+                "httpPort": 8222,
+                "leafPort": 7422,
+                "mqttPort": 8883,
+                "serverPort": 4222
+              },
+              "router": {
+                "address": null,
+                "edgePort": 45671,
+                "interiorPort": 55671,
+                "messagePort": 5671
+              }
+            },
+            "nats": {
+              "enabled": true,
+              "jetStream": {
+                "memoryStoreSize": "1Gi",
+                "storageClassName": "",
+                "storageSize": "10Gi"
+              }
+            },
+            "replicas": {
+              "controller": 2,
+              "nats": 2
+            },
+            "services": {
+              "controller": {
+                "annotations": null,
+                "type": null
+              },
+              "nats": {
+                "annotations": {},
+                "type": "ClusterIP"
+              },
+              "natsServer": {
+                "annotations": {},
+                "type": "ClusterIP"
+              },
+              "router": {
+                "annotations": null,
+                "type": null
+              }
+            }
+          },
+          "status": {
+            "conditions": [
+              {
+                "lastTransitionTime": "2022-04-10T22:44:09Z",
+                "message": "",
+                "reason": "initial_status",
+                "status": "True",
+                "type": "deploying"
+              }
+            ]
+          }
+        }
+      ]
+    capabilities: Basic Install
+    createdAt: "2026-04-16T11:41:45Z"
+    operators.operatorframework.io/builder: operator-sdk-v1.37.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+  name: iofog-operator.v3.7.2
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Application defines an ioFog application.
+      kind: Application
+      name: applications.datasance.com
+      version: v3
+    - description: ControlPlane deploys and manages the ioFog control plane.
+      kind: ControlPlane
+      name: controlplanes.datasance.com
+      version: v3
+  description: ioFog Control Plane on Kubernetes
+  displayName: iofog-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments:
+      - label:
+          name: iofog-operator
+        name: iofog-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: iofog-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: iofog-operator
+            spec:
+              containers:
+              - args:
+                - --enable-leader-election
+                command:
+                - iofog-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: iofog-operator
+                image: ghcr.io/datasance/operator:3.7.2
+                imagePullPolicy: Always
+                name: iofog-operator
+                resources: {}
+              serviceAccountName: iofog-operator
+              terminationGracePeriodSeconds: 10
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - iofog
+  - datasance
+  - pot
+  links:
+  - name: Datasance PoT // Iofog Operator
+    url: https://datasance.com
+  maturity: stable
+  minKubeVersion: 1.18.0
+  provider:
+    name: Datasance
+  version: 3.7.2

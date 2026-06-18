@@ -5,73 +5,136 @@ import (
 	"strings"
 )
 
-func GetConfig() string {
-	replacer := strings.NewReplacer("<MESSAGE_PORT>", strconv.Itoa(MessagePort),
+func GetConfig(namespace string) string {
+	// Default values for parameters
+	replacer := strings.NewReplacer(
+		"<MESSAGE_PORT>", strconv.Itoa(MessagePort),
 		"<HTTP_PORT>", strconv.Itoa(HTTPPort),
 		"<INTERIOR_PORT>", strconv.Itoa(InteriorPort),
-		"<EDGE_PORT>", strconv.Itoa(EdgePort))
+		"<EDGE_PORT>", strconv.Itoa(EdgePort),
+		"<NAMESPACE>", namespace,
+	)
 
 	return replacer.Replace(rawRouterConfig)
 }
 
 const (
-	MessagePort  = 5672
+	MessagePort  = 5671
 	HTTPPort     = 9090
-	InteriorPort = 55672
-	EdgePort     = 45672
+	InteriorPort = 55671
+	EdgePort     = 45671
 )
 
 const rawRouterConfig = `
-router {
-    mode: interior
-    id: default-router
-}
-
-listener {
-    host: 0.0.0.0
-    port: <MESSAGE_PORT>
-    role: normal
-}
-
-sslProfile {
-    name: router-amqps
-    certFile: /etc/qpid-dispatch-certs/router-amqps/tls.crt
-    privateKeyFile: /etc/qpid-dispatch-certs/router-amqps/tls.key
-    caCertFile: /etc/qpid-dispatch-certs/router-amqps/ca.crt
-}
-
-listener {
-    host: 0.0.0.0
-    port: <HTTP_PORT>
-    role: normal
-    http: true
-    httpRootDir: disabled
-    websockets: false
-    healthz: true
-    metrics: true
-}
-
-sslProfile {
-    name: router-internal
-    certFile: /etc/qpid-dispatch-certs/router-internal/tls.crt
-    privateKeyFile: /etc/qpid-dispatch-certs/router-internal/tls.key
-    caCertFile: /etc/qpid-dispatch-certs/router-internal/ca.crt
-}
-
-listener {
-    role: inter-router
-    host: 0.0.0.0
-    port: <INTERIOR_PORT>
-    saslMechanisms: ANONYMOUS
-    authenticatePeer: no
-}
-
-listener {
-    role: edge
-    host: 0.0.0.0
-    port: <EDGE_PORT>
-    saslMechanisms: ANONYMOUS
-    authenticatePeer: no
-}
-
+[
+    [
+        "router",
+        {
+            "id": "default-router",
+            "mode": "interior",
+            "helloMaxAgeSeconds": "3",
+            "metadata": "{\"id\":\"default-router\",\"version\":\"pot\",\"platform\":\"kubernetes\",\"pot-config\":\"1.0.0\"}"
+        }
+    ],
+    [
+        "site",
+        {
+            "name": "default-router",
+            "platform": "kubernetes",
+            "namespace": "<NAMESPACE>",
+            "version": "pot"
+        }
+    ],
+    [
+        "sslProfile",
+        {
+            "name": "system-default",
+            "certFile": "/etc/pki/tls/certs/ca-bundle.crt"
+        }
+    ],
+    [
+        "sslProfile",
+        {
+            "name": "router-site-server",
+            "certFile": "/etc/skupper-router-certs/router-site-server/tls.crt",
+            "privateKeyFile": "/etc/skupper-router-certs/router-site-server/tls.key",
+            "caCertFile": "/etc/skupper-router-certs/router-site-server/ca.crt"
+        }
+    ],
+    [
+        "sslProfile",
+        {
+            "name": "router-local-server",
+            "certFile": "/etc/skupper-router-certs/router-local-server/tls.crt",
+            "privateKeyFile": "/etc/skupper-router-certs/router-local-server/tls.key",
+            "caCertFile": "/etc/skupper-router-certs/router-local-server/ca.crt"
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "iofog-router-edge",
+            "role": "edge",
+            "port": <EDGE_PORT>,
+            "sslProfile": "router-site-server",
+            "saslMechanisms": "EXTERNAL",
+            "authenticatePeer": true
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "amqp",
+            "host": "localhost",
+            "port": 5672
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "amqps",
+            "port": <MESSAGE_PORT>,
+            "sslProfile": "router-local-server",
+            "saslMechanisms": "EXTERNAL",
+            "authenticatePeer": true
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "@9090",
+            "role": "normal",
+            "port": <HTTP_PORT>,
+            "http": true,
+            "httpRootDir": "disabled",
+            "healthz": true,
+            "metrics": true
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "iofog-router-inter-router",
+            "role": "inter-router",
+            "port": <INTERIOR_PORT>,
+            "sslProfile": "router-site-server",
+            "saslMechanisms": "EXTERNAL",
+            "authenticatePeer": true
+        }
+    ],
+    [
+        "address",
+        {
+            "prefix": "mc",
+            "distribution": "multicast"
+        }
+    ],
+    [
+        "log",
+        {
+            "module": "ROUTER_CORE",
+            "enable": "error+"
+        }
+    ]
+]
 `

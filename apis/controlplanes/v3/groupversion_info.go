@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v3 contains API Schema definitions for the controlplanes v3 API group
 // +kubebuilder:object:generate=true
-// +groupName=iofog.org
+// +groupName=datasance.com
 package v3
 
 import (
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "iofog.org", Version: "v3"} //nolint:gochecknoglobals
+	GroupVersion = schema.GroupVersion{Group: "datasance.com", Version: "v3"} //nolint:gochecknoglobals
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals

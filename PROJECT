@@ -1,5 +1,5 @@
-domain: iofog.org
-layout: go.kubebuilder.io/v2
+domain: datasance.com
+layout: go.kubebuilder.io/v4
 multigroup: true
 projectName: iofog-operator
 repo: github.com/datasance/iofog-operator
@@ -10,4 +10,5 @@ resources:
   version: v3
 version: "3"
 plugins:
-  go.sdk.operatorframework.io/v2-alpha: {}
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}

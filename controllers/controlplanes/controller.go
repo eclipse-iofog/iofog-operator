@@ -19,8 +19,8 @@ package controllers
 import (
 	"context"
 
-	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
-	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
+	iofogclient "github.com/datasance/iofog-go-sdk/v3/pkg/client"
+	op "github.com/datasance/iofog-go-sdk/v3/pkg/k8s/operator"
 	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,8 +38,10 @@ type ControlPlaneReconciler struct {
 	cp     cpv3.ControlPlane
 }
 
-// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ControlPlaneReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	r.log = r.Log.WithValues("controlplane", request.NamespacedName)

@@ -42,8 +42,12 @@ type ApplicationReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=iofog.org,resources=applications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=iofog.org,resources=applications/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=applications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=datasance.com,resources=apps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=datasance.com,resources=applications/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=applications/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=apps/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=apps/finalizers,verbs=get;update;patch
 
 func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("application", request.NamespacedName)
@@ -155,14 +159,15 @@ func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*apps
 		return nil, err
 	}
 
-	routes, err := json.Marshal(app.Spec.Routes)
-	if err != nil {
-		return nil, err
-	}
-
 	annotations := map[string]string{
 		"microservices": string(microservices),
-		"routes":        string(routes),
+	}
+	if app.Spec.NatsConfig != nil {
+		natsConfig, err := json.Marshal(app.Spec.NatsConfig)
+		if err != nil {
+			return nil, err
+		}
+		annotations["natsConfig"] = string(natsConfig)
 	}
 
 	containers := make([]corev1.Container, len(app.Spec.Microservices))
@@ -205,21 +210,6 @@ func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*apps
 						},
 					},
 					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "type",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"iofog-kubelet"},
-											},
-										},
-									},
-								},
-							},
-						},
 						PodAntiAffinity: &corev1.PodAntiAffinity{
 							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 								{

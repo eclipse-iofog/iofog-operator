@@ -1,0 +1,4 @@
+# Default overlay: operator deployment + RBAC
+resources:
+- ../operator
+- ../rbac

@@ -19,8 +19,8 @@ function testDeleteNamespace() {
 
 function testCreateCRD() {
   startTest
-  kctl apply -f config/crd/bases/iofog.org_applications.yaml
-  kctl apply -f config/crd/bases/iofog.org_controlplanes.yaml
+  kctl apply -f config/crd/bases/datasance.com_applications.yaml
+  kctl apply -f config/crd/bases/datasance.com_controlplanes.yaml
   kctl get crds | grep "controlplanes\.iofog\.org"
   kctl get crds | grep "apps\.iofog\.org"
   stopTest
@@ -34,10 +34,10 @@ function testDeployOperator() {
   kctl describe pods -l name=iofog-operator | grep "$OP_VERSION"
   local TXTS=(
     "successfully acquired lease"
-    'Starting Controller	{"controller": "application", "controllerGroup": "iofog.org", "controllerKind": "Application"}'
-    'Starting Controller	{"controller": "controlplane", "controllerGroup": "iofog.org", "controllerKind": "ControlPlane"}'
-    'Starting workers	{"controller": "application", "controllerGroup": "iofog.org", "controllerKind": "Application", "worker count": 1}'
-    'Starting workers	{"controller": "controlplane", "controllerGroup": "iofog.org", "controllerKind": "ControlPlane", "worker count": 1}'
+    'Starting Controller	{"controller": "application", "controllerGroup": "datasance.com", "controllerKind": "Application"}'
+    'Starting Controller	{"controller": "controlplane", "controllerGroup": "datasance.com", "controllerKind": "ControlPlane"}'
+    'Starting workers	{"controller": "application", "controllerGroup": "datasance.com", "controllerKind": "Application", "worker count": 1}'
+    'Starting workers	{"controller": "controlplane", "controllerGroup": "datasance.com", "controllerKind": "ControlPlane", "worker count": 1}'
   )
   for TXT in "${TXTS[@]}"; do
     waitCmdGrep 30 "kctl logs -l name=iofog-operator" "$TXT"

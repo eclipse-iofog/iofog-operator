@@ -17,7 +17,7 @@ limitations under the License.
 package v3
 
 import (
-	"github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/apps"
+	"github.com/datasance/iofog-go-sdk/v3/pkg/apps"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,9 +29,9 @@ type ApplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Microservices []apps.Microservice `json:"microservices"`
-	Routes        []apps.Route        `json:"routes"`
-	Replicas      int32               `json:"replicas"`
+	Microservices []apps.Microservice         `json:"microservices"`
+	NatsConfig    *apps.ApplicationNatsConfig `json:"natsConfig,omitempty"`
+	Replicas      int32                       `json:"replicas"`
 }
 
 // ApplicationStatus defines the observed state of Application.

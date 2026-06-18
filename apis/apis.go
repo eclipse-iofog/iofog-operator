@@ -11,7 +11,7 @@ import (
 )
 
 func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
-	apiVersions := []string{"v3", "v2"}
+	apiVersions := []string{"v3"}
 	versions := make([]extsv1.CustomResourceDefinitionVersion, len(apiVersions))
 	preserveUnknownFields := true
 
@@ -37,10 +37,10 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 
 	return &extsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "controlplanes.iofog.org",
+			Name: "controlplanes.datasance.com",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
-			Group: "iofog.org",
+			Group: "datasance.com",
 			Names: extsv1.CustomResourceDefinitionNames{
 				Kind:     "ControlPlane",
 				ListKind: "ControlPlaneList",
@@ -54,7 +54,7 @@ func NewControlPlaneCustomResource() *extsv1.CustomResourceDefinition {
 }
 
 func NewAppCustomResource() *extsv1.CustomResourceDefinition {
-	apiVersions := []string{"v3", "v2", "v1"}
+	apiVersions := []string{"v3"}
 	preserveUnknownFields := true
 	versions := make([]extsv1.CustomResourceDefinitionVersion, len(apiVersions))
 
@@ -80,10 +80,10 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 
 	return &extsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "apps.iofog.org",
+			Name: "apps.datasance.com",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
-			Group: "iofog.org",
+			Group: "datasance.com",
 			Names: extsv1.CustomResourceDefinitionNames{
 				Kind:     "Application",
 				ListKind: "ApplicationList",

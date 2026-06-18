@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
+	op "github.com/datasance/iofog-go-sdk/v3/pkg/k8s/operator"
 )
 
 type reconcileFunc = func(ctx context.Context) op.Reconciliation
@@ -32,6 +32,10 @@ func (r *ControlPlaneReconciler) getReconcileFunc(ctx context.Context) (reconcil
 
 	if r.cp.IsDeploying() {
 		return r.reconcileDeploying, nil
+	}
+
+	if r.cp.IsUpdating() {
+		return r.reconcileUpdating, nil
 	}
 	// If invalid state, migrate state to deploying to restart on sane basis
 	r.cp.SetConditionDeploying(nil)
@@ -60,11 +64,11 @@ func (r *ControlPlaneReconciler) reconcileDeploying(ctx context.Context) op.Reco
 	// Reconcile Router
 	go reconcileRoutine(ctx, r.reconcileRouter, reconChan)
 
-	// Reconcile Iofog Controller and Kubelet
-	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
+	// Reconcile NATS (when enabled)
+	go reconcileRoutine(ctx, r.reconcileNats, reconChan)
 
-	// Reconcile Port Manager
-	go reconcileRoutine(ctx, r.reconcilePortManager, reconChan)
+	// Reconcile Iofog Controller
+	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
 
 	// Wait for all parallel recons and evaluate results
 	finRecon := op.Reconciliation{}
@@ -107,6 +111,79 @@ func (r *ControlPlaneReconciler) reconcileDeploying(ctx context.Context) op.Reco
 
 		if err := r.Status().Update(ctx, &r.cp); err != nil {
 			r.log.Error(err, fmt.Sprintf("reconcileDeploying() ControlPlane %s -- failed to update status", r.cp.Name))
+
+			return op.ReconcileWithError(err)
+		}
+
+		if err := r.Update(ctx, &r.cp); err != nil {
+			return op.ReconcileWithError(err)
+		}
+
+		r.log.Info(fmt.Sprintf("Control Plane %s is ready", r.cp.Name))
+
+		return op.Reconcile()
+	}
+
+	return op.Continue()
+}
+
+func (r *ControlPlaneReconciler) reconcileUpdating(ctx context.Context) op.Reconciliation {
+	r.log.Info(fmt.Sprintf("reconcileUpdating() ControlPlane %s", r.cp.Name))
+
+	// Error chan for reconcile routines
+	reconcilerCount := 3
+	reconChan := make(chan op.Reconciliation, reconcilerCount)
+
+	// Reconcile Router
+	go reconcileRoutine(ctx, r.reconcileRouter, reconChan)
+
+	// Reconcile NATS (when enabled)
+	go reconcileRoutine(ctx, r.reconcileNats, reconChan)
+
+	// Reconcile Iofog Controller
+	go reconcileRoutine(ctx, r.reconcileIofogController, reconChan)
+
+	// Wait for all parallel recons and evaluate results
+	finRecon := op.Reconciliation{}
+
+	for i := 0; i < reconcilerCount; i++ {
+		recon := <-reconChan
+		if recon.Err != nil {
+			if finRecon.Err == nil {
+				// Create new err
+				finRecon.Err = recon.Err
+			} else {
+				// Append
+				finRecon.Err = fmt.Errorf("%s\n%s", finRecon.Err.Error(), recon.Err.Error()) //nolint:errorlint
+			}
+		}
+		// End overrides all
+		if recon.End {
+			finRecon.End = true
+		}
+		// Record largest requeue
+		if recon.Requeue {
+			finRecon.Requeue = true
+			if recon.Delay > finRecon.Delay {
+				finRecon.Delay = recon.Delay
+			}
+		}
+	}
+
+	if finRecon.IsFinal() {
+		r.log.Info(fmt.Sprintf("reconcileUpdating() ControlPlane %s isFinal", r.cp.Name))
+
+		return finRecon
+	}
+
+	// updating -> ready
+	if r.cp.IsUpdating() {
+		r.log.Info(fmt.Sprintf("reconcileUpdating() ControlPlane %s setReady", r.cp.Name))
+		r.cp.SetConditionReady(&r.log) // temporary logger
+		r.log.Info(fmt.Sprintf("reconcileUpdating() ControlPlane %s -- write status update, new conditions %v", r.cp.Name, r.cp.Status.Conditions))
+
+		if err := r.Status().Update(ctx, &r.cp); err != nil {
+			r.log.Error(err, fmt.Sprintf("reconcileUpdating() ControlPlane %s -- failed to update status", r.cp.Name))
 
 			return op.ReconcileWithError(err)
 		}
