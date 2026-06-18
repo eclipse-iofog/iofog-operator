@@ -13,6 +13,12 @@ import (
 const (
 	standardLabelManagedBy = "iofog-operator"
 	standardLabelName      = "pot"
+	controllerIngressName  = "controller"
+	// controllerConsolePortName is the Service port name for EdgeOps Console (≤15 chars for Ingress).
+	controllerConsolePortName    = "console"
+	defaultControllerConsolePort = 8008
+	controllerConsoleServicePort = 80
+	controllerAPIPort            = 51121
 )
 
 // getStandardLabels returns Kubernetes and Datasance standard labels for operator-created resources.
@@ -100,7 +106,7 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 
 	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "pot-controller",
+			Name:        controllerIngressName,
 			Namespace:   namespace,
 			Labels:      labels,
 			Annotations: cfg.annotations,
@@ -126,7 +132,7 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 										Service: &networkingv1.IngressServiceBackend{
 											Name: "controller",
 											Port: networkingv1.ServiceBackendPort{
-												Name: "ecn-viewer",
+												Name: controllerConsolePortName,
 											},
 										},
 									},

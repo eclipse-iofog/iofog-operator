@@ -449,6 +449,9 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 		cfg.logLevel = "info"
 	}
 
+	if cfg.consolePort == 0 {
+		cfg.consolePort = defaultControllerConsolePort
+	}
 }
 
 func getControllerPort(msvc *microservice) (int, error) {
@@ -508,9 +511,15 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				ports: []corev1.ServicePort{
 					{
 						Name:       "controller-api",
-						Port:       51121,
-						TargetPort: intstr.FromInt(51121),
-						Protocol:   corev1.Protocol("TCP"),
+						Port:       controllerAPIPort,
+						TargetPort: intstr.FromInt(controllerAPIPort),
+						Protocol:   corev1.ProtocolTCP,
+					},
+					{
+						Name:       controllerConsolePortName,
+						Port:       controllerConsoleServicePort,
+						TargetPort: intstr.FromInt(cfg.consolePort),
+						Protocol:   corev1.ProtocolTCP,
 					},
 				},
 			},
