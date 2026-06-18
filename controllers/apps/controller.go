@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 	"github.com/go-logr/logr"
@@ -19,6 +18,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// defaultAppReplicas is a compile-time placeholder until Plan 6 removes the Deployment stub reconciler.
+const defaultAppReplicas int32 = 1
+
 // ApplicationReconciler reconciles a Application object.
 type ApplicationReconciler struct {
 	client.Client
@@ -27,11 +29,8 @@ type ApplicationReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=datasance.com,resources=applications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=datasance.com,resources=apps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=datasance.com,resources=applications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=datasance.com,resources=applications/finalizers,verbs=get;update;patch
-// +kubebuilder:rbac:groups=datasance.com,resources=apps/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=datasance.com,resources=apps/finalizers,verbs=get;update;patch
 
 func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("application", request.NamespacedName)
@@ -72,7 +71,7 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	count := instance.Spec.Replicas
+	count := defaultAppReplicas
 	log.Info("Scaling", "Current count: ", *found.Spec.Replicas)
 	log.Info("Scaling", "Desired count: ", count)
 
@@ -89,28 +88,6 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	podList := &corev1.PodList{}
-
-	err = r.Client.List(ctx, podList)
-	if err != nil {
-		log.Error(err, "Failed to list pods", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
-
-		return ctrl.Result{}, err
-	}
-
-	podNames := getPodNames(podList.Items)
-
-	if !reflect.DeepEqual(podNames, instance.Status.PodNames) {
-		instance.Status.PodNames = podNames
-
-		err := r.Client.Update(ctx, instance)
-		if err != nil {
-			log.Error(err, "failed to update node status", "Deployment.Namespace", instance.Namespace, "Deployment.Name", instance.Name)
-
-			return ctrl.Result{}, err
-		}
-	}
-
 	return ctrl.Result{}, nil
 }
 
@@ -118,15 +95,6 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv3.Application{}).
 		Complete(r)
-}
-
-func getPodNames(pods []corev1.Pod) []string {
-	podNames := make([]string, len(pods))
-	for i := range pods {
-		podNames[i] = pods[i].Name
-	}
-
-	return podNames
 }
 
 func labelsForIOFog(name string) map[string]string {
@@ -165,6 +133,7 @@ func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*apps
 		containers[i] = container
 	}
 
+	replicas := defaultAppReplicas
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -175,7 +144,7 @@ func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*apps
 			Namespace: app.ObjectMeta.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &app.Spec.Replicas,
+			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
