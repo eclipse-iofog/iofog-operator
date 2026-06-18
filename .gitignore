@@ -81,3 +81,5 @@ tags
 
 test.txt
 /*.iml
+.cursor/
+AGENTS.md
