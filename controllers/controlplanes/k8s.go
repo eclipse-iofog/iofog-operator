@@ -427,20 +427,31 @@ func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *micr
 }
 
 func (r *ControlPlaneReconciler) loginIofogClient(iofogClient *iofogclient.Client) error {
-	authURL := r.cp.Spec.Auth.URL
-	realm := r.cp.Spec.Auth.Realm
-	clientID := r.cp.Spec.Auth.ControllerClient
-	clientSecret := r.cp.Spec.Auth.ControllerSecret
+	auth := r.cp.Spec.Auth
+
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		// Plan 3: POST /api/v3/user/login with bootstrap credentials.
+		return fmt.Errorf("invalid credentials")
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl == "" {
+			return fmt.Errorf("auth.issuerUrl is required when mode=external")
+		}
+		if auth.Client == nil || auth.Client.ID == "" || auth.Client.Secret == "" {
+			return fmt.Errorf("auth.client id and secret are required when mode=external")
+		}
+	default:
+		return fmt.Errorf("unsupported auth mode: %q", auth.Mode)
+	}
 
 	type LoginResponse struct {
 		AccessToken string `json:"access_token"`
 	}
 
 	r.log.Info("Generating Client Access Token")
-	// Construct the URL for token request
-	url := fmt.Sprintf("%srealms/%s/protocol/openid-connect/token", authURL, realm)
+	tokenURL := strings.TrimSuffix(auth.IssuerUrl, "/") + "/protocol/openid-connect/token"
 	method := "POST"
-	payload := fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
+	payload := fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", auth.Client.ID, auth.Client.Secret)
 
 	// Create HTTP client with custom transport to skip certificate verification
 	tr := &http.Transport{
@@ -449,7 +460,7 @@ func (r *ControlPlaneReconciler) loginIofogClient(iofogClient *iofogclient.Clien
 	client := &http.Client{Transport: tr}
 
 	// Create request
-	req, err := http.NewRequest(method, url, strings.NewReader(payload))
+	req, err := http.NewRequest(method, tokenURL, strings.NewReader(payload))
 	if err != nil {
 		return err
 	}

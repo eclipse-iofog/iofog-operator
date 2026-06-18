@@ -18,28 +18,27 @@ import (
 )
 
 const (
-	routerName                                     = "router"
-	controllerName                                 = "controller"
-	controllerCredentialsSecretName                = "controller-credentials"
-	emailSecretKey                                 = "email"
-	passwordSecretKey                              = "password"
-	controlllerAuthCredentialsSecretName           = "controller-auth-credentials" //nolint:gosec
-	controlllerAuthUrlSecretKey                    = "auth-url"
-	controlllerAuthRealmSecretKey                  = "auth-realm"
-	controlllerAuthRealmKeySecretKey               = "auth-realm-key"
-	controlllerAuthSSLSecretKey                    = "auth-ssl-req"
-	controlllerAuthControllerClientSecretKey       = "auth-controller-client"
-	controlllerAuthControllerClientSecretSecretKey = "auth-controller-client-secret"
-	controlllerAuthViewerClientSecretKey           = "auth-viewer-client"
-	controllerDBCredentialsSecretName              = "controller-db-credentials" //nolint:gosec
-	controllerVaultCredentialsSecretName           = "controller-vault-credentials"
-	controllerDBUserSecretKey                      = "username"
-	controllerDBDBNameSecretKey                    = "dbname"
-	controllerDBPasswordSecretKey                  = "password"
-	controllerDBHostSecretKey                      = "host"
-	controllerDBPortSecretKey                      = "port"
-	controllerDBSSLSecretKey                       = "ssl"
-	controllerDBCACertSecretKey                    = "ca"
+	routerName                           = "router"
+	controllerName                       = "controller"
+	controllerCredentialsSecretName      = "controller-credentials"
+	emailSecretKey                       = "email"
+	passwordSecretKey                    = "password"
+	controlllerAuthCredentialsSecretName = "controller-auth-credentials" //nolint:gosec
+	controllerAuthModeSecretKey          = "auth-mode"
+	controllerAuthIssuerURLSecretKey     = "auth-issuer-url"
+	controllerAuthClientIDSecretKey      = "auth-client-id"
+	controllerAuthClientSecretSecretKey  = "auth-client-secret"
+	controllerAuthBootstrapUserSecretKey = "auth-bootstrap-username"
+	controllerAuthBootstrapPassSecretKey = "auth-bootstrap-password"
+	controllerDBCredentialsSecretName    = "controller-db-credentials" //nolint:gosec
+	controllerVaultCredentialsSecretName = "controller-vault-credentials"
+	controllerDBUserSecretKey            = "username"
+	controllerDBDBNameSecretKey          = "dbname"
+	controllerDBPasswordSecretKey        = "password"
+	controllerDBHostSecretKey            = "host"
+	controllerDBPortSecretKey            = "port"
+	controllerDBSSLSecretKey             = "ssl"
+	controllerDBCACertSecretKey          = "ca"
 )
 
 type service struct {
@@ -111,8 +110,6 @@ type controllerMicroserviceConfig struct {
 	natsEnabled           bool
 	ecn                   string
 	pidBaseDir            string
-	ecnViewerPort         int
-	ecnViewerURL          string
 	logLevel              string
 	vault                 *cpv3.Vault
 }
@@ -141,15 +138,7 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 				Namespace: namespace,
 				Name:      controlllerAuthCredentialsSecretName,
 			},
-			StringData: map[string]string{
-				controlllerAuthUrlSecretKey:                    cfg.auth.URL,
-				controlllerAuthRealmSecretKey:                  cfg.auth.Realm,
-				controlllerAuthRealmKeySecretKey:               cfg.auth.RealmKey,
-				controlllerAuthSSLSecretKey:                    cfg.auth.SSL,
-				controlllerAuthControllerClientSecretKey:       cfg.auth.ControllerClient,
-				controlllerAuthControllerClientSecretSecretKey: cfg.auth.ControllerSecret,
-				controlllerAuthViewerClientSecretKey:           cfg.auth.ViewerClient,
-			},
+			StringData: authSecretStringData(cfg.auth),
 		},
 	}
 	if cfg.vault != nil {
@@ -158,6 +147,27 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 		}
 	}
 	return secrets
+}
+
+func authSecretStringData(auth *cpv3.Auth) map[string]string {
+	if auth == nil {
+		return map[string]string{}
+	}
+	data := map[string]string{
+		controllerAuthModeSecretKey: string(auth.Mode),
+	}
+	if auth.IssuerUrl != "" {
+		data[controllerAuthIssuerURLSecretKey] = auth.IssuerUrl
+	}
+	if auth.Client != nil {
+		data[controllerAuthClientIDSecretKey] = auth.Client.ID
+		data[controllerAuthClientSecretSecretKey] = auth.Client.Secret
+	}
+	if auth.Bootstrap != nil {
+		data[controllerAuthBootstrapUserSecretKey] = auth.Bootstrap.Username
+		data[controllerAuthBootstrapPassSecretKey] = auth.Bootstrap.Password
+	}
+	return data
 }
 
 // buildVaultCredentialsSecret returns a Secret containing provider-specific vault config for the controller. Keys match what we use in SecretKeyRef (address, token, mount for hashicorp; etc.).
@@ -215,10 +225,6 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 
 	if cfg.serviceType == "" {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
-	}
-
-	if cfg.ecnViewerPort == 0 {
-		cfg.ecnViewerPort = 8008
 	}
 
 	if cfg.pidBaseDir == "" {
@@ -298,12 +304,6 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 						TargetPort: intstr.FromInt(51121),
 						Protocol:   corev1.Protocol("TCP"),
 					},
-					{
-						Name:       "ecn-viewer",
-						Port:       80,
-						TargetPort: intstr.FromInt(cfg.ecnViewerPort),
-						Protocol:   corev1.Protocol("TCP"),
-					},
 				},
 			},
 		},
@@ -334,83 +334,6 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				},
 				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
-					{
-						Name: "KC_URL",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthUrlSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_REALM",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthRealmSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_REALM_KEY",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthRealmKeySecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_SSL_REQ",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthSSLSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_CLIENT",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthControllerClientSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthControllerClientSecretSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_VIEWER_CLIENT",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthViewerClientSecretKey,
-							},
-						},
-					},
 					{
 						Name:  "DB_PROVIDER",
 						Value: cfg.db.Provider,
@@ -513,6 +436,14 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 						Value: cfg.routerImage,
 					},
 					{
+						Name:  "ROUTER_IMAGE_3",
+						Value: cfg.routerImage,
+					},
+					{
+						Name:  "ROUTER_IMAGE_4",
+						Value: cfg.routerImage,
+					},
+					{
 						Name:  "NATS_ENABLED",
 						Value: strconv.FormatBool(cfg.natsEnabled),
 					},
@@ -525,20 +456,20 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 						Value: cfg.natsImage,
 					},
 					{
+						Name:  "NATS_IMAGE_3",
+						Value: cfg.natsImage,
+					},
+					{
+						Name:  "NATS_IMAGE_4",
+						Value: cfg.natsImage,
+					},
+					{
 						Name:  "ECN_NAME",
 						Value: cfg.ecn,
 					},
 					{
 						Name:  "PID_BASE",
 						Value: cfg.pidBaseDir,
-					},
-					{
-						Name:  "VIEWER_PORT",
-						Value: strconv.Itoa(cfg.ecnViewerPort),
-					},
-					{
-						Name:  "VIEWER_URL",
-						Value: cfg.ecnViewerURL,
 					},
 					{
 						Name:  "LOG_LEVEL",
