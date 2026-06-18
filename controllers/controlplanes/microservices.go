@@ -1,16 +1,3 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Datasance Teknoloji A.S.
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package controllers
 
 import (
@@ -18,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
-	"github.com/datasance/iofog-operator/v3/controllers/controlplanes/nats"
-	"github.com/datasance/iofog-operator/v3/controllers/controlplanes/router"
-	"github.com/datasance/iofog-operator/v3/internal/util"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/nats"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -587,7 +574,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-sqlite",
-			MountPath: "/home/runner/.npm-global/lib/node_modules/@datasance/iofogcontroller/src/data/sqlite_files/",
+			MountPath: "/home/runner/.npm-global/lib/node_modules/controller/src/data/sqlite_files/",
 			// SubPath:   "prod_database.sqlite",
 		})
 	}
@@ -1113,7 +1100,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 					{Name: "NATS_JWT_MOUNT_DIR", Value: "/tmp/nats/jwt"},
 					{Name: "NATS_CREDS_DIR", Value: "/etc/nats/creds"},
 					{Name: "NATS_SYS_USER_CRED_PATH", Value: "/etc/nats/creds/admin-hub.creds"},
-					{Name: "NATS_SSL_DIR", Value: "/etc/nats/certs"},
+					{Name: "NATS_TLS_DIR", Value: "/etc/nats/certs"},
 					{Name: "NATS_CERT_NAME", Value: "nats-site-server"},
 					{Name: "NATS_MQTT_CERT_NAME", Value: "nats-mqtt-server"},
 					{Name: "NATS_SERVER_PORT", Value: "4222"},
