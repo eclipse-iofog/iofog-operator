@@ -1,0 +1,69 @@
+apiVersion: datasance.com/v3
+kind: ControlPlane
+metadata:
+  name: pot
+spec:
+  replicas:
+    controller: 2
+    nats: 2
+  controller:
+    publicUrl: https://controller.example.com
+    trustProxy: true
+    pidBaseDir: ""
+    consolePort: 0
+    consoleUrl: ""
+    https: false
+    secretName: ""
+    logLevel: ""
+  database:
+    provider: postgres
+    user: admin
+    host: db.example.com
+    port: 5432
+    password: secret
+    databaseName: controller
+    ssl: false
+  auth:
+    mode: embedded
+    insecureAllowHttp: false
+    insecureAllowBootstrapLog: false
+    bootstrap:
+      username: admin
+      password: "ReplaceMe1!"
+  events:
+    auditEnabled: true
+    retentionDays: 30
+    cleanupInterval: 3600
+    captureIpAddress: true
+  images:
+    controller: ghcr.io/datasance/controller:v3.8.0-rc.1
+    router: ghcr.io/datasance/router:v3.8.0-rc.1
+    nats: ghcr.io/datasance/nats:2.14.2-rc.1
+  nats:
+    enabled: true
+    jetStream:
+      storageSize: "10Gi"
+      memoryStoreSize: "1Gi"
+  services:
+    controller:
+      type: LoadBalancer
+    router:
+      type: LoadBalancer
+    nats:
+      type: ClusterIP
+    natsServer:
+      type: ClusterIP
+  ingresses:
+    controller:
+      ingressClassName: nginx
+      host: controller.example.com
+    router:
+      messagePort: 5671
+      interiorPort: 55671
+      edgePort: 45671
+    nats:
+      serverPort: 4222
+      clusterPort: 6222
+      leafPort: 7422
+      mqttPort: 8883
+      httpPort: 8222

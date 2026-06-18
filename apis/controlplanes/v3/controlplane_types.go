@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	cond "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,7 +25,7 @@ type ControlPlaneSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	// Auth contains Keycloak Client Configuration of Controller and ECN Viewer
+	// Auth configures OIDC for the Controller (embedded or external IdP).
 	Auth Auth `json:"auth"`
 	// Database for ioFog Controller
 	Database Database `json:"database"`
@@ -130,14 +131,95 @@ type Images struct {
 	Nats       string `json:"nats,omitempty"`
 }
 
+// AuthMode selects embedded local OIDC or an external IdP.
+// +kubebuilder:validation:Enum=embedded;external
+type AuthMode string
+
+const (
+	AuthModeEmbedded AuthMode = "embedded"
+	AuthModeExternal AuthMode = "external"
+)
+
+// Auth configures Controller OIDC (embedded or external).
 type Auth struct {
-	URL              string `json:"url"`
-	Realm            string `json:"realm"`
-	SSL              string `json:"ssl"`
-	RealmKey         string `json:"realmKey"`
-	ControllerClient string `json:"controllerClient"`
-	ControllerSecret string `json:"controllerSecret"`
-	ViewerClient     string `json:"viewerClient"`
+	// Mode is required: embedded (local OIDC) or external (IdP).
+	Mode AuthMode `json:"mode"`
+	// InsecureAllowHttp allows HTTP for OIDC endpoints (dev only).
+	// +optional
+	InsecureAllowHttp *bool `json:"insecureAllowHttp,omitempty"`
+	// InsecureAllowBootstrapLog logs bootstrap credentials (dev only).
+	// +optional
+	InsecureAllowBootstrapLog *bool `json:"insecureAllowBootstrapLog,omitempty"`
+	// Bootstrap admin credentials; required when mode=embedded.
+	// +optional
+	Bootstrap *AuthBootstrap `json:"bootstrap,omitempty"`
+	// IssuerUrl is required when mode=external.
+	// +optional
+	IssuerUrl string `json:"issuerUrl,omitempty"`
+	// Client OAuth2 credentials for the Controller API.
+	// +optional
+	Client *AuthClient `json:"client,omitempty"`
+	// ConsoleClient is the OIDC client id for EdgeOps Console (embedded only).
+	// +optional
+	ConsoleClient string `json:"consoleClient,omitempty"`
+	// ConsoleClientEnabled registers the console OIDC client (embedded only).
+	// +optional
+	ConsoleClientEnabled *bool `json:"consoleClientEnabled,omitempty"`
+	// RateLimit configures auth rate limiting (embedded only).
+	// +optional
+	RateLimit *AuthRateLimit `json:"rateLimit,omitempty"`
+	// SessionStore configures session storage (embedded only).
+	// +optional
+	SessionStore *AuthSessionStore `json:"sessionStore,omitempty"`
+	// TokenTtl configures access/refresh token TTLs (embedded only).
+	// +optional
+	TokenTtl *AuthTokenTtl `json:"tokenTtl,omitempty"`
+	// OidcTtl configures OIDC interaction/grant/session TTLs (embedded only).
+	// +optional
+	OidcTtl *AuthOidcTtl `json:"oidcTtl,omitempty"`
+}
+
+// AuthBootstrap holds embedded-mode admin bootstrap credentials.
+type AuthBootstrap struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	// PasswordSecretRef references a Secret containing the bootstrap password.
+	// +optional
+	PasswordSecretRef *corev1.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+}
+
+// AuthClient holds OAuth2 client id and secret.
+type AuthClient struct {
+	ID     string `json:"id,omitempty"`
+	Secret string `json:"secret,omitempty"`
+}
+
+// AuthRateLimit configures embedded auth rate limiting.
+type AuthRateLimit struct {
+	Enabled              *bool `json:"enabled,omitempty"`
+	MaxRequestsPerWindow int   `json:"maxRequestsPerWindow,omitempty"`
+	WindowMs             int   `json:"windowMs,omitempty"`
+}
+
+// AuthSessionStore configures embedded session storage (memory or database).
+type AuthSessionStore struct {
+	Type   string `json:"type,omitempty"`
+	TtlMs  int    `json:"ttlMs,omitempty"`
+	Secret string `json:"secret,omitempty"`
+}
+
+// AuthTokenTtl configures embedded access/refresh token TTLs.
+type AuthTokenTtl struct {
+	AccessTokenTtlSeconds  int `json:"accessTokenTtlSeconds,omitempty"`
+	RefreshTokenTtlSeconds int `json:"refreshTokenTtlSeconds,omitempty"`
+}
+
+// AuthOidcTtl configures embedded OIDC provider TTLs.
+type AuthOidcTtl struct {
+	InteractionTtlSeconds int `json:"interactionTtlSeconds,omitempty"`
+	GrantTtlSeconds       int `json:"grantTtlSeconds,omitempty"`
+	SessionTtlSeconds     int `json:"sessionTtlSeconds,omitempty"`
+	IdTokenTtlSeconds     int `json:"idTokenTtlSeconds,omitempty"`
 }
 
 type Events struct {
@@ -202,13 +284,15 @@ type Ingresses struct {
 }
 
 type Controller struct {
-	PidBaseDir    string `json:"pidBaseDir,omitempty"`
-	EcnViewerPort int    `json:"ecnViewerPort,omitempty"`
-	EcnViewerURL  string `json:"ecnViewerUrl,omitempty"`
-	ECNName       string `json:"ecn,omitempty"`
-	Https         *bool  `json:"https,omitempty"`
-	SecretName    string `json:"secretName,omitempty"`
-	LogLevel      string `json:"logLevel,omitempty"`
+	PublicUrl   string `json:"publicUrl,omitempty"`
+	TrustProxy  *bool  `json:"trustProxy,omitempty"`
+	ConsoleUrl  string `json:"consoleUrl,omitempty"`
+	ConsolePort int    `json:"consolePort,omitempty"`
+	PidBaseDir  string `json:"pidBaseDir,omitempty"`
+	ECNName     string `json:"ecn,omitempty"`
+	Https       *bool  `json:"https,omitempty"`
+	SecretName  string `json:"secretName,omitempty"`
+	LogLevel    string `json:"logLevel,omitempty"`
 }
 
 // type Router struct {
