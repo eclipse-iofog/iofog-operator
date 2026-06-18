@@ -2,15 +2,14 @@ package controllers
 
 import (
 	"context"
-	"crypto/tls"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/auth/controllerlogin"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -426,13 +425,27 @@ func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *micr
 	return nil
 }
 
-func (r *ControlPlaneReconciler) loginIofogClient(iofogClient *iofogclient.Client) error {
+func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClient *iofogclient.Client) error {
 	auth := r.cp.Spec.Auth
 
 	switch auth.Mode {
 	case cpv3.AuthModeEmbedded:
-		// Plan 3: POST /api/v3/user/login with bootstrap credentials.
-		return fmt.Errorf("invalid credentials")
+		if auth.Bootstrap == nil {
+			return fmt.Errorf("auth.bootstrap is required when mode=embedded")
+		}
+		username := strings.TrimSpace(auth.Bootstrap.Username)
+		if username == "" {
+			return fmt.Errorf("auth.bootstrap.username is required when mode=embedded")
+		}
+		password, err := resolveBootstrapPassword(ctx, r.Client, r.cp.Namespace, &auth)
+		if err != nil {
+			return fmt.Errorf("resolve bootstrap password: %w", err)
+		}
+		if password == "" {
+			return fmt.Errorf("auth.bootstrap password is required when mode=embedded")
+		}
+		r.log.Info("Logging in to Controller with bootstrap credentials")
+		return controllerlogin.EmbeddedBootstrapLogin(iofogClient, username, password)
 	case cpv3.AuthModeExternal:
 		if auth.IssuerUrl == "" {
 			return fmt.Errorf("auth.issuerUrl is required when mode=external")
@@ -440,54 +453,16 @@ func (r *ControlPlaneReconciler) loginIofogClient(iofogClient *iofogclient.Clien
 		if auth.Client == nil || auth.Client.ID == "" || auth.Client.Secret == "" {
 			return fmt.Errorf("auth.client id and secret are required when mode=external")
 		}
+		r.log.Info("Generating Client Access Token")
+		return controllerlogin.ExternalClientCredentialsLogin(
+			iofogClient,
+			auth.IssuerUrl,
+			auth.Client.ID,
+			auth.Client.Secret,
+		)
 	default:
 		return fmt.Errorf("unsupported auth mode: %q", auth.Mode)
 	}
-
-	type LoginResponse struct {
-		AccessToken string `json:"access_token"`
-	}
-
-	r.log.Info("Generating Client Access Token")
-	tokenURL := strings.TrimSuffix(auth.IssuerUrl, "/") + "/protocol/openid-connect/token"
-	method := "POST"
-	payload := fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", auth.Client.ID, auth.Client.Secret)
-
-	// Create HTTP client with custom transport to skip certificate verification
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	// Create request
-	req, err := http.NewRequest(method, tokenURL, strings.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Cache-Control", "no-cache")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	// Send request
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	// Check response status
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
-	// Read response body
-	var response LoginResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return err
-	}
-
-	// Assign access token
-	iofogClient.SetAccessToken(response.AccessToken)
-	return nil
 }
 
 func newInt(val int) *int {

@@ -298,7 +298,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		return fin
 	}
 	// Set up user
-	if err := r.loginIofogClient(iofogClient); err != nil {
+	if err := r.loginIofogClient(ctx, iofogClient); err != nil {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not login to ControlPlane %s: %s", r.cp.Name, err.Error()))
 			return op.ReconcileWithError(err)
@@ -592,7 +592,7 @@ func (r *ControlPlaneReconciler) reconcileNats(ctx context.Context) op.Reconcili
 	if recon.IsFinal() {
 		return recon
 	}
-	if err := r.loginIofogClient(iofogClient); err != nil {
+	if err := r.loginIofogClient(ctx, iofogClient); err != nil {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not login for NATS bootstrap ControlPlane %s: %s", r.cp.Name, err.Error()))
 			return op.ReconcileWithError(err)
