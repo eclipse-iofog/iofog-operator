@@ -127,7 +127,42 @@ func (r *ControlPlaneReconciler) reconcileVaultCredentialsSecret(ctx context.Con
 	return false, nil
 }
 
+func (r *ControlPlaneReconciler) reconcileAuthCredentialsSecret(ctx context.Context, ms *microservice) (shouldRestartPod bool, err error) {
+	stdLabels := getStandardLabels("controller", r.cp.Name)
+	for i := range ms.secrets {
+		secret := &ms.secrets[i]
+		if secret.Name != controlllerAuthCredentialsSecretName {
+			continue
+		}
+		secret.Labels = mergeLabels(stdLabels, secret.Labels)
+		if setErr := controllerutil.SetControllerReference(&r.cp, secret, r.Scheme); setErr != nil {
+			return false, setErr
+		}
+		found := &corev1.Secret{}
+		getErr := r.Client.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, found)
+		if getErr != nil {
+			if !k8serrors.IsNotFound(getErr) {
+				return false, getErr
+			}
+			if createErr := r.Client.Create(ctx, secret); createErr != nil {
+				return false, createErr
+			}
+			return false, nil
+		}
+		if updateErr := r.Client.Update(ctx, secret); updateErr != nil {
+			return false, updateErr
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) op.Reconciliation {
+	bootstrapPassword, err := resolveBootstrapPassword(ctx, r.Client, r.cp.Namespace, &r.cp.Spec.Auth)
+	if err != nil {
+		return op.ReconcileWithError(fmt.Errorf("resolve bootstrap password: %w", err))
+	}
+
 	// Configure Controller
 	config := &controllerMicroserviceConfig{
 		controllerName:        r.cp.Name,
@@ -139,6 +174,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		natsEnabled:           isNatsEnabled(r.cp),
 		db:                    &r.cp.Spec.Database,
 		auth:                  &r.cp.Spec.Auth,
+		bootstrapPassword:     bootstrapPassword,
 		serviceType:           r.cp.Spec.Services.Controller.Type,
 		serviceAnnotations:    r.cp.Spec.Services.Controller.Annotations,
 		externalTrafficPolicy: r.cp.Spec.Services.Controller.ExternalTrafficPolicy,
@@ -147,6 +183,10 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		secretName:            r.cp.Spec.Controller.SecretName,
 		ecn:                   r.cp.Spec.Controller.ECNName,
 		pidBaseDir:            r.cp.Spec.Controller.PidBaseDir,
+		publicUrl:             r.cp.Spec.Controller.PublicUrl,
+		trustProxy:            r.cp.Spec.Controller.TrustProxy,
+		consoleUrl:            r.cp.Spec.Controller.ConsoleUrl,
+		consolePort:           r.cp.Spec.Controller.ConsolePort,
 		logLevel:              r.cp.Spec.Controller.LogLevel,
 		events:                getEventsIfConfigured(r.cp.Spec.Events),
 		vault:                 getVaultIfConfigured(r.cp.Spec),
@@ -196,6 +236,13 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		return op.ReconcileWithError(err)
 	}
 	if restartVault {
+		shouldRestartPods = true
+	}
+	restartAuth, err := r.reconcileAuthCredentialsSecret(ctx, ms)
+	if err != nil {
+		return op.ReconcileWithError(err)
+	}
+	if restartAuth {
 		shouldRestartPods = true
 	}
 	// Create secrets

@@ -110,8 +110,13 @@ type controllerMicroserviceConfig struct {
 	natsEnabled           bool
 	ecn                   string
 	pidBaseDir            string
+	publicUrl             string
+	trustProxy            *bool
+	consoleUrl            string
+	consolePort           int
 	logLevel              string
 	vault                 *cpv3.Vault
+	bootstrapPassword     string // resolved from inline password or passwordSecretRef; never logged
 }
 
 func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig) []corev1.Secret {
@@ -138,7 +143,7 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 				Namespace: namespace,
 				Name:      controlllerAuthCredentialsSecretName,
 			},
-			StringData: authSecretStringData(cfg.auth),
+			StringData: authSecretStringData(cfg.auth, cfg.bootstrapPassword),
 		},
 	}
 	if cfg.vault != nil {
@@ -149,25 +154,228 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 	return secrets
 }
 
-func authSecretStringData(auth *cpv3.Auth) map[string]string {
+func authSecretStringData(auth *cpv3.Auth, resolvedBootstrapPassword string) map[string]string {
 	if auth == nil {
 		return map[string]string{}
 	}
 	data := map[string]string{
 		controllerAuthModeSecretKey: string(auth.Mode),
 	}
-	if auth.IssuerUrl != "" {
-		data[controllerAuthIssuerURLSecretKey] = auth.IssuerUrl
-	}
-	if auth.Client != nil {
-		data[controllerAuthClientIDSecretKey] = auth.Client.ID
-		data[controllerAuthClientSecretSecretKey] = auth.Client.Secret
-	}
-	if auth.Bootstrap != nil {
-		data[controllerAuthBootstrapUserSecretKey] = auth.Bootstrap.Username
-		data[controllerAuthBootstrapPassSecretKey] = auth.Bootstrap.Password
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		if auth.Bootstrap != nil {
+			if auth.Bootstrap.Username != "" {
+				data[controllerAuthBootstrapUserSecretKey] = auth.Bootstrap.Username
+			}
+			if password := effectiveBootstrapPassword(auth, resolvedBootstrapPassword); password != "" {
+				data[controllerAuthBootstrapPassSecretKey] = password
+			}
+		}
+		appendAuthClientSecretKeys(data, auth.Client)
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl != "" {
+			data[controllerAuthIssuerURLSecretKey] = auth.IssuerUrl
+		}
+		appendAuthClientSecretKeys(data, auth.Client)
 	}
 	return data
+}
+
+func appendAuthClientSecretKeys(data map[string]string, client *cpv3.AuthClient) {
+	if client == nil {
+		return
+	}
+	if client.ID != "" {
+		data[controllerAuthClientIDSecretKey] = client.ID
+	}
+	if client.Secret != "" {
+		data[controllerAuthClientSecretSecretKey] = client.Secret
+	}
+}
+
+func appendAuthClientEnvFromSecret(env []corev1.EnvVar, client *cpv3.AuthClient) []corev1.EnvVar {
+	if client == nil {
+		return env
+	}
+	if client.ID != "" {
+		env = append(env, corev1.EnvVar{
+			Name:      "OIDC_CLIENT_ID",
+			ValueFrom: authCredentialsSecretKeyRef(controllerAuthClientIDSecretKey),
+		})
+	}
+	if client.Secret != "" {
+		env = append(env, corev1.EnvVar{
+			Name:      "OIDC_CLIENT_SECRET",
+			ValueFrom: authCredentialsSecretKeyRef(controllerAuthClientSecretSecretKey),
+		})
+	}
+	return env
+}
+
+func authCredentialsSecretKeyRef(key string) *corev1.EnvVarSource {
+	return &corev1.EnvVarSource{
+		SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: controlllerAuthCredentialsSecretName,
+			},
+			Key: key,
+		},
+	}
+}
+
+func appendControllerAuthEnv(env []corev1.EnvVar, auth *cpv3.Auth, resolvedBootstrapPassword string) []corev1.EnvVar {
+	if auth == nil {
+		return env
+	}
+	env = append(env, corev1.EnvVar{
+		Name:      "AUTH_MODE",
+		ValueFrom: authCredentialsSecretKeyRef(controllerAuthModeSecretKey),
+	})
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		if auth.Bootstrap != nil && auth.Bootstrap.Username != "" {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_BOOTSTRAP_ADMIN_USERNAME",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthBootstrapUserSecretKey),
+			})
+		}
+		if hasBootstrapPassword(auth, resolvedBootstrapPassword) {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_BOOTSTRAP_ADMIN_PASSWORD",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthBootstrapPassSecretKey),
+			})
+		}
+		env = appendAuthClientEnvFromSecret(env, auth.Client)
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl != "" {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_ISSUER_URL",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthIssuerURLSecretKey),
+			})
+		}
+		env = appendAuthClientEnvFromSecret(env, auth.Client)
+	}
+	if auth.InsecureAllowHttp != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_INSECURE_ALLOW_HTTP",
+			Value: strconv.FormatBool(*auth.InsecureAllowHttp),
+		})
+	}
+	if auth.InsecureAllowBootstrapLog != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_INSECURE_ALLOW_BOOTSTRAP_LOG",
+			Value: strconv.FormatBool(*auth.InsecureAllowBootstrapLog),
+		})
+	}
+	if auth.ConsoleClient != "" {
+		env = append(env, corev1.EnvVar{
+			Name:  "OIDC_CONSOLE_CLIENT_ID",
+			Value: auth.ConsoleClient,
+		})
+	}
+	if auth.ConsoleClientEnabled != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_CONSOLE_CLIENT_ENABLED",
+			Value: strconv.FormatBool(*auth.ConsoleClientEnabled),
+		})
+	}
+	if auth.RateLimit != nil {
+		if auth.RateLimit.Enabled != nil {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_ENABLED",
+				Value: strconv.FormatBool(*auth.RateLimit.Enabled),
+			})
+		}
+		if auth.RateLimit.MaxRequestsPerWindow != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_MAX_REQUESTS",
+				Value: strconv.Itoa(auth.RateLimit.MaxRequestsPerWindow),
+			})
+		}
+		if auth.RateLimit.WindowMs != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_WINDOW_MS",
+				Value: strconv.Itoa(auth.RateLimit.WindowMs),
+			})
+		}
+	}
+	if auth.SessionStore != nil {
+		if auth.SessionStore.Type != "" {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_STORE_TYPE",
+				Value: auth.SessionStore.Type,
+			})
+		}
+		if auth.SessionStore.TtlMs != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_STORE_TTL_MS",
+				Value: strconv.Itoa(auth.SessionStore.TtlMs),
+			})
+		}
+		if auth.SessionStore.Secret != "" {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_SECRET",
+				Value: auth.SessionStore.Secret,
+			})
+		}
+	}
+	if auth.OidcTtl != nil {
+		if auth.OidcTtl.InteractionTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_INTERACTION_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.InteractionTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.GrantTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_GRANT_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.GrantTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.SessionTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_SESSION_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.SessionTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.IdTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_ID_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.IdTokenTtlSeconds),
+			})
+		}
+	}
+	if auth.TokenTtl != nil {
+		if auth.TokenTtl.AccessTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_ACCESS_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.TokenTtl.AccessTokenTtlSeconds),
+			})
+		}
+		if auth.TokenTtl.RefreshTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_REFRESH_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.TokenTtl.RefreshTokenTtlSeconds),
+			})
+		}
+	}
+	return env
+}
+
+func appendControllerServerEnv(env []corev1.EnvVar, cfg *controllerMicroserviceConfig) []corev1.EnvVar {
+	if cfg.publicUrl != "" {
+		env = append(env, corev1.EnvVar{Name: "CONTROLLER_PUBLIC_URL", Value: cfg.publicUrl})
+	}
+	if cfg.trustProxy != nil {
+		env = append(env, corev1.EnvVar{Name: "TRUST_PROXY", Value: strconv.FormatBool(*cfg.trustProxy)})
+	}
+	if cfg.consoleUrl != "" {
+		env = append(env, corev1.EnvVar{Name: "CONSOLE_URL", Value: cfg.consoleUrl})
+	}
+	if cfg.consolePort != 0 {
+		env = append(env, corev1.EnvVar{Name: "CONSOLE_PORT", Value: strconv.Itoa(cfg.consolePort)})
+	}
+	return env
 }
 
 // buildVaultCredentialsSecret returns a Secret containing provider-specific vault config for the controller. Keys match what we use in SecretKeyRef (address, token, mount for hashicorp; etc.).
@@ -632,6 +840,9 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 			)
 		}
 	}
+
+	msvc.containers[0].env = appendControllerAuthEnv(msvc.containers[0].env, cfg.auth, cfg.bootstrapPassword)
+	msvc.containers[0].env = appendControllerServerEnv(msvc.containers[0].env, cfg)
 
 	return msvc
 }
