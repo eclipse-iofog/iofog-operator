@@ -1,2 +1,3 @@
 resources:
   - controlplane.yaml
+  - application.yaml

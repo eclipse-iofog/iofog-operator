@@ -1,0 +1,95 @@
+apiVersion: datasance.com/v3
+kind: Application
+metadata:
+  name: health-care-wearable
+  namespace: default
+spec:
+  natsConfig:
+    natsAccess: true
+    natsRule: default-account
+  microservices:
+    - name: heart-rate-monitor
+      agent:
+        name: horse-1
+      images:
+        amd64: arm-image:latest
+        arm64: x86-image:latest
+        riscv64: riscv64-image:latest
+        arm: amd64-image:latest
+        registry: "1"
+      natsConfig:
+        natsAccess: true
+        natsRule: default-user
+      container:
+        annotations: {}
+        hostNetworkMode: false
+        isPrivileged: false
+        ipcMode: ''
+        pidMode: ''
+        runAsUser: ''
+        platform: ''
+        runtime: ''
+        cdiDevices: []
+        volumes:
+          - hostDestination: /tmp/msvc
+            containerDestination: /data
+            accessMode: rw
+            type: bind
+        extraHosts: []
+        env:
+          - key: BASE_URL
+            value: http://localhost:8080/data
+        ports:
+          - internal: 80
+            external: 5000
+        commands:
+          - dbhost
+          - localhost:27017
+        cpuSetCpus: ''
+        memoryLimit: 4096
+        healthCheck:
+          test:
+            - CMD-SHELL
+            - curl -f http://localhost:8083/healthz | grep -q 'Healthy' || exit 1
+          interval: 30
+          timeout: 10
+          startPeriod: 60
+          retries: 3
+      schedule: 50
+      config:
+        data_label: test_mode=false_cross_agent_microservice_routing_aug_27
+        test_mode: true
+    - name: heart-rate-viewer
+      agent:
+        name: horse-1
+      images:
+        amd64: arm-image:latest
+        arm64: x86-image:latest
+        riscv64: riscv64-image:latest
+        arm: amd64-image:latest
+        registry: remote
+      natsConfig:
+        natsAccess: false
+      container:
+        hostNetworkMode: false
+        isPrivileged: false
+        runAsUser: ''
+        platform: ''
+        runtime: ''
+        cdiDevices: []
+        ports:
+          - internal: 80
+            external: 5000
+            protocol: tcp
+        extraHosts: []
+        env:
+          - key: BASE_URL
+            value: http://localhost:8080/data
+      config:
+        test: 54
+  # Alternative: deploy from a named template instead of inline microservices
+  # template:
+  #   name: template-name
+  #   variables:
+  #     - key: variable-name
+  #       value: variable-value
