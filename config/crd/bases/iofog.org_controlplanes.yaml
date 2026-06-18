@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.3
-  name: controlplanes.datasance.com
+  name: controlplanes.iofog.org
 spec:
-  group: datasance.com
+  group: iofog.org
   names:
     kind: ControlPlane
     listKind: ControlPlaneList

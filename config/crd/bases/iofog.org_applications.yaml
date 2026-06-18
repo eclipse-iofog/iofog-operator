@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.3
-  name: applications.datasance.com
+  name: applications.iofog.org
 spec:
-  group: datasance.com
+  group: iofog.org
   names:
     kind: Application
     listKind: ApplicationList

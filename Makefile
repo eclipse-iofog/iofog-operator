@@ -3,6 +3,9 @@ OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 VERSION = $(shell grep "^version:" PROJECT | head -1 | sed 's/^version: *//' | tr -d '"' | tr -d ' ')
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 
+# Canonical CRD group in Go source (see apis/*/v3/groupversion_info.go).
+SOURCE_CRD_GROUP = datasance.com
+
 # Dual-mirror flavor (override in CI — see RFC R6–R12)
 OPERATOR_CRD_GROUP ?= iofog.org
 OPERATOR_DEPLOY_API_VERSION ?= iofog.org/v3
@@ -87,8 +90,28 @@ run: build ## Run operator locally (uses KUBECONFIG, optional WATCH_NAMESPACE=TE
 test-local: local-prep deploy-cr ## Install CRDs, build operator, deploy CR; then run: make run
 	@echo "Run the operator in another terminal: make run"
 
-manifests: gen ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+manifests: gen controller-gen rbac-manifests ## Generate manifests (optional FLAVOR=datasance|iofog; default both CRD sets)
+ifdef FLAVOR
+	$(MAKE) manifests-flavor FLAVOR=$(FLAVOR)
+else
+	$(MAKE) manifests-all
+endif
+
+.PHONY: manifests-all manifests-flavor gen-check rbac-manifests
+manifests-all: ## Generate CRD manifests for both mirror flavors
+	$(MAKE) manifests-flavor FLAVOR=datasance
+	$(MAKE) manifests-flavor FLAVOR=iofog
+
+manifests-flavor: controller-gen ## Generate CRD manifests for one flavor (FLAVOR=datasance|iofog)
+	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
+	@case "$(FLAVOR)" in datasance|iofog) ;; *) echo "FLAVOR must be datasance or iofog" && exit 1 ;; esac
+	@hack/gen-crds.sh $(FLAVOR)
+
+rbac-manifests: controller-gen ## Generate RBAC and webhook manifests
+	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..."
+
+gen-check: gen manifests-all ## Verify committed CRDs match generated output
+	git diff --exit-code -- config/crd/bases/
 
 fmt: ## Run gofmt against code
 	@gofmt -s -w .
@@ -150,7 +173,7 @@ controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 ;\
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.3 ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
