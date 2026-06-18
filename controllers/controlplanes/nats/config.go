@@ -103,8 +103,7 @@ cluster: {
 
 leafnodes: {
   port: $NATS_LEAF_PORT$
-  advertise: $NATS_LEAF_ADVERTISE$
-  tls: {
+$NATS_LEAF_ADVERTISE_LINE$  tls: {
     ca_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/ca.crt"
     cert_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.crt"
     key_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.key"
@@ -166,6 +165,10 @@ func escapeConfString(s string) string {
 // BuildServerConf returns server.conf content with placeholders replaced.
 // SELFNAME is left as $SELFNAME so the NATS image can substitute from the pod's metadata.name (downward API).
 func BuildServerConf(p ServerConfParams) string {
+	leafAdvertiseLine := ""
+	if p.LeafAdvertise != "" {
+		leafAdvertiseLine = fmt.Sprintf("  advertise: %s\n", p.LeafAdvertise)
+	}
 	s := serverConfTemplate
 	repl := []string{
 		"$NATS_SERVER_PORT$", fmt.Sprintf("%d", p.ServerPort),
@@ -180,7 +183,7 @@ func BuildServerConf(p ServerConfParams) string {
 		"$NATS_CERT_NAME$", p.CertName,
 		"$NATS_MQTT_CERT_NAME$", p.MqttCertName,
 		"$NATS_LEAF_PORT$", fmt.Sprintf("%d", p.LeafPort),
-		"$NATS_LEAF_ADVERTISE$", p.LeafAdvertise,
+		"$NATS_LEAF_ADVERTISE_LINE$", leafAdvertiseLine,
 		"$NATS_CLUSTER_PORT$", fmt.Sprintf("%d", p.ClusterPort),
 		"$NATS_MQTT_PORT$", fmt.Sprintf("%d", p.MqttPort),
 		"$NATS_JWT_DIR$", p.JWTDir,
