@@ -5,7 +5,7 @@ Control Plane CRDs for the purposes of deploying ioFog Control Planes to Kuberne
 
 ## Build from Source
 
-Go 1.17.9+ is a prerequisite.
+Go 1.26.4 is a prerequisite.
 
 See all `make` commands by running:
 
@@ -20,8 +20,7 @@ make build
 ```
 
 Note that the Makefile targets have a number of tooling dependencies. These are
-installed automatically if not present (as the [Azure build/test pipeline](azure-pipelines.yml) requires them),
-but for local development, you can use your own install method for the tools. They are:
+installed automatically by `make` if not present, but for local development you can use your own install method. They are:
 
 - [controller-gen](https://github.com/kubernetes-sigs/controller-tools): k8s component
 - [kustomize](https://kustomize.io): k8s component
