@@ -35,12 +35,16 @@ BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
 
-# Local testing (no image build)
+# Local testing (no image build) — see hack/local/README.md
 KUBECONFIG ?= $(HOME)/.kube/config
 TEST_NAMESPACE ?= iofog-test
 CR_PATH ?= config/cr/
+LOCAL_CR_PATH ?= config/cr/local
+POSTGRES_PATH ?= config/local/postgres
+LOCAL_SCRIPTS ?= hack/local
 KUBECTL ?= kubectl
 export KUBECONFIG
+export TEST_NAMESPACE
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -79,16 +83,55 @@ create-namespace: ## Create TEST_NAMESPACE if it does not exist (uses KUBECONFIG
 	$(KUBECTL) get namespace $(TEST_NAMESPACE) >/dev/null 2>&1 || $(KUBECTL) create namespace $(TEST_NAMESPACE)
 
 .PHONY: deploy-cr
-deploy-cr: create-namespace ## Deploy CR(s) from CR_PATH into TEST_NAMESPACE (uses KUBECONFIG)
+deploy-cr: create-namespace kustomize ## Deploy CR(s) from CR_PATH into TEST_NAMESPACE (uses KUBECONFIG)
 	$(KUSTOMIZE) build $(CR_PATH) | $(KUBECTL) apply -f - -n $(TEST_NAMESPACE)
 
+.PHONY: local-cluster-up
+local-cluster-up: kustomize ## Create TEST_NAMESPACE and deploy Postgres (OrbStack/k3s local E2E)
+	bash $(LOCAL_SCRIPTS)/cluster-up.sh
+
+.PHONY: local-cluster-down
+local-cluster-down: ## Delete TEST_NAMESPACE and all local E2E resources
+	bash $(LOCAL_SCRIPTS)/cluster-down.sh
+
+.PHONY: local-deploy-cr
+local-deploy-cr: create-namespace kustomize ## Deploy local ControlPlane CR (config/cr/local)
+	$(KUSTOMIZE) build $(LOCAL_CR_PATH) | $(KUBECTL) apply -f - -n $(TEST_NAMESPACE)
+
+.PHONY: local-wait-baseline
+local-wait-baseline: ## Wait until operator created Service, Ingress, Deployment, auth secret
+	bash $(LOCAL_SCRIPTS)/wait-baseline.sh
+
+.PHONY: local-scenario-a
+local-scenario-a: ## E2E scenario A — service patch (controller + router)
+	bash $(LOCAL_SCRIPTS)/scenario-service-patch.sh
+
+.PHONY: local-scenario-b
+local-scenario-b: ## E2E scenario B — ingress patch (host, class, TLS, annotations)
+	bash $(LOCAL_SCRIPTS)/scenario-ingress-patch.sh
+
+.PHONY: local-scenario-c
+local-scenario-c: ## E2E scenario C — auth password patch + secret update
+	bash $(LOCAL_SCRIPTS)/scenario-auth-patch.sh
+
+.PHONY: local-scenarios
+local-scenarios: ## Run E2E scenarios A, B, C in order (operator must be running)
+	bash $(LOCAL_SCRIPTS)/run-scenarios.sh
+
+.PHONY: local-e2e-setup
+local-e2e-setup: local-cluster-up local-prep local-deploy-cr ## Cluster + CRDs + build + Postgres + ControlPlane CR
+	@echo ""
+	@echo "Setup complete. In another terminal run:  make run"
+	@echo "Then wait for baseline:                 make local-wait-baseline"
+	@echo "Run reconcile E2E tests:                  make local-scenarios"
+	@echo "Full guide:                               hack/local/README.md"
+
 .PHONY: run
-run: build ## Run operator locally (uses KUBECONFIG, optional WATCH_NAMESPACE=TEST_NAMESPACE)
+run: build ## Run operator locally (uses KUBECONFIG, WATCH_NAMESPACE=TEST_NAMESPACE)
 	WATCH_NAMESPACE=$(TEST_NAMESPACE) ./bin/iofog-operator
 
 .PHONY: test-local
-test-local: local-prep deploy-cr ## Install CRDs, build operator, deploy CR; then run: make run
-	@echo "Run the operator in another terminal: make run"
+test-local: local-e2e-setup ## Alias for local-e2e-setup; then run operator and scenarios (see hack/local/README.md)
 
 manifests: gen controller-gen rbac-manifests ## Generate manifests (optional FLAVOR=datasance|iofog; default both CRD sets)
 ifdef FLAVOR

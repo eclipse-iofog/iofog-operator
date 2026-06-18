@@ -1,0 +1,63 @@
+# Local E2E ControlPlane — used with: make local-deploy-cr
+# Requires postgres in the same namespace (make local-cluster-up).
+apiVersion: datasance.com/v3
+kind: ControlPlane
+metadata:
+  name: pot
+spec:
+  replicas:
+    controller: 1
+    nats: 2
+  controller:
+    # publicUrl: http://pot.local
+    trustProxy: false
+    https: false
+  database:
+    provider: postgres
+    user: admin
+    host: postgres
+    port: 5432
+    password: localpass
+    databaseName: controller
+    ssl: false
+  auth:
+    mode: embedded
+    bootstrap:
+      username: admin
+      password: "LocalTest12!"   # ≥12 chars; Controller validates at bootstrap
+  images:
+    controller: emirhandurmus/controller:3.8.0-rc.1
+    router: ghcr.io/datasance/router:3.8.0-rc.1
+    nats: ghcr.io/datasance/nats:2.14.2-rc.1
+  nats:
+    enabled: true
+    jetStream:
+      storageSize: "2Gi"
+      memoryStoreSize: "512Mi"
+  services:
+    controller:
+      type: LoadBalancer
+      externalTrafficPolicy: Cluster  # OrbStack/k3s; avoids ingress controller requirement
+    router:
+      type: LoadBalancer
+      externalTrafficPolicy: Cluster  # required on OrbStack/k3s; Local keeps LB pending
+    nats:
+      type: LoadBalancer
+      externalTrafficPolicy: Cluster  # required on OrbStack/k3s; Local keeps LB pending
+    natsServer:
+      type: ClusterIP
+  # ingresses:
+  #   controller:
+  #     host: pot.local
+  #     secretName: ""
+  #     annotations: {}
+  #   router:
+  #     messagePort: 5671
+  #     interiorPort: 55671
+  #     edgePort: 45671
+  #   nats:
+  #     serverPort: 4222
+  #     clusterPort: 6222
+  #     leafPort: 7422
+  #     mqttPort: 8883
+  #     httpPort: 8222
