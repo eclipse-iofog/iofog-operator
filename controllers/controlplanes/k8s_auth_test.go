@@ -155,9 +155,9 @@ func TestLoginIofogClient_AuthModeSelectionErrors(t *testing.T) {
 	const sensitiveSecret = "DoNotLeakThisSecret!"
 
 	tests := []struct {
-		name      string
-		auth      cpv3.Auth
-		objects   []client.Object
+		name       string
+		auth       cpv3.Auth
+		objects    []client.Object
 		wantSubstr string
 	}{
 		{
