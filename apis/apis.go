@@ -80,15 +80,15 @@ func NewAppCustomResource() *extsv1.CustomResourceDefinition {
 
 	return &extsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "apps.datasance.com",
+			Name: "applications.datasance.com",
 		},
 		Spec: extsv1.CustomResourceDefinitionSpec{
 			Group: "datasance.com",
 			Names: extsv1.CustomResourceDefinitionNames{
 				Kind:     "Application",
 				ListKind: "ApplicationList",
-				Plural:   "apps",
-				Singular: "app",
+				Plural:   "applications",
+				Singular: "application",
 			},
 			Scope:    extsv1.NamespaceScoped,
 			Versions: versions,

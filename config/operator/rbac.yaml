@@ -45,7 +45,6 @@ rules:
       - datasance.com
     resources:
       - applications
-      - apps
     verbs:
       - create
       - delete
@@ -57,9 +56,7 @@ rules:
   - apiGroups:
       - datasance.com
     resources:
-      - apps/status
       - applications/status
-      - apps/finalizers
       - applications/finalizers
     verbs:
       - get
