@@ -1,19 +1,3 @@
-/*
-Copyright 2021.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controllers
 
 import (
@@ -22,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	appsv3 "github.com/datasance/iofog-operator/v3/apis/apps/v3"
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -176,7 +160,7 @@ func (r *ApplicationReconciler) deploymentForApp(app *appsv3.Application) (*apps
 		microservice := &app.Spec.Microservices[i]
 		container := corev1.Container{
 			Name:  microservice.Name,
-			Image: fmt.Sprintf("%s, %s", microservice.Images.X86, microservice.Images.ARM),
+			Image: fmt.Sprintf("%s, %s", microservice.Images.AMD64, microservice.Images.ARM),
 		}
 		containers[i] = container
 	}

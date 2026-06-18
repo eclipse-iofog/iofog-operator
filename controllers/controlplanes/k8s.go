@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	iofogclient "github.com/datasance/iofog-go-sdk/v3/pkg/client"
-	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
+	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -524,7 +524,7 @@ func (r *ControlPlaneReconciler) createDefaultNatsHub(iofogClient *iofogclient.C
 		ClusterPort: &clusterPort,
 		LeafPort:    &leafPort,
 		MqttPort:    &mqttPort,
-		HttpPort:    &httpPort,
+		HTTPPort:    &httpPort,
 	}
 	_, err := iofogClient.UpsertNatsHub(req)
 	return err
