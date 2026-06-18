@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
@@ -265,11 +266,35 @@ func (r *ControlPlaneReconciler) createService(ctx context.Context, ms *microser
 			return err
 		}
 
-		// Resource already exists - don't requeue
+		if serviceNeedsPatch(found, svc) {
+			r.log.Info("Updating existing Service", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+			applyServicePatch(found, svc)
+			if err := r.Client.Update(ctx, found); err != nil {
+				return err
+			}
+			continue
+		}
+
 		r.log.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
 	}
 
 	return nil
+}
+
+func serviceNeedsPatch(existing, desired *corev1.Service) bool {
+	if existing.Spec.Type != desired.Spec.Type {
+		return true
+	}
+	if existing.Spec.ExternalTrafficPolicy != desired.Spec.ExternalTrafficPolicy {
+		return true
+	}
+	return !maps.Equal(existing.Annotations, desired.Annotations)
+}
+
+func applyServicePatch(existing, desired *corev1.Service) {
+	existing.Annotations = desired.Annotations
+	existing.Spec.Type = desired.Spec.Type
+	existing.Spec.ExternalTrafficPolicy = desired.Spec.ExternalTrafficPolicy
 }
 
 func (r *ControlPlaneReconciler) createIngress(ctx context.Context, cfg *controllerIngressConfig) error {
@@ -298,14 +323,74 @@ func (r *ControlPlaneReconciler) createIngress(ctx context.Context, cfg *control
 		return err
 	}
 
-	// Resource already exists - don't requeue
-	r.log.Info(" Ingress already exists, updating existing Ingress:", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
-
-	if err := r.Client.Update(ctx, ingress); err != nil {
-		return err
+	if ingressNeedsPatch(found, ingress) {
+		r.log.Info("Updating existing Ingress", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
+		applyIngressPatch(found, ingress)
+		if err := r.Client.Update(ctx, found); err != nil {
+			return err
+		}
+		return nil
 	}
 
+	r.log.Info("Skip reconcile: Ingress already exists", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
 	return nil
+}
+
+func ingressNeedsPatch(existing, desired *networkingv1.Ingress) bool {
+	if !maps.Equal(existing.Annotations, desired.Annotations) {
+		return true
+	}
+	if !ingressClassNameEqual(existing.Spec.IngressClassName, desired.Spec.IngressClassName) {
+		return true
+	}
+	if !ingressTLSEqual(existing.Spec.TLS, desired.Spec.TLS) {
+		return true
+	}
+	return ingressHost(existing) != ingressHost(desired)
+}
+
+func ingressClassNameEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func ingressHost(ing *networkingv1.Ingress) string {
+	if len(ing.Spec.Rules) == 0 {
+		return ""
+	}
+	return ing.Spec.Rules[0].Host
+}
+
+func ingressTLSEqual(a, b []networkingv1.IngressTLS) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].SecretName != b[i].SecretName {
+			return false
+		}
+		if len(a[i].Hosts) != len(b[i].Hosts) {
+			return false
+		}
+		for j := range a[i].Hosts {
+			if a[i].Hosts[j] != b[i].Hosts[j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func applyIngressPatch(existing, desired *networkingv1.Ingress) {
+	existing.Annotations = desired.Annotations
+	existing.Spec.IngressClassName = desired.Spec.IngressClassName
+	existing.Spec.TLS = desired.Spec.TLS
+	existing.Spec.Rules = desired.Spec.Rules
 }
 
 func (r *ControlPlaneReconciler) createServiceAccount(ctx context.Context, ms *microservice) error {
