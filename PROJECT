@@ -2,7 +2,7 @@ domain: datasance.com
 layout: go.kubebuilder.io/v4
 multigroup: true
 projectName: iofog-operator
-repo: github.com/datasance/iofog-operator
+repo: github.com/eclipse-iofog/iofog-operator
 resources:
 - kind: Application
   version: v3

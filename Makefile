@@ -1,11 +1,23 @@
 OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 VERSION = $(shell grep "^version:" PROJECT | head -1 | sed 's/^version: *//' | tr -d '"' | tr -d ' ')
-PREFIX = github.com/datasance/iofog-operator/v3/internal/util
-LDFLAGS += -X $(PREFIX).routerTag=3.7.0
-LDFLAGS += -X $(PREFIX).controllerTag=3.7.3
-LDFLAGS += -X $(PREFIX).natsTag=2.12.4
-LDFLAGS += -X $(PREFIX).repo=ghcr.io/datasance
+PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
+
+# Dual-mirror flavor (override in CI — see RFC R6–R12)
+OPERATOR_CRD_GROUP ?= iofog.org
+OPERATOR_DEPLOY_API_VERSION ?= iofog.org/v3
+OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
+IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
+
+# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:v3.8.0)
+CONTROLLER_IMAGE_TAG ?= v3.8.0
+ROUTER_IMAGE_TAG ?= v3.8.0
+NATS_IMAGE_TAG ?= v3.8.0
+
+LDFLAGS += -X $(PREFIX).routerTag=$(ROUTER_IMAGE_TAG)
+LDFLAGS += -X $(PREFIX).controllerTag=$(CONTROLLER_IMAGE_TAG)
+LDFLAGS += -X $(PREFIX).natsTag=$(NATS_IMAGE_TAG)
+LDFLAGS += -X $(PREFIX).repo=$(IMAGE_REGISTRY)
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
@@ -14,10 +26,9 @@ GOARGS=-gcflags="all=-N -l"
 endif
 
 # Image URL to use all building/pushing image targets
-REGISTRY ?= ghcr.io/datasance
-VERSION_TAG ?= 3.7.2
-IMG ?= $(REGISTRY)/operator:$(VERSION_TAG)
-BUNDLE_IMG ?= $(REGISTRY)/operator-bundle:$(VERSION_TAG)
+VERSION_TAG ?= v3.8.0
+IMG ?= $(IMAGE_REGISTRY)/operator:$(VERSION_TAG)
+BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
 
@@ -89,7 +100,7 @@ gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 docker:
-	docker build -t $(REGISTRY)/$(IMG) .
+	docker build -t $(IMG) .
 
 unit: ## Run unit tests
 	set -o pipefail; go list ./... | xargs -n1 go test  $(GOARGS) -v -parallel 1 2>&1 | tee test.txt
@@ -167,7 +178,17 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker buildx build --platform=linux/amd64 -f bundle.Dockerfile -t $(REGISTRY)/$(BUNDLE_IMG) .
+	docker buildx build --platform=linux/amd64 -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-help:
-	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: ## Show targets and flavor variables
+	@echo "Flavor variables (override at build time):"
+	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_CRD_GROUP $(OPERATOR_CRD_GROUP)
+	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_DEPLOY_API_VERSION $(OPERATOR_DEPLOY_API_VERSION)
+	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_COMPONENT_LABEL_DOMAIN $(OPERATOR_COMPONENT_LABEL_DOMAIN)
+	@printf "  \033[33m%-35s\033[0m %s\n" IMAGE_REGISTRY $(IMAGE_REGISTRY)
+	@printf "  \033[33m%-35s\033[0m %s\n" CONTROLLER_IMAGE_TAG $(CONTROLLER_IMAGE_TAG)
+	@printf "  \033[33m%-35s\033[0m %s\n" ROUTER_IMAGE_TAG $(ROUTER_IMAGE_TAG)
+	@printf "  \033[33m%-35s\033[0m %s\n" NATS_IMAGE_TAG $(NATS_IMAGE_TAG)
+	@printf "  \033[33m%-35s\033[0m %s\n" VERSION_TAG $(VERSION_TAG)
+	@echo ""
+	@grep -h -E '^[a-zA-Z_.-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

@@ -1,16 +1,3 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Datasance Teknoloji A.S.
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package util
 
 import (
@@ -24,7 +11,7 @@ import (
 
 	"golang.org/x/oauth2/clientcredentials"
 
-	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 )
 
 // UpdateECNViewerClientRootURL updates the root URL for the ecnviewerclient

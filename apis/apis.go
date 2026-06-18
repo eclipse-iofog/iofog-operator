@@ -1,8 +1,8 @@
 package apis
 
 import (
-	appsv3 "github.com/datasance/iofog-operator/v3/apis/apps/v3"
-	cpv3 "github.com/datasance/iofog-operator/v3/apis/controlplanes/v3"
+	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	extsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
