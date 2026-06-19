@@ -12,6 +12,7 @@ import (
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/nats"
 	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/auth/consoleclient"
 	openidutil "github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 	util "github.com/eclipse-iofog/iofog-operator/v3/internal/util/certs"
 	pk8s "github.com/eclipse-iofog/iofog-operator/v3/pkg/k8s"
@@ -125,6 +126,20 @@ func (r *ControlPlaneReconciler) reconcileVaultCredentialsSecret(ctx context.Con
 		return true, nil
 	}
 	return false, nil
+}
+
+func (r *ControlPlaneReconciler) consoleClientUpdater() consoleclient.Updater {
+	if r.ConsoleClientUpdater != nil {
+		return r.ConsoleClientUpdater
+	}
+	return &consoleclient.NoopUpdater{Log: r.log}
+}
+
+func (r *ControlPlaneReconciler) updateConsoleClientURLs(ctx context.Context, consoleURL string) error {
+	if consoleURL == "" {
+		return nil
+	}
+	return r.consoleClientUpdater().UpdateConsoleURLs(ctx, consoleclient.ConfigFromAuth(r.cp.Spec.Auth), consoleURL)
 }
 
 func (r *ControlPlaneReconciler) reconcileAuthCredentialsSecret(ctx context.Context, ms *microservice) (shouldRestartPod bool, err error) {
@@ -293,6 +308,9 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	applyControllerAccess(config, access, r.cp.Spec.Controller.TrustProxy)
 	if needLBIP {
 		return op.ReconcileWithRequeue(time.Second * 10) //nolint:gomnd
+	}
+	if err := r.updateConsoleClientURLs(ctx, config.consoleUrl); err != nil {
+		r.log.Info(fmt.Sprintf("Failed to update console client URLs for ControlPlane %s: %s", r.cp.Name, err.Error()))
 	}
 	ms = newControllerMicroservice(r.cp.Namespace, config)
 

@@ -6,6 +6,7 @@ import (
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/auth/consoleclient"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,10 +17,11 @@ import (
 // ControlPlaneReconciler reconciles a ControlPlane object.
 type ControlPlaneReconciler struct {
 	client.Client
-	Log    logr.Logger
-	log    logr.Logger
-	Scheme *runtime.Scheme
-	cp     cpv3.ControlPlane
+	Log                  logr.Logger
+	log                  logr.Logger
+	Scheme               *runtime.Scheme
+	cp                   cpv3.ControlPlane
+	ConsoleClientUpdater consoleclient.Updater
 }
 
 // +kubebuilder:rbac:groups=datasance.com,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete

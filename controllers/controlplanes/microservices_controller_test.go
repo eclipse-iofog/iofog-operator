@@ -45,3 +45,21 @@ func TestNewControllerMicroservice_ConsolePortFromCR(t *testing.T) {
 	}
 	require.Equal(t, "9000", consoleEnv)
 }
+
+func TestNewControllerMicroservice_ConsoleURLFromCR(t *testing.T) {
+	ms := newControllerMicroservice("pot-ns", &controllerMicroserviceConfig{
+		replicas:   1,
+		consoleUrl: "https://ui.example.com",
+		db:         &cpv3.Database{Provider: "postgres"},
+		auth:       &cpv3.Auth{Mode: cpv3.AuthModeEmbedded},
+	})
+
+	var consoleURL string
+	for _, e := range ms.containers[0].env {
+		if e.Name == "CONSOLE_URL" {
+			consoleURL = e.Value
+			break
+		}
+	}
+	require.Equal(t, "https://ui.example.com", consoleURL)
+}
