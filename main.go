@@ -4,9 +4,7 @@ import (
 	"flag"
 	"os"
 
-	appsv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/apps/v3"
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
-	appscontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/apps"
 	controlplanescontroller "github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -25,7 +23,6 @@ var scheme = runtime.NewScheme() //nolint:gochecknoglobals
 func init() { //nolint:gochecknoinits
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(appsv3.AddToScheme(scheme))
 	utilruntime.Must(cpv3.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 } //nolint:wsl
@@ -69,15 +66,6 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
-	if err = (&appscontroller.ApplicationReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Application"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
 	}
 
