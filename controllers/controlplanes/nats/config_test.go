@@ -25,9 +25,10 @@ func TestBuildServerConf_OmitsLeafAdvertiseWhenEmpty(t *testing.T) {
 		MaxFileStore:   "2G",
 	})
 
-	require.NotContains(t, conf, "advertise:")
+	require.NotContains(t, conf, "  advertise:")
 	require.Contains(t, conf, "leafnodes: {")
 	require.Contains(t, conf, "port: 7422")
+	require.Contains(t, conf, "no_advertise: true")
 }
 
 func TestBuildServerConf_IncludesLeafAdvertiseWhenSet(t *testing.T) {
@@ -48,8 +49,9 @@ func TestBuildServerConf_IncludesLeafAdvertiseWhenSet(t *testing.T) {
 		MaxFileStore:   "2G",
 	})
 
-	require.Contains(t, conf, "advertise: nats.example.com:7422")
-	idxAdvertise := strings.Index(conf, "advertise:")
-	idxTLS := strings.Index(conf, "tls: {")
+	require.Contains(t, conf, "  advertise: nats.example.com:7422")
+	leafSection := conf[strings.Index(conf, "leafnodes: {"):]
+	idxAdvertise := strings.Index(leafSection, "  advertise:")
+	idxTLS := strings.Index(leafSection, "  tls: {")
 	require.Greater(t, idxTLS, idxAdvertise)
 }
