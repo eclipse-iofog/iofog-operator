@@ -8,7 +8,6 @@ SOURCE_CRD_GROUP = datasance.com
 
 # Dual-mirror flavor (override in CI — see RFC R6–R12)
 OPERATOR_CRD_GROUP ?= iofog.org
-OPERATOR_DEPLOY_API_VERSION ?= iofog.org/v3
 OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
 
@@ -249,7 +248,6 @@ bundle-build: ## Build the bundle image.
 help: ## Show targets and flavor variables
 	@echo "Flavor variables (override at build time):"
 	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_CRD_GROUP $(OPERATOR_CRD_GROUP)
-	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_DEPLOY_API_VERSION $(OPERATOR_DEPLOY_API_VERSION)
 	@printf "  \033[33m%-35s\033[0m %s\n" OPERATOR_COMPONENT_LABEL_DOMAIN $(OPERATOR_COMPONENT_LABEL_DOMAIN)
 	@printf "  \033[33m%-35s\033[0m %s\n" IMAGE_REGISTRY $(IMAGE_REGISTRY)
 	@printf "  \033[33m%-35s\033[0m %s\n" CONTROLLER_IMAGE_TAG $(CONTROLLER_IMAGE_TAG)

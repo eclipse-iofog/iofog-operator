@@ -22,7 +22,6 @@ iofog)
 esac
 
 GV_FILES=(
-	apis/apps/v3/groupversion_info.go
 	apis/controlplanes/v3/groupversion_info.go
 )
 
@@ -42,5 +41,5 @@ if [[ "$TARGET_GROUP" != "$SOURCE_GROUP" ]]; then
 fi
 
 controller-gen crd:crdVersions=v1,allowDangerousTypes=true \
-	paths="./apis/..." \
+	paths="./apis/controlplanes/..." \
 	output:crd:artifacts:config=config/crd/bases
