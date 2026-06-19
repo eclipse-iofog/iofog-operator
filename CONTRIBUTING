@@ -49,3 +49,17 @@ https://www.eclipse.org/projects/handbook/#resources-commit
 Contact the project developers via the project's "dev" list.
 
 * https://dev.eclipse.org/mailman/listinfo/iofog-dev
+
+## CI repository variables
+
+The same git SHA is built on both [eclipse-iofog/iofog-operator](https://github.com/eclipse-iofog/iofog-operator) and [Datasance/iofog-operator](https://github.com/Datasance/iofog-operator). Mirror-specific publish settings come from **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables), resolved by `.github/actions/set-build-env`.
+
+| Variable | Eclipse default | Datasance default |
+|----------|-----------------|-------------------|
+| `IMAGE_REGISTRY` | `ghcr.io/eclipse-iofog` | `ghcr.io/datasance` |
+| `OPERATOR_CRD_GROUP` | `iofog.org` | `datasance.com` |
+| `HELM_REPO_BASE_URL` | `https://eclipse-iofog.github.io/iofog-operator` | `https://datasance.github.io/iofog-operator` |
+| `OCI_SOURCE_REPO` | `https://github.com/eclipse-iofog/iofog-operator` | `https://github.com/Datasance/iofog-operator` |
+| `OPERATOR_COMPONENT_LABEL_DOMAIN` | `iofog.org` | `datasance.com` |
+
+When a variable is unset, the action picks defaults from `github.repository`. Override any value explicitly on a mirror when needed. Preflight CI (`ci.yml`) does not publish images; release (`release.yml`) pushes container images and manifest tarballs on `v*` tags only.

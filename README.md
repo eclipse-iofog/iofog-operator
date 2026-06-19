@@ -1,5 +1,7 @@
 # ioFog Operator
 
+[![govulncheck](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/govulncheck.yml)
+
 Operator is a component of the ioFog Kubernetes Control Plane. It is responsible for consuming
 Control Plane CRDs for the purposes of deploying ioFog Control Planes to Kubernetes clusters.
 
