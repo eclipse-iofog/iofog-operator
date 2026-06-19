@@ -55,7 +55,7 @@ wait_baseline_resources() {
     fi
     sleep 5
   done
-  die "Timed out waiting for baseline resources. Is 'make run' running in another terminal?"
+  die "Timed out waiting for baseline resources. Is the operator running (make run or local-deploy-operator)?"
 }
 
 wait_controlplane_ready() {

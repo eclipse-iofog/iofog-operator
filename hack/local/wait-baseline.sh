@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wait until operator has created baseline resources (run after make run + make local-deploy-cr).
+# Wait until operator has created baseline resources (after make run or local-deploy-operator + local-deploy-cr).
 
 set -euo pipefail
 

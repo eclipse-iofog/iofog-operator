@@ -60,6 +60,31 @@ make local-scenarios        # run scenarios A → B → C
 
 Or combine steps 6–8: `make local-scenarios`.
 
+## Published operator image (in-cluster)
+
+Same E2E scenarios as above, but the operator runs from a **published container** instead of `make run`. No local build required.
+
+```bash
+make local-e2e-setup-image IMG=ghcr.io/datasance/operator:3.8.0-beta.0
+make local-wait-baseline
+make local-scenarios
+```
+
+This runs:
+
+1. `make local-cluster-up` — namespace `iofog-test` + Postgres
+2. `make local-deploy-operator` — Deployment + RBAC from `IMG` in `TEST_NAMESPACE`
+3. `make install` — cluster CRDs
+4. `make local-deploy-cr` — local ControlPlane CR
+
+Requires pull access to `IMG` and to component images in `config/cr/local/controlplane.yaml`.
+
+Deploy only the operator (e.g. after cluster prep):
+
+```bash
+make local-deploy-operator IMG=ghcr.io/datasance/operator:3.8.0-beta.0
+```
+
 ## Test scenarios
 
 ### Scenario A — Service patch
@@ -138,6 +163,7 @@ config/local/postgres/              # Postgres for controller DB
 hack/local/
   cluster-up.sh                     # Namespace + Postgres
   cluster-down.sh                   # Delete namespace
+  deploy-operator.sh                # Deploy published operator image (IMG)
   wait-baseline.sh                  # Wait for operator resources
   scenario-service-patch.sh         # Scenario A
   scenario-ingress-patch.sh         # Scenario B
@@ -154,7 +180,7 @@ hack/local/
 | Postgres not ready | `kubectl get pods -n iofog-test` — re-run `make local-cluster-up` |
 | Image pull errors | Log in to GHCR or edit images in `config/cr/local/controlplane.yaml` |
 | Scenario fails after prior run | Scenarios are cumulative; run `make local-cluster-down` and setup again for a clean run |
-| Operator not reconciling | Check `WATCH_NAMESPACE` matches `TEST_NAMESPACE` |
+| Operator not reconciling | Check operator pod: `kubectl get pods -n iofog-test -l name=iofog-operator`. For binary flow, `WATCH_NAMESPACE` must match `TEST_NAMESPACE` |
 
 ## Teardown
 

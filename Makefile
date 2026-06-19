@@ -124,6 +124,11 @@ local-scenario-c: ## E2E scenario C — auth password patch + secret update
 local-scenarios: ## Run E2E scenarios A, B, C in order (operator must be running)
 	bash $(LOCAL_SCRIPTS)/run-scenarios.sh
 
+.PHONY: local-deploy-operator
+local-deploy-operator: kustomize create-namespace ## Deploy published operator image (IMG) into TEST_NAMESPACE
+	@test -n "$(IMG)" || (echo "IMG is required, e.g. IMG=ghcr.io/datasance/operator:3.8.0-beta.1" && exit 1)
+	bash $(LOCAL_SCRIPTS)/deploy-operator.sh
+
 .PHONY: local-e2e-setup
 local-e2e-setup: local-cluster-up local-prep local-deploy-cr ## Cluster + CRDs + build + Postgres + ControlPlane CR
 	@echo ""
@@ -131,6 +136,14 @@ local-e2e-setup: local-cluster-up local-prep local-deploy-cr ## Cluster + CRDs +
 	@echo "Then wait for baseline:                 make local-wait-baseline"
 	@echo "Run reconcile E2E tests:                  make local-scenarios"
 	@echo "Full guide:                               hack/local/README.md"
+
+.PHONY: local-e2e-setup-image
+local-e2e-setup-image: local-cluster-up local-deploy-operator install local-deploy-cr ## Local E2E with published operator image (IMG=...)
+	@echo ""
+	@echo "Setup complete. Wait for baseline:  make local-wait-baseline"
+	@echo "Run reconcile E2E tests:           make local-scenarios"
+	@echo "Operator image: $(IMG)"
+	@echo "Full guide:                         hack/local/README.md"
 
 .PHONY: run
 run: build ## Run operator locally (uses KUBECONFIG, WATCH_NAMESPACE=TEST_NAMESPACE)
