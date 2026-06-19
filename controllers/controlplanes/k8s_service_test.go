@@ -42,6 +42,33 @@ func TestCreateService_PatchesExistingServiceType(t *testing.T) {
 	require.Equal(t, corev1.ServiceTypeLoadBalancer, updated.Spec.Type)
 }
 
+func TestCreateService_PatchesConsolePort(t *testing.T) {
+	existing := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "controller",
+			Namespace: "pot-ns",
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{{
+				Name: "controller-api", Port: 51121, TargetPort: intstr.FromInt(51121), Protocol: corev1.ProtocolTCP,
+			}},
+		},
+	}
+
+	r := newServiceTestReconciler(t, existing)
+	ms := testControllerMicroservice("LoadBalancer", nil, "")
+
+	require.NoError(t, r.createService(context.Background(), ms))
+
+	updated := &corev1.Service{}
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "controller"}, updated))
+	require.Len(t, updated.Spec.Ports, 2)
+	require.Equal(t, controllerConsolePortName, updated.Spec.Ports[1].Name)
+	require.Equal(t, int32(controllerConsoleServicePort), updated.Spec.Ports[1].Port)
+	require.Equal(t, int32(defaultControllerConsolePort), updated.Spec.Ports[1].TargetPort.IntVal)
+}
+
 func TestCreateService_PatchesAnnotationsAndExternalTrafficPolicy(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -177,9 +204,7 @@ func TestCreateService_SkipsUpdateWhenUnchanged(t *testing.T) {
 		Spec: corev1.ServiceSpec{
 			Type:                  corev1.ServiceTypeLoadBalancer,
 			ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyTypeLocal,
-			Ports: []corev1.ServicePort{{
-				Name: "controller-api", Port: 51121, TargetPort: intstr.FromInt(51121),
-			}},
+			Ports: controllerServicePortsFixture(),
 		},
 	}
 
@@ -223,9 +248,14 @@ func testControllerMicroservice(serviceType string, annotations map[string]strin
 			serviceType:        serviceType,
 			serviceAnnotations: annotations,
 			trafficPolicy:      trafficPolicy,
-			ports: []corev1.ServicePort{{
-				Name: "controller-api", Port: 51121, TargetPort: intstr.FromInt(51121),
-			}},
+			ports:              controllerServicePortsFixture(),
 		}},
+	}
+}
+
+func controllerServicePortsFixture() []corev1.ServicePort {
+	return []corev1.ServicePort{
+		{Name: "controller-api", Port: 51121, TargetPort: intstr.FromInt(51121), Protocol: corev1.ProtocolTCP},
+		{Name: controllerConsolePortName, Port: controllerConsoleServicePort, TargetPort: intstr.FromInt(defaultControllerConsolePort), Protocol: corev1.ProtocolTCP},
 	}
 }

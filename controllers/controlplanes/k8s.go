@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"reflect"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
@@ -288,13 +289,38 @@ func serviceNeedsPatch(existing, desired *corev1.Service) bool {
 	if existing.Spec.ExternalTrafficPolicy != desired.Spec.ExternalTrafficPolicy {
 		return true
 	}
+	if !servicePortsEqual(existing.Spec.Ports, desired.Spec.Ports) {
+		return true
+	}
 	return !maps.Equal(existing.Annotations, desired.Annotations)
+}
+
+func servicePortsEqual(existing, desired []corev1.ServicePort) bool {
+	if len(existing) != len(desired) {
+		return false
+	}
+	byName := func(ports []corev1.ServicePort) map[string]corev1.ServicePort {
+		m := make(map[string]corev1.ServicePort, len(ports))
+		for _, p := range ports {
+			m[p.Name] = p
+		}
+		return m
+	}
+	ex := byName(existing)
+	for name, want := range byName(desired) {
+		got, ok := ex[name]
+		if !ok || got.Port != want.Port || got.Protocol != want.Protocol || got.TargetPort != want.TargetPort {
+			return false
+		}
+	}
+	return true
 }
 
 func applyServicePatch(existing, desired *corev1.Service) {
 	existing.Annotations = desired.Annotations
 	existing.Spec.Type = desired.Spec.Type
 	existing.Spec.ExternalTrafficPolicy = desired.Spec.ExternalTrafficPolicy
+	existing.Spec.Ports = desired.Spec.Ports
 }
 
 func (r *ControlPlaneReconciler) createIngress(ctx context.Context, cfg *controllerIngressConfig) error {
@@ -346,7 +372,14 @@ func ingressNeedsPatch(existing, desired *networkingv1.Ingress) bool {
 	if !ingressTLSEqual(existing.Spec.TLS, desired.Spec.TLS) {
 		return true
 	}
-	return ingressHost(existing) != ingressHost(desired)
+	if ingressHost(existing) != ingressHost(desired) {
+		return true
+	}
+	return !ingressRulesEqual(existing.Spec.Rules, desired.Spec.Rules)
+}
+
+func ingressRulesEqual(a, b []networkingv1.IngressRule) bool {
+	return reflect.DeepEqual(a, b)
 }
 
 func ingressClassNameEqual(a, b *string) bool {

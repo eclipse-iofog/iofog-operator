@@ -43,6 +43,30 @@ func TestCreateIngress_PatchesHostClassTLSAndAnnotations(t *testing.T) {
 	require.Equal(t, "new-tls", updated.Spec.TLS[0].SecretName)
 	require.Equal(t, []string{"new.example.com"}, updated.Spec.TLS[0].Hosts)
 	require.Equal(t, "new.example.com", updated.Spec.Rules[0].Host)
+	require.Len(t, updated.Spec.Rules[0].HTTP.Paths, 2)
+	require.Equal(t, controllerConsolePortName, updated.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name)
+	require.Equal(t, "controller-api", updated.Spec.Rules[0].HTTP.Paths[1].Backend.Service.Port.Name)
+}
+
+func TestCreateIngress_PatchesLegacyConsoleBackend(t *testing.T) {
+	legacy := newControllerIngress("pot-ns", "test-cp", &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+	})
+	legacy.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name = "ecn-viewer"
+	legacy.ResourceVersion = "1"
+
+	r := newIngressTestReconciler(t, legacy)
+	cfg := &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+	}
+
+	require.NoError(t, r.createIngress(context.Background(), cfg))
+
+	updated := &networkingv1.Ingress{}
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: controllerIngressName}, updated))
+	require.Equal(t, controllerConsolePortName, updated.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name)
 }
 
 func TestCreateIngress_SkipsUpdateWhenUnchanged(t *testing.T) {
