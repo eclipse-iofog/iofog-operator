@@ -48,6 +48,8 @@ endif
 VERSION_TAG ?= 3.8.0-rc.1
 IMG ?= $(IMAGE_REGISTRY)/operator:$(VERSION_TAG)
 BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
+BUNDLE_PACKAGE ?= iofog-operator
+BUNDLE_CHANNEL ?= stable
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
 
@@ -275,11 +277,13 @@ release-manifests: kustomize ## Build manifest tarball for one flavor (FLAVOR + 
 	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) hack/release-manifests.sh $(FLAVOR) $(VERSION_TAG)
 
 .PHONY: bundle
-bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
-	operator-sdk generate kustomize manifests -q
-	cd config/operator && $(KUSTOMIZE) edit set image ghcr.io/datasance/operator=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION_TAG) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+bundle: kustomize ## Generate flavor-specific OLM bundle (FLAVOR=datasance|iofog required)
+	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
+	@case "$(FLAVOR)" in datasance|iofog) ;; *) echo "FLAVOR must be datasance or iofog" && exit 1 ;; esac
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@chmod +x hack/gen-bundle.sh
+	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) BUNDLE_PACKAGE=$(BUNDLE_PACKAGE) BUNDLE_CHANNEL=$(BUNDLE_CHANNEL) \
+		hack/gen-bundle.sh $(FLAVOR) $(VERSION_TAG)
 
 
 .PHONY: bundle-build

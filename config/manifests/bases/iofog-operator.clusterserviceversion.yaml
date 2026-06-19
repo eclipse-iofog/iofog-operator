@@ -112,7 +112,7 @@ spec:
       name: controlplanes.datasance.com
       version: v3
   description: ioFog Control Plane on Kubernetes
-  displayName: iofog-operator
+  displayName: Kubernetes Operator for Eclipse ioFog and Datasance PoT
   icon:
   - base64data: ""
     mediatype: ""
