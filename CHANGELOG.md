@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OLM** — package `iofog-operator`, channel `stable`; flavor-aware bundle via `make bundle`.
 - **Release artifacts per flavor** — manifest tarballs (`manifests-iofog-*`, `manifests-datasance-*`), OLM bundle images, Helm chart index entries.
 
+### Deprecated
+
+- **[Datasance/helm](https://github.com/Datasance/helm)** — standalone Helm repo (`https://datasance.github.io/helm`, chart `pot`) is retired. Charts ship from **`charts/iofog-operator/`** in this repository and publish to each mirror's gh-pages (`https://datasance.github.io/iofog-operator`, `https://eclipse-iofog.github.io/iofog-operator`). Redirect README stub: [`docs/helm/datasance-helm-deprecation-README.md`](docs/helm/datasance-helm-deprecation-README.md).
+
 ### Changed
 
 - **Go toolchain** — Go **1.26.4**; module path **`github.com/eclipse-iofog/iofog-operator/v3`**; SDK **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.8.0`** train.

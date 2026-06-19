@@ -53,7 +53,7 @@ Choose the channel that matches your fleet — Eclipse (`iofog.org/v3`) or Datas
 
 ### Helm (recommended)
 
-Helm charts are published to each mirror's gh-pages index:
+Helm charts are published to each mirror's gh-pages index. The legacy standalone repo [Datasance/helm](https://github.com/Datasance/helm) (`datasance.github.io/helm`, chart `pot`) is **deprecated** — use the URLs below instead.
 
 | Mirror | `helm repo add` URL |
 |--------|---------------------|
