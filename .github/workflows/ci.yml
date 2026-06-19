@@ -92,10 +92,10 @@ jobs:
           OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171bb7bf4a8c327a584d0cc5cc47ecf4f813 # v3.11.1
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
 
       - name: Build operator image
-        uses: docker/build-push-action@263435318d21b8f00a28725e9c16f1e5b3e56b4 # v6.18.0
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: Dockerfile
@@ -120,7 +120,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install Helm
-        uses: azure/setup-helm@5115966013bdb63d80f07dc3c4e7b8cdc811a0af # v4.3.0
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
 
       - name: Lint chart (${{ matrix.flavor }})
         env:
