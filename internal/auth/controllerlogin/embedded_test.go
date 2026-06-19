@@ -68,7 +68,7 @@ func TestEmbeddedBootstrapLogin_InvalidCredentials(t *testing.T) {
 }
 
 func TestUserLoginURL(t *testing.T) {
-	got, err := userLoginURL("http://controller.pot-ns.svc.cluster.local:51121/api/v3")
+	got, err := userLoginURL("http://controller.cp-ns.svc.cluster.local:51121/api/v3")
 	require.NoError(t, err)
-	require.Equal(t, "http://controller.pot-ns.svc.cluster.local:51121/api/v3/user/login", got)
+	require.Equal(t, "http://controller.cp-ns.svc.cluster.local:51121/api/v3/user/login", got)
 }

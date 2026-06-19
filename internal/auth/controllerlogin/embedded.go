@@ -15,7 +15,7 @@ import (
 
 type loginRequest struct {
 	Email    string `json:"email"`
-	Password string `json:"password"`
+	Password string `json:"password"` // #nosec G117 -- Controller login API field name, not a stored credential
 }
 
 type loginResponse struct {
@@ -30,7 +30,7 @@ func EmbeddedBootstrapLogin(clt *iofogclient.Client, username, password string) 
 		return err
 	}
 
-	body, err := json.Marshal(loginRequest{Email: username, Password: password})
+	body, err := json.Marshal(loginRequest{Email: username, Password: password}) // #nosec G117 -- marshaling login payload for Controller API
 	if err != nil {
 		return fmt.Errorf("marshal login request: %w", err)
 	}

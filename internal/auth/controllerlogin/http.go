@@ -7,6 +7,6 @@ import (
 
 func insecureHTTPTransport() *http.Transport {
 	return &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // IdP/Controller commonly use self-signed TLS
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 -- Controller/IdP commonly use self-signed TLS
 	}
 }

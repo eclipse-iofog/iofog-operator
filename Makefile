@@ -1,5 +1,21 @@
 OS = $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
+GOBIN ?= $(shell go env GOBIN)
+ifeq ($(GOBIN),)
+GOBIN := $(shell go env GOPATH)/bin
+endif
+
+export PATH := $(GOBIN):$(PATH)
+
+# golangci-lint — pinned version; override with GOLANGCI_LINT_VERSION=vX.Y.Z
+GOLANGCI_LINT_VERSION ?= v2.12.2
+GOLANGCI_LINT         := $(GOBIN)/golangci-lint
+
+# Security tooling — gosec runs outside golangci-lint (edgelet / go-sdk pattern)
+GOVULNCHECK_VERSION ?= v1.1.4
+GOSEC_VERSION       ?= v2.22.2
+GOSEC_SCOPE         := ./...
+
 VERSION = $(shell grep "^version:" PROJECT | head -1 | sed 's/^version: *//' | tr -d '"' | tr -d ' ')
 PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 
@@ -11,15 +27,16 @@ OPERATOR_CRD_GROUP ?= iofog.org
 OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
 
-# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:v3.8.0)
-CONTROLLER_IMAGE_TAG ?= v3.8.0
-ROUTER_IMAGE_TAG ?= v3.8.0
-NATS_IMAGE_TAG ?= v3.8.0
+# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:3.8.0)
+CONTROLLER_IMAGE_TAG ?= 3.8.0-rc.1
+ROUTER_IMAGE_TAG ?= 3.8.0-rc.1
+NATS_IMAGE_TAG ?= 3.8.0-rc.1
 
 LDFLAGS += -X $(PREFIX).routerTag=$(ROUTER_IMAGE_TAG)
 LDFLAGS += -X $(PREFIX).controllerTag=$(CONTROLLER_IMAGE_TAG)
 LDFLAGS += -X $(PREFIX).natsTag=$(NATS_IMAGE_TAG)
 LDFLAGS += -X $(PREFIX).repo=$(IMAGE_REGISTRY)
+LDFLAGS += -X $(PREFIX).componentLabelDomain=$(OPERATOR_COMPONENT_LABEL_DOMAIN)
 
 export CGO_ENABLED ?= 0
 ifeq (${DEBUG},)
@@ -28,7 +45,7 @@ GOARGS=-gcflags="all=-N -l"
 endif
 
 # Image URL to use all building/pushing image targets
-VERSION_TAG ?= v3.8.0
+VERSION_TAG ?= 3.8.0-rc.1
 IMG ?= $(IMAGE_REGISTRY)/operator:$(VERSION_TAG)
 BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -44,18 +61,6 @@ LOCAL_SCRIPTS ?= hack/local
 KUBECTL ?= kubectl
 export KUBECONFIG
 export TEST_NAMESPACE
-
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
-
-# Check if GOBIN is an absolute path
-ifneq ($(shell [ -d $(GOBIN) ] && echo yes),yes)
-$(error GOBIN must be set to an absolute path and exist)
-endif
 
 all: build
 
@@ -152,14 +157,48 @@ manifests-flavor: controller-gen ## Generate CRD manifests for one flavor (FLAVO
 rbac-manifests: controller-gen ## Generate RBAC and webhook manifests
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..."
 
-gen-check: gen manifests-all ## Verify committed CRDs match generated output
-	git diff --exit-code -- config/crd/bases/
+gen-check: gen manifests-all ## Verify committed CRDs match dual-flavor CRD output
+	@git diff --exit-code -- config/crd/bases/ \
+		|| (echo "ERROR: CRD drift — run 'make manifests' and commit" && exit 1)
+	@echo "config/crd/bases/ is up to date"
 
 fmt: ## Run gofmt against code
 	@gofmt -s -w .
 
-lint: golangci-lint fmt ## Lint the source
-	@$(GOLANGCI_LINT) run --timeout 5m0s
+$(GOLANGCI_LINT):
+	@echo "⬇️  Installing golangci-lint $(GOLANGCI_LINT_VERSION) → $(GOBIN)..."
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+		| sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
+	@echo "✓ golangci-lint $(GOLANGCI_LINT_VERSION) installed"
+
+.PHONY: install-lint
+install-lint: $(GOLANGCI_LINT) ## Install golangci-lint (pinned to GOLANGCI_LINT_VERSION)
+	@$(GOLANGCI_LINT) version
+
+lint: $(GOLANGCI_LINT) ## Run linters (auto-installs golangci-lint if needed)
+	@echo "Running golangci-lint $(GOLANGCI_LINT_VERSION)..."
+	@$(GOLANGCI_LINT) run --config .golangci.yaml ./...
+
+.PHONY: security-code vulncheck quality
+security-code: ## Static Go security analysis (gosec; not in golangci-lint)
+	@echo "🔍 Running Go static security analysis..."
+	@if ! command -v gosec >/dev/null 2>&1; then \
+		echo "⬇️  Installing gosec $(GOSEC_VERSION)..."; \
+		go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION); \
+	fi
+	@gosec -exclude=G101 -exclude-generated $(GOSEC_SCOPE)
+
+vulncheck: ## Dependency vulnerability scan (govulncheck + go mod verify)
+	@echo "🔐 Running govulncheck..."
+	@if ! command -v govulncheck >/dev/null 2>&1; then \
+		echo "⬇️  Installing govulncheck $(GOVULNCHECK_VERSION)..."; \
+		go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION); \
+	fi
+	@govulncheck ./...
+	@echo "🔍 Verifying module integrity..."
+	@go mod verify
+
+quality: lint security-code vulncheck ## Full quality gate (lint + gosec + govulncheck)
 
 gen: controller-gen ## Generate code using controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -200,17 +239,6 @@ ifeq (, $(shell which kubectl))
 	}
 endif
 
-golangci-lint: ## Install golangci
-ifeq (, $(shell which golangci-lint))
-	@{ \
-	set -e ;\
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 ;\
-	}
-GOLANGCI_LINT=$(GOBIN)/golangci-lint
-else
-GOLANGCI_LINT=$(shell which golangci-lint)
-endif
-
 controller-gen: ## Install controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
@@ -232,6 +260,19 @@ KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
 endif
+
+.PHONY: release-manifests release-manifests-all
+release-manifests-all: kustomize ## Build manifest tarballs for both flavors (VERSION_TAG required)
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@chmod +x hack/release-manifests.sh
+	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) hack/release-manifests.sh datasance $(VERSION_TAG)
+	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) hack/release-manifests.sh iofog $(VERSION_TAG)
+
+release-manifests: kustomize ## Build manifest tarball for one flavor (FLAVOR + VERSION_TAG required)
+	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@chmod +x hack/release-manifests.sh
+	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) hack/release-manifests.sh $(FLAVOR) $(VERSION_TAG)
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.

@@ -238,7 +238,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 
 	// get scheme for controller endpoint
 	var scheme string
-	if config.https == nil || *config.https == false {
+	if config.https == nil || !*config.https {
 		scheme = "http"
 	} else {
 		scheme = "https"
@@ -941,8 +941,8 @@ func (r *ControlPlaneReconciler) createRouterSecrets(namespace string, ms *micro
 	existingLocalServer := &corev1.Secret{}
 	siteSecretAddress := fmt.Sprintf("%s.%s.svc.cluster.local,%s", ms.name, namespace, address)
 	localSecretAddress := fmt.Sprintf("%s.%s.svc.cluster.local,%s", ms.name, namespace, address)
-	siteSecretSubject := fmt.Sprintf("iofog-router")
-	localSecretSubject := fmt.Sprintf("iofog-router-local")
+	siteSecretSubject := "iofog-router"
+	localSecretSubject := "iofog-router-local"
 
 	// Try to get existing secrets
 	err = r.Client.Get(context.Background(), types.NamespacedName{Name: SiteCaSecret, Namespace: namespace}, existingSiteCA)
