@@ -156,7 +156,7 @@ func GenerateSecret(name string, subject string, hosts string, expiration time.D
 	if ca != nil {
 		secret.Data["ca.crt"] = caCert.CrtData
 	} else {
-		secret.Data["ca.crt"] = secret.Data["tls.crt"] //self.signed
+		secret.Data["ca.crt"] = secret.Data["tls.crt"] // self-signed
 	}
 
 	return secret
@@ -165,7 +165,7 @@ func GenerateSecret(name string, subject string, hosts string, expiration time.D
 func DecodeCertificate(data []byte) (*x509.Certificate, error) {
 	b, _ := pem.Decode(data)
 	if b == nil {
-		return nil, fmt.Errorf("Could not decode PEM block from data")
+		return nil, fmt.Errorf("could not decode PEM block from data")
 	}
 	return x509.ParseCertificate(b.Bytes)
 }

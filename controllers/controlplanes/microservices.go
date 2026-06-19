@@ -1,16 +1,3 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Contributors to the Eclipse ioFog Project
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package controllers
 
 import (
@@ -31,28 +18,27 @@ import (
 )
 
 const (
-	routerName                                     = "router"
-	controllerName                                 = "controller"
-	controllerCredentialsSecretName                = "controller-credentials"
-	emailSecretKey                                 = "email"
-	passwordSecretKey                              = "password"
-	controlllerAuthCredentialsSecretName           = "controller-auth-credentials" //nolint:gosec
-	controlllerAuthUrlSecretKey                    = "auth-url"
-	controlllerAuthRealmSecretKey                  = "auth-realm"
-	controlllerAuthRealmKeySecretKey               = "auth-realm-key"
-	controlllerAuthSSLSecretKey                    = "auth-ssl-req"
-	controlllerAuthControllerClientSecretKey       = "auth-controller-client"
-	controlllerAuthControllerClientSecretSecretKey = "auth-controller-client-secret"
-	controlllerAuthViewerClientSecretKey           = "auth-viewer-client"
-	controllerDBCredentialsSecretName              = "controller-db-credentials" //nolint:gosec
-	controllerVaultCredentialsSecretName           = "controller-vault-credentials"
-	controllerDBUserSecretKey                      = "username"
-	controllerDBDBNameSecretKey                    = "dbname"
-	controllerDBPasswordSecretKey                  = "password"
-	controllerDBHostSecretKey                      = "host"
-	controllerDBPortSecretKey                      = "port"
-	controllerDBSSLSecretKey                       = "ssl"
-	controllerDBCACertSecretKey                    = "ca"
+	routerName                           = "router"
+	controllerName                       = "controller"
+	controllerCredentialsSecretName      = "controller-credentials"
+	emailSecretKey                       = "email"
+	passwordSecretKey                    = "password"
+	controlllerAuthCredentialsSecretName = "controller-auth-credentials" //nolint:gosec
+	controllerAuthModeSecretKey          = "auth-mode"
+	controllerAuthIssuerURLSecretKey     = "auth-issuer-url"
+	controllerAuthClientIDSecretKey      = "auth-client-id"
+	controllerAuthClientSecretSecretKey  = "auth-client-secret"
+	controllerAuthBootstrapUserSecretKey = "auth-bootstrap-username"
+	controllerAuthBootstrapPassSecretKey = "auth-bootstrap-password"
+	controllerDBCredentialsSecretName    = "controller-db-credentials" //nolint:gosec
+	controllerVaultCredentialsSecretName = "controller-vault-credentials"
+	controllerDBUserSecretKey            = "username"
+	controllerDBDBNameSecretKey          = "dbname"
+	controllerDBPasswordSecretKey        = "password"
+	controllerDBHostSecretKey            = "host"
+	controllerDBPortSecretKey            = "port"
+	controllerDBSSLSecretKey             = "ssl"
+	controllerDBCACertSecretKey          = "ca"
 )
 
 type service struct {
@@ -124,10 +110,13 @@ type controllerMicroserviceConfig struct {
 	natsEnabled           bool
 	ecn                   string
 	pidBaseDir            string
-	ecnViewerPort         int
-	ecnViewerURL          string
+	publicUrl             string
+	trustProxy            *bool
+	consoleUrl            string
+	consolePort           int
 	logLevel              string
 	vault                 *cpv3.Vault
+	bootstrapPassword     string // resolved from inline password or passwordSecretRef; never logged
 }
 
 func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig) []corev1.Secret {
@@ -154,15 +143,7 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 				Namespace: namespace,
 				Name:      controlllerAuthCredentialsSecretName,
 			},
-			StringData: map[string]string{
-				controlllerAuthUrlSecretKey:                    cfg.auth.URL,
-				controlllerAuthRealmSecretKey:                  cfg.auth.Realm,
-				controlllerAuthRealmKeySecretKey:               cfg.auth.RealmKey,
-				controlllerAuthSSLSecretKey:                    cfg.auth.SSL,
-				controlllerAuthControllerClientSecretKey:       cfg.auth.ControllerClient,
-				controlllerAuthControllerClientSecretSecretKey: cfg.auth.ControllerSecret,
-				controlllerAuthViewerClientSecretKey:           cfg.auth.ViewerClient,
-			},
+			StringData: authSecretStringData(cfg.auth, cfg.bootstrapPassword),
 		},
 	}
 	if cfg.vault != nil {
@@ -171,6 +152,230 @@ func buildControllerSecrets(namespace string, cfg *controllerMicroserviceConfig)
 		}
 	}
 	return secrets
+}
+
+func authSecretStringData(auth *cpv3.Auth, resolvedBootstrapPassword string) map[string]string {
+	if auth == nil {
+		return map[string]string{}
+	}
+	data := map[string]string{
+		controllerAuthModeSecretKey: string(auth.Mode),
+	}
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		if auth.Bootstrap != nil {
+			if auth.Bootstrap.Username != "" {
+				data[controllerAuthBootstrapUserSecretKey] = auth.Bootstrap.Username
+			}
+			if password := effectiveBootstrapPassword(auth, resolvedBootstrapPassword); password != "" {
+				data[controllerAuthBootstrapPassSecretKey] = password
+			}
+		}
+		appendAuthClientSecretKeys(data, auth.Client)
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl != "" {
+			data[controllerAuthIssuerURLSecretKey] = auth.IssuerUrl
+		}
+		appendAuthClientSecretKeys(data, auth.Client)
+	}
+	return data
+}
+
+func appendAuthClientSecretKeys(data map[string]string, client *cpv3.AuthClient) {
+	if client == nil {
+		return
+	}
+	if client.ID != "" {
+		data[controllerAuthClientIDSecretKey] = client.ID
+	}
+	if client.Secret != "" {
+		data[controllerAuthClientSecretSecretKey] = client.Secret
+	}
+}
+
+func appendAuthClientEnvFromSecret(env []corev1.EnvVar, client *cpv3.AuthClient) []corev1.EnvVar {
+	if client == nil {
+		return env
+	}
+	if client.ID != "" {
+		env = append(env, corev1.EnvVar{
+			Name:      "OIDC_CLIENT_ID",
+			ValueFrom: authCredentialsSecretKeyRef(controllerAuthClientIDSecretKey),
+		})
+	}
+	if client.Secret != "" {
+		env = append(env, corev1.EnvVar{
+			Name:      "OIDC_CLIENT_SECRET",
+			ValueFrom: authCredentialsSecretKeyRef(controllerAuthClientSecretSecretKey),
+		})
+	}
+	return env
+}
+
+func authCredentialsSecretKeyRef(key string) *corev1.EnvVarSource {
+	return &corev1.EnvVarSource{
+		SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: controlllerAuthCredentialsSecretName,
+			},
+			Key: key,
+		},
+	}
+}
+
+func appendControllerAuthEnv(env []corev1.EnvVar, auth *cpv3.Auth, resolvedBootstrapPassword string) []corev1.EnvVar {
+	if auth == nil {
+		return env
+	}
+	env = append(env, corev1.EnvVar{
+		Name:      "AUTH_MODE",
+		ValueFrom: authCredentialsSecretKeyRef(controllerAuthModeSecretKey),
+	})
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		if auth.Bootstrap != nil && auth.Bootstrap.Username != "" {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_BOOTSTRAP_ADMIN_USERNAME",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthBootstrapUserSecretKey),
+			})
+		}
+		if hasBootstrapPassword(auth, resolvedBootstrapPassword) {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_BOOTSTRAP_ADMIN_PASSWORD",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthBootstrapPassSecretKey),
+			})
+		}
+		env = appendAuthClientEnvFromSecret(env, auth.Client)
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl != "" {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_ISSUER_URL",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthIssuerURLSecretKey),
+			})
+		}
+		env = appendAuthClientEnvFromSecret(env, auth.Client)
+	}
+	if auth.InsecureAllowHttp != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_INSECURE_ALLOW_HTTP",
+			Value: strconv.FormatBool(*auth.InsecureAllowHttp),
+		})
+	}
+	if auth.InsecureAllowBootstrapLog != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_INSECURE_ALLOW_BOOTSTRAP_LOG",
+			Value: strconv.FormatBool(*auth.InsecureAllowBootstrapLog),
+		})
+	}
+	if auth.ConsoleClient != "" {
+		env = append(env, corev1.EnvVar{
+			Name:  "OIDC_CONSOLE_CLIENT_ID",
+			Value: auth.ConsoleClient,
+		})
+	}
+	if auth.ConsoleClientEnabled != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "AUTH_CONSOLE_CLIENT_ENABLED",
+			Value: strconv.FormatBool(*auth.ConsoleClientEnabled),
+		})
+	}
+	if auth.RateLimit != nil {
+		if auth.RateLimit.Enabled != nil {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_ENABLED",
+				Value: strconv.FormatBool(*auth.RateLimit.Enabled),
+			})
+		}
+		if auth.RateLimit.MaxRequestsPerWindow != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_MAX_REQUESTS",
+				Value: strconv.Itoa(auth.RateLimit.MaxRequestsPerWindow),
+			})
+		}
+		if auth.RateLimit.WindowMs != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_RATE_LIMIT_WINDOW_MS",
+				Value: strconv.Itoa(auth.RateLimit.WindowMs),
+			})
+		}
+	}
+	if auth.SessionStore != nil {
+		if auth.SessionStore.Type != "" {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_STORE_TYPE",
+				Value: auth.SessionStore.Type,
+			})
+		}
+		if auth.SessionStore.TtlMs != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_STORE_TTL_MS",
+				Value: strconv.Itoa(auth.SessionStore.TtlMs),
+			})
+		}
+		if auth.SessionStore.Secret != "" {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_SESSION_SECRET",
+				Value: auth.SessionStore.Secret,
+			})
+		}
+	}
+	if auth.OidcTtl != nil {
+		if auth.OidcTtl.InteractionTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_INTERACTION_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.InteractionTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.GrantTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_GRANT_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.GrantTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.SessionTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_SESSION_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.SessionTtlSeconds),
+			})
+		}
+		if auth.OidcTtl.IdTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_OIDC_ID_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.OidcTtl.IdTokenTtlSeconds),
+			})
+		}
+	}
+	if auth.TokenTtl != nil {
+		if auth.TokenTtl.AccessTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_ACCESS_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.TokenTtl.AccessTokenTtlSeconds),
+			})
+		}
+		if auth.TokenTtl.RefreshTokenTtlSeconds != 0 {
+			env = append(env, corev1.EnvVar{
+				Name:  "AUTH_REFRESH_TOKEN_TTL_SECONDS",
+				Value: strconv.Itoa(auth.TokenTtl.RefreshTokenTtlSeconds),
+			})
+		}
+	}
+	return env
+}
+
+func appendControllerServerEnv(env []corev1.EnvVar, cfg *controllerMicroserviceConfig) []corev1.EnvVar {
+	if cfg.publicUrl != "" {
+		env = append(env, corev1.EnvVar{Name: "CONTROLLER_PUBLIC_URL", Value: cfg.publicUrl})
+	}
+	if cfg.trustProxy != nil {
+		env = append(env, corev1.EnvVar{Name: "TRUST_PROXY", Value: strconv.FormatBool(*cfg.trustProxy)})
+	}
+	if cfg.consoleUrl != "" {
+		env = append(env, corev1.EnvVar{Name: "CONSOLE_URL", Value: cfg.consoleUrl})
+	}
+	if cfg.consolePort != 0 {
+		env = append(env, corev1.EnvVar{Name: "CONSOLE_PORT", Value: strconv.Itoa(cfg.consolePort)})
+	}
+	return env
 }
 
 // buildVaultCredentialsSecret returns a Secret containing provider-specific vault config for the controller. Keys match what we use in SecretKeyRef (address, token, mount for hashicorp; etc.).
@@ -230,15 +435,11 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 		cfg.serviceType = string(corev1.ServiceTypeLoadBalancer)
 	}
 
-	if cfg.ecnViewerPort == 0 {
-		cfg.ecnViewerPort = 8008
-	}
-
 	if cfg.pidBaseDir == "" {
 		cfg.pidBaseDir = "/home/runner"
 	}
 
-	if cfg.https == nil || *cfg.https == false {
+	if cfg.https == nil || !*cfg.https {
 		cfg.scheme = "http"
 	} else {
 		cfg.scheme = "https"
@@ -248,6 +449,9 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 		cfg.logLevel = "info"
 	}
 
+	if cfg.consolePort == 0 {
+		cfg.consolePort = defaultControllerConsolePort
+	}
 }
 
 func getControllerPort(msvc *microservice) (int, error) {
@@ -264,9 +468,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 	msvc := &microservice{
 		availableDelay: 5,
 		name:           "controller",
-		labels: map[string]string{
-			"iofog.org/component": "controller",
-		},
+		labels:         util.ComponentLabel("controller"),
 		rbacRules: []rbacv1.PolicyRule{
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
@@ -307,15 +509,15 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				ports: []corev1.ServicePort{
 					{
 						Name:       "controller-api",
-						Port:       51121,
-						TargetPort: intstr.FromInt(51121),
-						Protocol:   corev1.Protocol("TCP"),
+						Port:       controllerAPIPort,
+						TargetPort: intstr.FromInt(controllerAPIPort),
+						Protocol:   corev1.ProtocolTCP,
 					},
 					{
-						Name:       "ecn-viewer",
-						Port:       80,
-						TargetPort: intstr.FromInt(cfg.ecnViewerPort),
-						Protocol:   corev1.Protocol("TCP"),
+						Name:       controllerConsolePortName,
+						Port:       controllerConsoleServicePort,
+						TargetPort: intstr.FromInt(cfg.consolePort),
+						Protocol:   corev1.ProtocolTCP,
 					},
 				},
 			},
@@ -347,83 +549,6 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				},
 				volumeMounts: []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
-					{
-						Name: "KC_URL",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthUrlSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_REALM",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthRealmSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_REALM_KEY",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthRealmKeySecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_SSL_REQ",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthSSLSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_CLIENT",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthControllerClientSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_CLIENT_SECRET",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthControllerClientSecretSecretKey,
-							},
-						},
-					},
-					{
-						Name: "KC_VIEWER_CLIENT",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: controlllerAuthCredentialsSecretName,
-								},
-								Key: controlllerAuthViewerClientSecretKey,
-							},
-						},
-					},
 					{
 						Name:  "DB_PROVIDER",
 						Value: cfg.db.Provider,
@@ -526,6 +651,14 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 						Value: cfg.routerImage,
 					},
 					{
+						Name:  "ROUTER_IMAGE_3",
+						Value: cfg.routerImage,
+					},
+					{
+						Name:  "ROUTER_IMAGE_4",
+						Value: cfg.routerImage,
+					},
+					{
 						Name:  "NATS_ENABLED",
 						Value: strconv.FormatBool(cfg.natsEnabled),
 					},
@@ -538,20 +671,20 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 						Value: cfg.natsImage,
 					},
 					{
+						Name:  "NATS_IMAGE_3",
+						Value: cfg.natsImage,
+					},
+					{
+						Name:  "NATS_IMAGE_4",
+						Value: cfg.natsImage,
+					},
+					{
 						Name:  "ECN_NAME",
 						Value: cfg.ecn,
 					},
 					{
 						Name:  "PID_BASE",
 						Value: cfg.pidBaseDir,
-					},
-					{
-						Name:  "VIEWER_PORT",
-						Value: strconv.Itoa(cfg.ecnViewerPort),
-					},
-					{
-						Name:  "VIEWER_URL",
-						Value: cfg.ecnViewerURL,
 					},
 					{
 						Name:  "LOG_LEVEL",
@@ -587,13 +720,13 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-sqlite",
-			MountPath: "/home/runner/.npm-global/lib/node_modules/@eclipse-iofog/iofogcontroller/src/data/sqlite_files/",
+			MountPath: "/home/runner/.npm-global/lib/node_modules/controller/src/data/sqlite_files/",
 			// SubPath:   "prod_database.sqlite",
 		})
 	}
 
 	// Add TLS secret details if type is https and secretname is provided
-	if cfg.https != nil && *cfg.https == true {
+	if cfg.https != nil && *cfg.https {
 		msvc.volumes = append(msvc.volumes, corev1.Volume{
 			Name: "controller-cert",
 			VolumeSource: corev1.VolumeSource{
@@ -715,6 +848,9 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 		}
 	}
 
+	msvc.containers[0].env = appendControllerAuthEnv(msvc.containers[0].env, cfg.auth, cfg.bootstrapPassword)
+	msvc.containers[0].env = appendControllerServerEnv(msvc.containers[0].env, cfg)
+
 	return msvc
 }
 
@@ -764,12 +900,11 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 
 	return &microservice{
 		name: routerName,
-		labels: map[string]string{
-			"iofog.org/component":  routerName,
+		labels: mergeLabels(map[string]string{
 			"application":          "interior-router",
 			"skupper.io/component": "router",
 			"skupper.io/type":      "site",
-		},
+		}, util.ComponentLabel(routerName)),
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",
 			"prometheus.io/scrape": "true",
@@ -1075,7 +1210,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 		volumeClaimTemplates:   []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "js-data"}, Spec: pvcSpec}},
 		imagePullSecret:        cfg.imagePullSecret,
 		replicas:               cfg.replicas,
-		labels:                 map[string]string{"iofog.org/component": "nats"},
+		labels:                 util.ComponentLabel("nats"),
 		services: []service{
 			{name: nats.HeadlessServiceName, serviceType: "ClusterIP", headless: true, ports: headlessPorts},
 			{name: nats.ClientServiceName, serviceType: cfg.serviceType, serviceAnnotations: cfg.serviceAnnotations, trafficPolicy: getTrafficPolicy(cfg.serviceType, cfg.externalTrafficPolicy), ports: clientPorts},
@@ -1113,7 +1248,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 					{Name: "NATS_JWT_MOUNT_DIR", Value: "/tmp/nats/jwt"},
 					{Name: "NATS_CREDS_DIR", Value: "/etc/nats/creds"},
 					{Name: "NATS_SYS_USER_CRED_PATH", Value: "/etc/nats/creds/admin-hub.creds"},
-					{Name: "NATS_SSL_DIR", Value: "/etc/nats/certs"},
+					{Name: "NATS_TLS_DIR", Value: "/etc/nats/certs"},
 					{Name: "NATS_CERT_NAME", Value: "nats-site-server"},
 					{Name: "NATS_MQTT_CERT_NAME", Value: "nats-mqtt-server"},
 					{Name: "NATS_SERVER_PORT", Value: "4222"},
@@ -1174,12 +1309,11 @@ func newRouterMicroserviceWithName(cfg routerMicroserviceConfig, name string) *m
 
 	return &microservice{
 		name: name,
-		labels: map[string]string{
-			"iofog.org/component":  routerName,
+		labels: mergeLabels(map[string]string{
 			"application":          "interior-router",
 			"skupper.io/component": "router",
 			"skupper.io/type":      "site",
-		},
+		}, util.ComponentLabel(routerName)),
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",
 			"prometheus.io/scrape": "true",

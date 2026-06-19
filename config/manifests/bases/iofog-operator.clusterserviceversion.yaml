@@ -5,101 +5,85 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "iofog.org/v3",
+          "apiVersion": "datasance.com/v3",
           "kind": "ControlPlane",
           "metadata": {
             "name": "iofog"
           },
           "spec": {
-            "auth": {
-              "controllerClient": null,
-              "controllerSecret": null,
-              "realm": null,
-              "realmKey": null,
-              "ssl": null,
-              "url": null,
-              "viewerClient": null
-            },
-            "controller": {
-              "ecnViewerPort": 0,
-              "ecnViewerUrl": null,
-              "https": null,
-              "logLevel": null,
-              "pidBaseDir": "",
-              "secretName": null
-            },
-            "database": {
-              "ca": null,
-              "databaseName": null,
-              "host": null,
-              "password": null,
-              "port": null,
-              "provider": null,
-              "ssl": null,
-              "user": null
-            },
-            "events": {
-              "auditEnabled": null,
-              "captureIpAddress": null,
-              "cleanupInterval": null,
-              "retentionDays": null
-            },
-            "images": {
-              "controller": null,
-              "nats": "ghcr.io/eclipse-iofog/nats:2.12.4",
-              "pullSecret": null,
-              "router": null
-            },
-            "ingresses": {
-              "controller": {
-                "annotations": null,
-                "host": null,
-                "ingressClassName": null,
-                "secretName": null
-              },
-              "nats": {
-                "address": null,
-                "clusterPort": 6222,
-                "httpPort": 8222,
-                "leafPort": 7422,
-                "mqttPort": 8883,
-                "serverPort": 4222
-              },
-              "router": {
-                "address": null,
-                "edgePort": 45671,
-                "interiorPort": 55671,
-                "messagePort": 5671
-              }
-            },
-            "nats": {
-              "enabled": true,
-              "jetStream": {
-                "memoryStoreSize": "1Gi",
-                "storageClassName": "",
-                "storageSize": "10Gi"
-              }
-            },
             "replicas": {
               "controller": 2,
               "nats": 2
             },
+            "database": {
+              "provider": "postgres",
+              "user": null,
+              "host": null,
+              "port": null,
+              "password": null,
+              "databaseName": null
+            },
+            "auth": {
+              "mode": "embedded",
+              "bootstrap": {
+                "username": "admin",
+                "password": null
+              }
+            },
+            "images": {
+              "pullSecret": null,
+              "controller": null,
+              "router": null,
+              "nats": null
+            },
             "services": {
               "controller": {
-                "annotations": null,
-                "type": null
-              },
-              "nats": {
-                "annotations": {},
-                "type": "ClusterIP"
-              },
-              "natsServer": {
-                "annotations": {},
-                "type": "ClusterIP"
+                "type": null,
+                "annotations": null
               },
               "router": {
+                "type": null,
+                "annotations": null
+              },
+              "nats": {
+                "type": "ClusterIP",
+                "annotations": null
+              },
+              "natsServer": {
+                "type": "ClusterIP",
+                "annotations": null
+              }
+            },
+            "controller": {
+              "publicUrl": null,
+              "trustProxy": false,
+              "consoleUrl": null,
+              "consolePort": 0,
+              "pidBaseDir": "",
+              "https": false,
+              "secretName": null,
+              "logLevel": "info"
+            },
+            "ingresses": {
+              "controller": {
                 "annotations": null,
-                "type": null
+                "ingressClassName": null,
+                "host": null,
+                "secretName": null
+              },
+              "router": {
+                "address": null,
+                "messagePort": 5671,
+                "interiorPort": 55671,
+                "edgePort": 45671
+              },
+              "nats": {
+                "address": null,
+                "serverPort": 4222,
+                "clusterPort": 6222,
+                "leafPort": 7422,
+                "mqttPort": 8883,
+                "httpPort": 8222
               }
             }
           },
@@ -117,69 +101,25 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2026-03-24T23:51:35Z"
-    operators.operatorframework.io/builder: operator-sdk-v1.37.0
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-  name: iofog-operator.v3.7.2
+  name: iofog-operator.v0.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Application defines an ioFog application.
-      kind: Application
-      name: applications.iofog.org
-      version: v3
     - description: ControlPlane deploys and manages the ioFog control plane.
       kind: ControlPlane
-      name: controlplanes.iofog.org
+      name: controlplanes.datasance.com
       version: v3
   description: ioFog Control Plane on Kubernetes
-  displayName: iofog-operator
+  displayName: Kubernetes Operator for Eclipse ioFog and Datasance PoT
   icon:
   - base64data: ""
     mediatype: ""
   install:
     spec:
-      deployments:
-      - label:
-          name: iofog-operator
-        name: iofog-operator
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              name: iofog-operator
-          strategy: {}
-          template:
-            metadata:
-              labels:
-                name: iofog-operator
-            spec:
-              containers:
-              - args:
-                - --enable-leader-election
-                command:
-                - iofog-operator
-                env:
-                - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.annotations['olm.targetNamespaces']
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      apiVersion: v1
-                      fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: iofog-operator
-                image: ghcr.io/eclipse-iofog/operator:3.7.2
-                imagePullPolicy: Always
-                name: iofog-operator
-                resources: {}
-              serviceAccountName: iofog-operator
-              terminationGracePeriodSeconds: 10
-    strategy: deployment
+      deployments: null
+    strategy: ""
   installModes:
   - supported: false
     type: OwnNamespace
@@ -192,12 +132,11 @@ spec:
   keywords:
   - iofog
   - datasance
-  - pot
   links:
-  - name: Eclipse ioFog// Iofog Operator
-    url: https://iofog.org
+  - name: Datasance PoT // Iofog Operator
+    url: https://datasance.com
   maturity: stable
   minKubeVersion: 1.18.0
   provider:
-    name: Eclipse ioFog
-  version: 3.7.2
+    name: Datasance
+  version: 0.0.0

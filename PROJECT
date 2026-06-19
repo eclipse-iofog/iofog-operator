@@ -1,11 +1,9 @@
-domain: iofog.org
+domain: datasance.com
 layout: go.kubebuilder.io/v4
 multigroup: true
 projectName: iofog-operator
 repo: github.com/eclipse-iofog/iofog-operator
 resources:
-- kind: Application
-  version: v3
 - kind: ControlPlane
   version: v3
 version: "3"

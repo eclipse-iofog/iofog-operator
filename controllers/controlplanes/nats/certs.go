@@ -1,16 +1,3 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Contributors to the Eclipse ioFog Project
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package nats
 
 import (
@@ -114,7 +101,7 @@ func EnsureNatsSecrets(ctx context.Context, getSecret func(context.Context, type
 		if s.Annotations == nil {
 			s.Annotations = make(map[string]string)
 		}
-		s.Annotations["iofog.org/nats-replicas"] = strconv.Itoa(replicas)
+		s.Annotations["datasance.com/nats-replicas"] = strconv.Itoa(replicas)
 		out = append(out, s)
 	}
 
@@ -127,7 +114,7 @@ func EnsureNatsSecrets(ctx context.Context, getSecret func(context.Context, type
 		if s.Annotations == nil {
 			s.Annotations = make(map[string]string)
 		}
-		s.Annotations["iofog.org/nats-replicas"] = strconv.Itoa(replicas)
+		s.Annotations["datasance.com/nats-replicas"] = strconv.Itoa(replicas)
 		out = append(out, s)
 	}
 

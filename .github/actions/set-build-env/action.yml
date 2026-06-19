@@ -1,0 +1,38 @@
+name: Set operator build environment
+description: Resolves operator image registry, CRD group flavor, Helm repo base URL, OCI source, and component label domain from workflow env or github.repository.
+
+runs:
+  using: composite
+  steps:
+    - name: Set dual-mirror build variables
+      shell: bash
+      run: |
+        REGISTRY="${{ env.IMAGE_REGISTRY }}"
+        CRD_GROUP="${{ env.OPERATOR_CRD_GROUP }}"
+        HELM_URL="${{ env.HELM_REPO_BASE_URL }}"
+        OCI_SOURCE="${{ env.OCI_SOURCE_REPO }}"
+        COMPONENT_DOMAIN="${{ env.OPERATOR_COMPONENT_LABEL_DOMAIN }}"
+        case "${{ github.repository }}" in
+          eclipse-iofog/iofog-operator)
+            REGISTRY="${REGISTRY:-ghcr.io/eclipse-iofog}"
+            CRD_GROUP="${CRD_GROUP:-iofog.org}"
+            FLAVOR="iofog"
+            HELM_URL="${HELM_URL:-https://eclipse-iofog.github.io/iofog-operator}"
+            OCI_SOURCE="${OCI_SOURCE:-https://github.com/eclipse-iofog/iofog-operator}"
+            COMPONENT_DOMAIN="${COMPONENT_DOMAIN:-iofog.org}"
+            ;;
+          *)
+            REGISTRY="${REGISTRY:-ghcr.io/datasance}"
+            CRD_GROUP="${CRD_GROUP:-datasance.com}"
+            FLAVOR="datasance"
+            HELM_URL="${HELM_URL:-https://datasance.github.io/iofog-operator}"
+            OCI_SOURCE="${OCI_SOURCE:-https://github.com/Datasance/iofog-operator}"
+            COMPONENT_DOMAIN="${COMPONENT_DOMAIN:-datasance.com}"
+            ;;
+        esac
+        echo "IMAGE_REGISTRY=$REGISTRY" >> "${GITHUB_ENV}"
+        echo "OPERATOR_CRD_GROUP=$CRD_GROUP" >> "${GITHUB_ENV}"
+        echo "FLAVOR=$FLAVOR" >> "${GITHUB_ENV}"
+        echo "HELM_REPO_BASE_URL=$HELM_URL" >> "${GITHUB_ENV}"
+        echo "OCI_SOURCE_REPO=$OCI_SOURCE" >> "${GITHUB_ENV}"
+        echo "OPERATOR_COMPONENT_LABEL_DOMAIN=$COMPONENT_DOMAIN" >> "${GITHUB_ENV}"

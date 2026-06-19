@@ -1,0 +1,11 @@
+Thank you for installing the ioFog operator.
+
+This chart deploys:
+- The ioFog operator
+- A ControlPlane custom resource instance
+
+To verify:
+  kubectl get pods -n {{ .Release.Namespace }} -l {{ include "iofog-operator.selectorLabels" . | replace "\n" "," }}
+  kubectl get controlplanes.{{ .Values.crdGroup }} -n {{ .Release.Namespace }}
+
+If you need to disable the ControlPlane instance creation, set controlplane.create=false.

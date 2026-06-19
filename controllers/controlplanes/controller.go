@@ -1,19 +1,3 @@
-/*
-Copyright 2021.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controllers
 
 import (
@@ -22,6 +6,7 @@ import (
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	op "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/k8s/operator"
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/auth/consoleclient"
 	"github.com/go-logr/logr"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,15 +17,16 @@ import (
 // ControlPlaneReconciler reconciles a ControlPlane object.
 type ControlPlaneReconciler struct {
 	client.Client
-	Log    logr.Logger
-	log    logr.Logger
-	Scheme *runtime.Scheme
-	cp     cpv3.ControlPlane
+	Log                  logr.Logger
+	log                  logr.Logger
+	Scheme               *runtime.Scheme
+	cp                   cpv3.ControlPlane
+	ConsoleClientUpdater consoleclient.Updater
 }
 
-// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=iofog.org,resources=controlplanes/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=datasance.com,resources=controlplanes/finalizers,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ControlPlaneReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {

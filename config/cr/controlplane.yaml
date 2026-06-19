@@ -1,4 +1,4 @@
-apiVersion: iofog.org/v3
+apiVersion: datasance.com/v3
 kind: ControlPlane
 metadata:
   name: iofog
@@ -7,45 +7,70 @@ spec:
     controller: 2
     nats: 2  # NATS server replicas (min 2 when NATS enabled)
   database:
-    provider:
-    user: 
-    host: 
-    port: 
-    password: 
+    provider: postgres
+    user:
+    host:
+    port:
+    password:
     databaseName:
     ssl:
-    ca: 
+    ca:
   auth:
-    url: 
-    realm: 
-    realmKey: 
-    ssl: 
-    controllerClient: 
-    controllerSecret: 
-    viewerClient:
+    mode: embedded  # embedded | external
+    insecureAllowHttp: false
+    insecureAllowBootstrapLog: false
+    bootstrap:
+      username: admin
+      password:  # inline password or use passwordSecretRef
+      # passwordSecretRef:
+      #   name: controller-bootstrap
+      #   key: password
+    # External-only (when mode=external):
+    # issuerUrl: https://idp.example.com/realms/myrealm
+    # client:
+    #   id: controller-api
+    #   secret: ""
+    # Embedded-only optional tuning:
+    # consoleClient: edgeops-console
+    # consoleClientEnabled: true
+    # rateLimit:
+    #   enabled: true
+    #   maxRequestsPerWindow: 100
+    #   windowMs: 60000
+    # sessionStore:
+    #   type: memory
+    #   ttlMs: 86400000
+    # tokenTtl:
+    #   accessTokenTtlSeconds: 3600
+    #   refreshTokenTtlSeconds: 86400
+    # oidcTtl:
+    #   interactionTtlSeconds: 3600
+    #   grantTtlSeconds: 3600
+    #   sessionTtlSeconds: 86400
+    #   idTokenTtlSeconds: 3600
   events:
     auditEnabled:
     retentionDays:
     cleanupInterval:
     captureIpAddress:
   images:
-    pullSecret: 
+    pullSecret:
     controller:
-    router: 
-    nats: ghcr.io/eclipse-iofog/nats:2.12.4  # NATS server image (optional)
+    router:
+    nats: ghcr.io/datasance/nats:2.12.4  # NATS server image (optional)
   services:
     controller:
-      type:  # LoadBalancer / ClusterIP / Node Port .. If it is Cluster IP ingress for Controller need to be defined
-      annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
+      type:  # LoadBalancer / ClusterIP / NodePort; use Ingress when ClusterIP
+      annotations:  # LoadBalancer IP pool annotations, e.g. Azure internal LB
         #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     router:
-      type:  
-      annotations: # if type is LoadBalancer user can define annotations in order to map which IP pool they would like to assign for the service
+      type:
+      annotations:
         #service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     nats:
       type: ClusterIP  # or LoadBalancer when using external NATS clients
       annotations: {}
-    natsServer:  # nats-server service (client + monitor ports, non-TLS); separate from nats for in-cluster config
+    natsServer:  # nats-server service (client + monitor ports, non-TLS)
       type: ClusterIP
       annotations: {}
   nats:  # optional; when omitted NATS is enabled with defaults
@@ -55,11 +80,13 @@ spec:
       memoryStoreSize: "1Gi"  # max_memory_store
       storageClassName: ""
   controller:
+    publicUrl:  # required; e.g. https://controller.example.com
+    trustProxy: false
+    consoleUrl:
+    consolePort: 0
     pidBaseDir: ""
-    ecnViewerPort: 0
-    ecnViewerUrl:
-    https: # true or false  ..default is false
-    secretName: #name of secret it has to be same with the one that defined in the controller ingress struct
+    https: false
+    secretName:  # TLS secret when https=true; match controller ingress secretName
     logLevel:
   ingresses:
     controller:
@@ -67,16 +94,16 @@ spec:
         # cert-manager.io/cluster-issuer: letsencrypt
         # nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
         # nginx.ingress.kubernetes.io/backend-protocol: "https"
-      ingressClassName: 
-      host: 
-      secretName: 
+      ingressClassName:
+      host:
+      secretName:
     router:
-      address: 
+      address:
       messagePort: 5671
       interiorPort: 55671
       edgePort: 45671
     nats:  # required when using ingress for NATS (address = hostname)
-      address: 
+      address:
       serverPort: 4222
       clusterPort: 6222
       leafPort: 7422
@@ -89,4 +116,3 @@ status:
       reason: "initial_status"
       status: "True"
       type: "deploying"
-

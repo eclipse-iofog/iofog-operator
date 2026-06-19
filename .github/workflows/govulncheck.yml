@@ -1,0 +1,30 @@
+name: govulncheck
+
+on:
+  push:
+    paths:
+      - go.sum
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+permissions: read-all
+
+env:
+  GO_VERSION: '1.26.4'
+
+jobs:
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Run govulncheck
+        run: make vulncheck

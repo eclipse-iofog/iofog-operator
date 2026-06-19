@@ -21,7 +21,7 @@ spec:
         - iofog-operator
         args:
         - --enable-leader-election
-        image: ghcr.io/eclipse-iofog/operator:latest
+        image: ghcr.io/datasance/operator:latest
         imagePullPolicy: Always
         name: iofog-operator
         env:

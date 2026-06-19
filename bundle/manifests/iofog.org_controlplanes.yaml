@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.17.3
   creationTimestamp: null
   name: controlplanes.iofog.org
 spec:
@@ -44,39 +44,130 @@ spec:
                   INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                   Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
                   Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-                  Auth contains Keycloak Client Configuration of Controller and ECN Viewer
+                  Auth configures OIDC for the Controller (embedded or external IdP).
                 properties:
-                  controllerClient:
+                  bootstrap:
+                    description: Bootstrap admin credentials; required when mode=embedded.
+                    properties:
+                      password:
+                        type: string
+                      passwordSecretRef:
+                        description: PasswordSecretRef references a Secret containing
+                          the bootstrap password.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      username:
+                        type: string
+                    type: object
+                  client:
+                    description: Client OAuth2 credentials for the Controller API.
+                    properties:
+                      id:
+                        type: string
+                      secret:
+                        type: string
+                    type: object
+                  consoleClient:
+                    description: ConsoleClient is the OIDC client id for EdgeOps Console
+                      (embedded only).
                     type: string
-                  controllerSecret:
+                  consoleClientEnabled:
+                    description: ConsoleClientEnabled registers the console OIDC client
+                      (embedded only).
+                    type: boolean
+                  insecureAllowBootstrapLog:
+                    description: InsecureAllowBootstrapLog logs bootstrap credentials
+                      (dev only).
+                    type: boolean
+                  insecureAllowHttp:
+                    description: InsecureAllowHttp allows HTTP for OIDC endpoints
+                      (dev only).
+                    type: boolean
+                  issuerUrl:
+                    description: IssuerUrl is required when mode=external.
                     type: string
-                  realm:
+                  mode:
+                    description: 'Mode is required: embedded (local OIDC) or external
+                      (IdP).'
+                    enum:
+                    - embedded
+                    - external
                     type: string
-                  realmKey:
-                    type: string
-                  ssl:
-                    type: string
-                  url:
-                    type: string
-                  viewerClient:
-                    type: string
+                  oidcTtl:
+                    description: OidcTtl configures OIDC interaction/grant/session
+                      TTLs (embedded only).
+                    properties:
+                      grantTtlSeconds:
+                        type: integer
+                      idTokenTtlSeconds:
+                        type: integer
+                      interactionTtlSeconds:
+                        type: integer
+                      sessionTtlSeconds:
+                        type: integer
+                    type: object
+                  rateLimit:
+                    description: RateLimit configures auth rate limiting (embedded
+                      only).
+                    properties:
+                      enabled:
+                        type: boolean
+                      maxRequestsPerWindow:
+                        type: integer
+                      windowMs:
+                        type: integer
+                    type: object
+                  sessionStore:
+                    description: SessionStore configures session storage (embedded
+                      only).
+                    properties:
+                      secret:
+                        type: string
+                      ttlMs:
+                        type: integer
+                      type:
+                        type: string
+                    type: object
+                  tokenTtl:
+                    description: TokenTtl configures access/refresh token TTLs (embedded
+                      only).
+                    properties:
+                      accessTokenTtlSeconds:
+                        type: integer
+                      refreshTokenTtlSeconds:
+                        type: integer
+                    type: object
                 required:
-                - controllerClient
-                - controllerSecret
-                - realm
-                - realmKey
-                - ssl
-                - url
-                - viewerClient
+                - mode
                 type: object
               controller:
                 description: Controller contains runtime configuration for ioFog Controller
                 properties:
-                  ecn:
-                    type: string
-                  ecnViewerPort:
+                  consolePort:
                     type: integer
-                  ecnViewerUrl:
+                  consoleUrl:
+                    type: string
+                  ecn:
                     type: string
                   https:
                     type: boolean
@@ -84,8 +175,12 @@ spec:
                     type: string
                   pidBaseDir:
                     type: string
+                  publicUrl:
+                    type: string
                   secretName:
                     type: string
+                  trustProxy:
+                    type: boolean
                 type: object
               database:
                 description: Database for ioFog Controller
@@ -331,7 +426,7 @@ spec:
                     type: object
                   basePath:
                     description: BasePath for secrets in vault; $namespace is replaced
-                      with the ControlPlane namespace (e.g. pot/$namespace/secrets).
+                      with the ControlPlane namespace (e.g. iofog/$namespace/secrets).
                     type: string
                   enabled:
                     type: boolean
@@ -372,16 +467,8 @@ spec:
                   INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
                   Important: Run "make" to regenerate code after modifying this file
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -422,12 +509,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string

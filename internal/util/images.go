@@ -1,21 +1,9 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Contributors to the Eclipse ioFog Project
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package util
 
 import "fmt"
 
-// These values are set by the linker, e.g. "LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1".
+// Image defaults are set by the linker, e.g. "LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1".
+// Mirror flavor labels: see flavor.go (componentLabelDomain).
 var (
 	repo          = "undefined" //nolint:gochecknoglobals
 	controllerTag = "undefined" //nolint:gochecknoglobals
