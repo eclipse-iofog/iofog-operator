@@ -1,0 +1,78 @@
+---
+nameOverride: iofog-operator
+fullnameOverride: iofog-operator
+crdGroup: iofog.org
+imageRegistry: ghcr.io/eclipse-iofog
+imagePullSecrets: []
+crds:
+  install: true
+rbac:
+  create: true
+operator:
+  replicaCount: 1
+  image: ghcr.io/eclipse-iofog/operator:3.8.0-rc.1
+  imagePullPolicy: Always
+  serviceAccount:
+    create: true
+    name: iofog-operator
+    annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  imagePullSecrets: []
+  extraEnv: []
+  extraArgs: []
+controlplane:
+  create: true
+  name: pot
+  namespace: ''
+  annotations: {}
+  labels: {}
+  spec:
+    replicas:
+      controller: 1
+      nats: 2
+    database:
+      provider: sqlite
+      user: ''
+      host: ''
+      port: 0
+      password: ''
+      databaseName: ''
+      ssl: false
+      ca: ''
+    auth:
+      mode: embedded
+      insecureAllowHttp: false
+      insecureAllowBootstrapLog: false
+      bootstrap:
+        username: admin
+        password: ReplaceMe1!
+    events:
+      auditEnabled: true
+      retentionDays: 14
+      cleanupInterval: 86400
+      captureIpAddress: true
+    images:
+      controller: ghcr.io/eclipse-iofog/controller:3.8.0-rc.1
+      router: ghcr.io/eclipse-iofog/router:3.8.0-rc.1
+      nats: ghcr.io/eclipse-iofog/nats:2.14.2-rc.1
+    services:
+      controller:
+        type: LoadBalancer
+      router:
+        type: LoadBalancer
+      nats:
+        type: ClusterIP
+      natsServer:
+        type: ClusterIP
+    nats:
+      enabled: true
+    controller:
+      https: false
+      logLevel: info
