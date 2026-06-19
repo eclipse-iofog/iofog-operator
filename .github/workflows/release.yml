@@ -1,0 +1,329 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: read-all
+
+env:
+  GO_VERSION: '1.26.4'
+  OPERATOR_SDK_VERSION: v1.37.0
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Resolve release version
+        id: version
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          echo "tag=${REF}" >> "${GITHUB_OUTPUT}"
+          echo "version=${REF#v}" >> "${GITHUB_OUTPUT}"
+
+      - name: Quality gate
+        run: make quality
+
+      - name: CRD drift gate
+        run: make gen-check
+
+      - name: Run unit tests
+        run: go test ./... -count=1
+
+  image:
+    name: Push operator image
+    runs-on: ubuntu-latest
+    needs: preflight
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171bb7bf4a8c327a584d0cc5cc47ecf4f813 # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@5e57cd3c6f216f32b781c50edfef0f765a2548eb # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push operator image
+        uses: docker/build-push-action@263435318d21b8f00a28725e9c16f1e5b3e56b4 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_REGISTRY }}/operator:${{ needs.preflight.outputs.version }}
+            ${{ env.IMAGE_REGISTRY }}/operator:${{ needs.preflight.outputs.tag }}
+            ${{ env.IMAGE_REGISTRY }}/operator:latest
+          build-args: |
+            IMAGE_REGISTRY=${{ env.IMAGE_REGISTRY }}
+            OPERATOR_COMPONENT_LABEL_DOMAIN=${{ env.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+            OCI_SOURCE_REPO=${{ env.OCI_SOURCE_REPO }}
+
+  manifests:
+    name: Manifest tarballs
+    runs-on: ubuntu-latest
+    needs: preflight
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Build manifest tarballs
+        env:
+          VERSION_TAG: ${{ needs.preflight.outputs.version }}
+        run: make release-manifests-all
+
+      - name: Upload manifest artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-manifests
+          path: dist/manifests-*.tar.gz
+          if-no-files-found: error
+
+  bundle:
+    name: OLM bundle image
+    runs-on: ubuntu-latest
+    needs: [preflight, image]
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - name: Install operator-sdk
+        run: |
+          curl -sSL "https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64" \
+            -o /usr/local/bin/operator-sdk
+          chmod +x /usr/local/bin/operator-sdk
+          operator-sdk version
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171bb7bf4a8c327a584d0cc5cc47ecf4f813 # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@5e57cd3c6f216f32b781c50edfef0f765a2548eb # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate and push bundle image
+        env:
+          VERSION_TAG: ${{ needs.preflight.outputs.version }}
+          IMG: ${{ env.IMAGE_REGISTRY }}/operator:${{ needs.preflight.outputs.version }}
+          BUNDLE_IMG: ${{ env.IMAGE_REGISTRY }}/operator-bundle:${{ needs.preflight.outputs.version }}
+        run: |
+          make bundle
+          docker buildx build --platform linux/amd64 -f bundle.Dockerfile -t "${BUNDLE_IMG}" --push .
+
+  helm:
+    name: Helm package
+    runs-on: ubuntu-latest
+    needs: preflight
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Check chart exists
+        id: chart
+        run: |
+          if [ -f charts/iofog-operator/Chart.yaml ]; then
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+            echo "charts/iofog-operator/ not present — skip (Plan 11)"
+          fi
+
+      - name: Install Helm
+        if: steps.chart.outputs.exists == 'true'
+        uses: azure/setup-helm@5115966013bdb63d80f07dc3c4e7b8cdc811a0af # v4.3.0
+
+      - name: Package chart
+        if: steps.chart.outputs.exists == 'true'
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: |
+          chmod +x hack/package-helm.sh
+          IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
+            hack/package-helm.sh "${FLAVOR}" "${VERSION}"
+          ls -la dist/
+
+      - name: Publish Helm repo to gh-pages
+        if: steps.chart.outputs.exists == 'true'
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          CHART="dist/iofog-operator-${VERSION}.tgz"
+          PAGES_DIR="$(mktemp -d)"
+          REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --heads "${REPO}" gh-pages | grep -q gh-pages; then
+            git clone --depth 1 -b gh-pages "${REPO}" "${PAGES_DIR}"
+          else
+            git clone --depth 1 "${REPO}" "${PAGES_DIR}"
+            cd "${PAGES_DIR}"
+            git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
+          fi
+          cp "${CHART}" "${PAGES_DIR}/"
+          chmod +x hack/render-helm-docs.sh
+          HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL}" OCI_SOURCE_REPO="${OCI_SOURCE_REPO}" \
+            IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
+            hack/render-helm-docs.sh "${FLAVOR}" "${VERSION}" "${PAGES_DIR}"
+          if [ -f "${PAGES_DIR}/index.yaml" ]; then
+            helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}" --merge "${PAGES_DIR}/index.yaml"
+          else
+            helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}"
+          fi
+          cd "${PAGES_DIR}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No gh-pages changes to publish"
+          else
+            git commit -m "Publish iofog-operator ${VERSION}"
+            git push "${REPO}" gh-pages
+          fi
+
+      - name: Upload Helm chart
+        if: steps.chart.outputs.exists == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-helm
+          path: dist/iofog-operator-*.tgz
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [preflight, image, manifests, bundle, helm]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Download manifest tarballs
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-manifests
+          path: dist
+
+      - name: Download Helm chart
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-helm
+          path: dist
+        continue-on-error: true
+
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="${{ needs.preflight.outputs.tag }}" \
+            -f target_commitish="${GITHUB_SHA}" \
+            --jq '.body' > release_notes.md
+          {
+            echo ""
+            echo "## Container images"
+            echo '```bash'
+            echo "docker pull ${{ env.IMAGE_REGISTRY }}/operator:${{ needs.preflight.outputs.version }}"
+            echo "docker pull ${{ env.IMAGE_REGISTRY }}/operator-bundle:${{ needs.preflight.outputs.version }}"
+            echo '```'
+            echo ""
+            echo "## Manifest tarballs"
+            echo "- \`manifests-datasance-${{ needs.preflight.outputs.version }}.tar.gz\`"
+            echo "- \`manifests-iofog-${{ needs.preflight.outputs.version }}.tar.gz\`"
+            echo ""
+            echo "## Helm chart"
+            echo "- \`iofog-operator-${{ needs.preflight.outputs.version }}.tgz\`"
+            echo ""
+            echo "## Helm repository"
+            echo '```bash'
+            echo "helm repo add iofog-operator ${HELM_REPO_BASE_URL}"
+            echo "helm repo update"
+            echo "helm install pot iofog-operator/iofog-operator --version ${{ needs.preflight.outputs.version }} \\"
+            echo "  --set controlplane.spec.auth.bootstrap.password='...'"
+            echo '```'
+          } >> release_notes.md
+
+      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          tag_name: ${{ needs.preflight.outputs.tag }}
+          body_path: release_notes.md
+          files: dist/*
+          draft: false
+          prerelease: ${{ contains(needs.preflight.outputs.tag, '-') }}

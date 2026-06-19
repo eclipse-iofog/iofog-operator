@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+      - '**/*.md'
+      - .cursor/**
+  pull_request:
+    branches:
+      - main
+      - develop
+      - release/**
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - LICENSE
+      - '**/*.md'
+      - .cursor/**
+  workflow_dispatch:
+
+permissions: read-all
+
+env:
+  GO_VERSION: '1.26.4'
+  VERSION_TAG: ci-${{ github.run_id }}
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - run: go version
+
+      - name: Quality gate
+        run: make quality
+
+      - name: CRD drift gate
+        run: make gen-check
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+
+      - run: go version
+
+      - name: Run unit tests
+        run: go test ./... -count=1
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/set-build-env
+        env:
+          IMAGE_REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          OPERATOR_CRD_GROUP: ${{ vars.OPERATOR_CRD_GROUP }}
+          HELM_REPO_BASE_URL: ${{ vars.HELM_REPO_BASE_URL }}
+          OCI_SOURCE_REPO: ${{ vars.OCI_SOURCE_REPO }}
+          OPERATOR_COMPONENT_LABEL_DOMAIN: ${{ vars.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171bb7bf4a8c327a584d0cc5cc47ecf4f813 # v3.11.1
+
+      - name: Build operator image
+        uses: docker/build-push-action@263435318d21b8f00a28725e9c16f1e5b3e56b4 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ env.IMAGE_REGISTRY }}/operator:${{ env.VERSION_TAG }}
+          build-args: |
+            IMAGE_REGISTRY=${{ env.IMAGE_REGISTRY }}
+            OPERATOR_COMPONENT_LABEL_DOMAIN=${{ env.OPERATOR_COMPONENT_LABEL_DOMAIN }}
+            OCI_SOURCE_REPO=${{ env.OCI_SOURCE_REPO }}
+
+  helm:
+    name: Helm lint
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [datasance, iofog]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install Helm
+        uses: azure/setup-helm@5115966013bdb63d80f07dc3c4e7b8cdc811a0af # v4.3.0
+
+      - name: Lint chart (${{ matrix.flavor }})
+        env:
+          VERSION_TAG: ${{ env.VERSION_TAG }}
+        run: |
+          case "${{ matrix.flavor }}" in
+            datasance)
+              export IMAGE_REGISTRY=ghcr.io/datasance
+              export OPERATOR_CRD_GROUP=datasance.com
+              ;;
+            iofog)
+              export IMAGE_REGISTRY=ghcr.io/eclipse-iofog
+              export OPERATOR_CRD_GROUP=iofog.org
+              ;;
+          esac
+          chmod +x hack/package-helm.sh
+          LINT_ONLY=1 hack/package-helm.sh "${{ matrix.flavor }}" "${VERSION_TAG}"
+
+      - name: Render gh-pages docs (${{ matrix.flavor }})
+        env:
+          VERSION_TAG: ${{ env.VERSION_TAG }}
+        run: |
+          case "${{ matrix.flavor }}" in
+            datasance)
+              export IMAGE_REGISTRY=ghcr.io/datasance
+              export OPERATOR_CRD_GROUP=datasance.com
+              export HELM_REPO_BASE_URL=https://datasance.github.io/iofog-operator
+              export OCI_SOURCE_REPO=https://github.com/Datasance/iofog-operator
+              EXPECT_GROUP=datasance.com
+              ;;
+            iofog)
+              export IMAGE_REGISTRY=ghcr.io/eclipse-iofog
+              export OPERATOR_CRD_GROUP=iofog.org
+              export HELM_REPO_BASE_URL=https://eclipse-iofog.github.io/iofog-operator
+              export OCI_SOURCE_REPO=https://github.com/eclipse-iofog/iofog-operator
+              EXPECT_GROUP=iofog.org
+              ;;
+          esac
+          OUT="$(mktemp -d)"
+          chmod +x hack/render-helm-docs.sh
+          hack/render-helm-docs.sh "${{ matrix.flavor }}" "${VERSION_TAG}" "${OUT}"
+          grep -q "controlplanes.${EXPECT_GROUP}" "${OUT}/index.html"
+          grep -q "${HELM_REPO_BASE_URL}" "${OUT}/index.html"
+          test -f "${OUT}/.nojekyll"

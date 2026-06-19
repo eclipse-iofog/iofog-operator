@@ -5,28 +5,30 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "datasance.com/v3",
+          "apiVersion": "iofog.org/v3",
           "kind": "ControlPlane",
           "metadata": {
-            "name": "pot"
+            "name": "iofog"
           },
           "spec": {
             "auth": {
-              "controllerClient": null,
-              "controllerSecret": null,
-              "realm": null,
-              "realmKey": null,
-              "ssl": null,
-              "url": null,
-              "viewerClient": null
+              "bootstrap": {
+                "password": null,
+                "username": "admin"
+              },
+              "insecureAllowBootstrapLog": false,
+              "insecureAllowHttp": false,
+              "mode": "embedded"
             },
             "controller": {
-              "ecnViewerPort": 0,
-              "ecnViewerUrl": null,
-              "https": null,
+              "consolePort": 0,
+              "consoleUrl": null,
+              "https": false,
               "logLevel": null,
               "pidBaseDir": "",
-              "secretName": null
+              "publicUrl": null,
+              "secretName": null,
+              "trustProxy": false
             },
             "database": {
               "ca": null,
@@ -34,7 +36,7 @@ metadata:
               "host": null,
               "password": null,
               "port": null,
-              "provider": null,
+              "provider": "postgres",
               "ssl": null,
               "user": null
             },
@@ -117,25 +119,20 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2026-04-16T11:41:45Z"
+    createdAt: "2026-06-19T12:07:10Z"
     operators.operatorframework.io/builder: operator-sdk-v1.37.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-  name: iofog-operator.v3.7.2
+  name: iofog-operator.v3.8.0-rc.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Application defines an ioFog application.
-      kind: Application
-      name: applications.datasance.com
-      version: v3
-    - description: ControlPlane deploys and manages the ioFog control plane.
-      kind: ControlPlane
-      name: controlplanes.datasance.com
+    - kind: ControlPlane
+      name: controlplanes.iofog.org
       version: v3
   description: ioFog Control Plane on Kubernetes
-  displayName: iofog-operator
+  displayName: Kubernetes Operator for Eclipse ioFog and Datasance PoT
   icon:
   - base64data: ""
     mediatype: ""
@@ -173,7 +170,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: iofog-operator
-                image: ghcr.io/datasance/operator:3.7.2
+                image: ghcr.io/eclipse-iofog/operator:3.8.0-rc.1
                 imagePullPolicy: Always
                 name: iofog-operator
                 resources: {}
@@ -192,7 +189,6 @@ spec:
   keywords:
   - iofog
   - datasance
-  - pot
   links:
   - name: Datasance PoT // Iofog Operator
     url: https://datasance.com
@@ -200,4 +196,4 @@ spec:
   minKubeVersion: 1.18.0
   provider:
     name: Datasance
-  version: 3.7.2
+  version: 3.8.0-rc.1

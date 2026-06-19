@@ -1,0 +1,39 @@
+{{- if .Values.controlplane.create }}
+apiVersion: {{ required "crdGroup is required" .Values.crdGroup }}/v3
+kind: ControlPlane
+metadata:
+  name: {{ default .Release.Name .Values.controlplane.name }}
+  namespace: {{ default .Release.Namespace .Values.controlplane.namespace }}
+  labels:
+    {{- include "iofog-operator.labels" . | nindent 4 }}
+    {{- with .Values.controlplane.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.controlplane.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- $auth := .Values.controlplane.spec.auth }}
+  {{- $mode := required "controlplane.spec.auth.mode is required" $auth.mode }}
+  {{- if eq $mode "embedded" }}
+  {{- $bootstrap := required "controlplane.spec.auth.bootstrap is required when mode=embedded" $auth.bootstrap }}
+  {{- $_ := required "controlplane.spec.auth.bootstrap.username is required when mode=embedded" $bootstrap.username }}
+  {{- if $bootstrap.passwordSecretRef }}
+  {{- $_ := required "controlplane.spec.auth.bootstrap.passwordSecretRef.name is required" $bootstrap.passwordSecretRef.name }}
+  {{- $_ := required "controlplane.spec.auth.bootstrap.passwordSecretRef.key is required" $bootstrap.passwordSecretRef.key }}
+  {{- else }}
+  {{- $_ := required "controlplane.spec.auth.bootstrap.password is required when mode=embedded (or set passwordSecretRef)" $bootstrap.password }}
+  {{- end }}
+  {{- else if eq $mode "external" }}
+  {{- $_ := required "controlplane.spec.auth.issuerUrl is required when mode=external" $auth.issuerUrl }}
+  {{- $client := required "controlplane.spec.auth.client is required when mode=external" $auth.client }}
+  {{- $_ := required "controlplane.spec.auth.client.id is required when mode=external" $client.id }}
+  {{- $_ := required "controlplane.spec.auth.client.secret is required when mode=external" $client.secret }}
+  {{- else }}
+  {{- fail (printf "controlplane.spec.auth.mode must be embedded or external, got %q" $mode) }}
+  {{- end }}
+  {{- with .Values.controlplane.spec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

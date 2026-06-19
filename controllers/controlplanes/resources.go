@@ -1,20 +1,8 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Datasance Teknoloji A.S.
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package controllers
 
 import (
-	"github.com/datasance/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -25,18 +13,27 @@ import (
 
 const (
 	standardLabelManagedBy = "iofog-operator"
-	standardLabelName      = "pot"
+	standardLabelName      = "iofog"
+	controllerIngressName  = "controller"
+	// controllerConsolePortName is the Service port name for EdgeOps Console (≤15 chars for Ingress).
+	controllerConsolePortName    = "console"
+	defaultControllerConsolePort = 8008
+	controllerConsoleServicePort = 80
+	controllerAPIPort            = 51121
 )
 
-// getStandardLabels returns Kubernetes and Datasance standard labels for operator-created resources.
+// getStandardLabels returns Kubernetes and mirror-flavor standard labels for operator-created resources.
 func getStandardLabels(component, instanceName string) map[string]string {
-	return map[string]string{
+	labels := map[string]string{
 		"app.kubernetes.io/name":       standardLabelName,
 		"app.kubernetes.io/instance":   instanceName,
 		"app.kubernetes.io/component":  component,
 		"app.kubernetes.io/managed-by": standardLabelManagedBy,
-		"datasance.com/component":      component,
 	}
+	for k, v := range util.ComponentLabel(component) {
+		labels[k] = v
+	}
+	return labels
 }
 
 // mergeLabels merges existing labels with standard labels; standard labels take precedence.
@@ -113,7 +110,7 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 
 	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "pot-controller",
+			Name:        controllerIngressName,
 			Namespace:   namespace,
 			Labels:      labels,
 			Annotations: cfg.annotations,
@@ -139,7 +136,7 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 										Service: &networkingv1.IngressServiceBackend{
 											Name: "controller",
 											Port: networkingv1.ServiceBackendPort{
-												Name: "ecn-viewer",
+												Name: controllerConsolePortName,
 											},
 										},
 									},

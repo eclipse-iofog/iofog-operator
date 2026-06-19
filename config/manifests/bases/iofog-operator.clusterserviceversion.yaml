@@ -8,14 +8,15 @@ metadata:
           "apiVersion": "datasance.com/v3",
           "kind": "ControlPlane",
           "metadata": {
-            "name": "pot"
+            "name": "iofog"
           },
           "spec": {
             "replicas": {
-              "controller": 2
+              "controller": 2,
+              "nats": 2
             },
             "database": {
-              "provider": null,
+              "provider": "postgres",
               "user": null,
               "host": null,
               "port": null,
@@ -23,18 +24,17 @@ metadata:
               "databaseName": null
             },
             "auth": {
-              "url": null,
-              "realm": null,
-              "realmKey": null,
-              "ssl": null,
-              "controllerClient": null,
-              "controllerSecret": null,
-              "viewerClient": null
+              "mode": "embedded",
+              "bootstrap": {
+                "username": "admin",
+                "password": null
+              }
             },
             "images": {
               "pullSecret": null,
               "controller": null,
-              "router": null
+              "router": null,
+              "nats": null
             },
             "services": {
               "controller": {
@@ -44,15 +44,25 @@ metadata:
               "router": {
                 "type": null,
                 "annotations": null
+              },
+              "nats": {
+                "type": "ClusterIP",
+                "annotations": null
+              },
+              "natsServer": {
+                "type": "ClusterIP",
+                "annotations": null
               }
             },
             "controller": {
+              "publicUrl": null,
+              "trustProxy": false,
+              "consoleUrl": null,
+              "consolePort": 0,
               "pidBaseDir": "",
-              "ecnViewerPort": 0,
-              "ecnViewerUrl": null,
-              "https": null,
+              "https": false,
               "secretName": null,
-              "logLevel": "debug"
+              "logLevel": "info"
             },
             "ingresses": {
               "controller": {
@@ -66,6 +76,14 @@ metadata:
                 "messagePort": 5671,
                 "interiorPort": 55671,
                 "edgePort": 45671
+              },
+              "nats": {
+                "address": null,
+                "serverPort": 4222,
+                "clusterPort": 6222,
+                "leafPort": 7422,
+                "mqttPort": 8883,
+                "httpPort": 8222
               }
             }
           },
@@ -93,12 +111,8 @@ spec:
       kind: ControlPlane
       name: controlplanes.datasance.com
       version: v3
-    - description: Application defines an ioFog application.
-      kind: Application
-      name: applications.datasance.com
-      version: v3
   description: ioFog Control Plane on Kubernetes
-  displayName: iofog-operator
+  displayName: Kubernetes Operator for Eclipse ioFog and Datasance PoT
   icon:
   - base64data: ""
     mediatype: ""
@@ -118,7 +132,6 @@ spec:
   keywords:
   - iofog
   - datasance
-  - pot
   links:
   - name: Datasance PoT // Iofog Operator
     url: https://datasance.com

@@ -1,16 +1,3 @@
-/*
- *  *******************************************************************************
- *  * Copyright (c) 2023 Datasance Teknoloji A.S.
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Eclipse Public License v. 2.0 which is available at
- *  * http://www.eclipse.org/legal/epl-2.0
- *  *
- *  * SPDX-License-Identifier: EPL-2.0
- *  *******************************************************************************
- *
- */
-
 package nats
 
 import (
@@ -75,7 +62,7 @@ func ToNatsSize(s string) string {
 
 // server.conf template. Placeholders: $NATS_SERVER_PORT$, $NATS_HTTP_PORT$,
 // $OPERATOR_JWT$, $SYSTEM_ACCOUNT$, $JETSTREAM_DOMAIN$, $JETSTREAM_KEY$, $JETSTREAM_PREV_KEY$,
-// $NATS_CLUSTER_ROUTES$, $NATS_SSL_DIR$, $NATS_CERT_NAME$, $NATS_MQTT_CERT_NAME$,
+// $NATS_CLUSTER_ROUTES$, $NATS_TLS_DIR$, $NATS_CERT_NAME$, $NATS_MQTT_CERT_NAME$,
 // $NATS_LEAF_PORT$, $NATS_LEAF_ADVERTISE$, $NATS_CLUSTER_PORT$, $NATS_MQTT_PORT$, $NATS_JWT_DIR$, $CONTROLLER_NAME$,
 // $MAX_MEMORY_STORE$, $MAX_FILE_STORE$.
 const serverConfTemplate = `port: $NATS_SERVER_PORT$
@@ -105,9 +92,9 @@ cluster: {
   no_advertise: true
   routes: $NATS_CLUSTER_ROUTES$
   tls: {
-    ca_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/ca.crt"
-    cert_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/tls.crt"
-    key_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/tls.key"
+    ca_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/ca.crt"
+    cert_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.crt"
+    key_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.key"
     handshake_first: true
     verify: true
     timeout: "3s"
@@ -116,11 +103,10 @@ cluster: {
 
 leafnodes: {
   port: $NATS_LEAF_PORT$
-  advertise: $NATS_LEAF_ADVERTISE$
-  tls: {
-    ca_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/ca.crt"
-    cert_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/tls.crt"
-    key_file: "$NATS_SSL_DIR$/$NATS_CERT_NAME$/tls.key"
+$NATS_LEAF_ADVERTISE_LINE$  tls: {
+    ca_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/ca.crt"
+    cert_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.crt"
+    key_file: "$NATS_TLS_DIR$/$NATS_CERT_NAME$/tls.key"
     verify: true
 	handshake_first: true
     timeout: "3s"
@@ -130,9 +116,9 @@ leafnodes: {
 mqtt: {
   port: $NATS_MQTT_PORT$
   tls: {
-    ca_file: "$NATS_SSL_DIR$/$NATS_MQTT_CERT_NAME$/ca.crt"
-    cert_file: "$NATS_SSL_DIR$/$NATS_MQTT_CERT_NAME$/tls.crt"
-    key_file: "$NATS_SSL_DIR$/$NATS_MQTT_CERT_NAME$/tls.key"
+    ca_file: "$NATS_TLS_DIR$/$NATS_MQTT_CERT_NAME$/ca.crt"
+    cert_file: "$NATS_TLS_DIR$/$NATS_MQTT_CERT_NAME$/tls.crt"
+    key_file: "$NATS_TLS_DIR$/$NATS_MQTT_CERT_NAME$/tls.key"
     handshake_first: true
     timeout: "3s"
   }
@@ -179,6 +165,10 @@ func escapeConfString(s string) string {
 // BuildServerConf returns server.conf content with placeholders replaced.
 // SELFNAME is left as $SELFNAME so the NATS image can substitute from the pod's metadata.name (downward API).
 func BuildServerConf(p ServerConfParams) string {
+	leafAdvertiseLine := ""
+	if p.LeafAdvertise != "" {
+		leafAdvertiseLine = fmt.Sprintf("  advertise: %s\n", p.LeafAdvertise)
+	}
 	s := serverConfTemplate
 	repl := []string{
 		"$NATS_SERVER_PORT$", fmt.Sprintf("%d", p.ServerPort),
@@ -189,11 +179,11 @@ func BuildServerConf(p ServerConfParams) string {
 		"$JETSTREAM_KEY$", escapeConfString(p.JetStreamKey),
 		"$JETSTREAM_PREV_KEY$", escapeConfString(p.JetStreamPrev),
 		"$NATS_CLUSTER_ROUTES$", p.ClusterRoutes,
-		"$NATS_SSL_DIR$", p.SSLDir,
+		"$NATS_TLS_DIR$", p.SSLDir,
 		"$NATS_CERT_NAME$", p.CertName,
 		"$NATS_MQTT_CERT_NAME$", p.MqttCertName,
 		"$NATS_LEAF_PORT$", fmt.Sprintf("%d", p.LeafPort),
-		"$NATS_LEAF_ADVERTISE$", p.LeafAdvertise,
+		"$NATS_LEAF_ADVERTISE_LINE$", leafAdvertiseLine,
 		"$NATS_CLUSTER_PORT$", fmt.Sprintf("%d", p.ClusterPort),
 		"$NATS_MQTT_PORT$", fmt.Sprintf("%d", p.MqttPort),
 		"$NATS_JWT_DIR$", p.JWTDir,
