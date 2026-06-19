@@ -439,7 +439,7 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 		cfg.pidBaseDir = "/home/runner"
 	}
 
-	if cfg.https == nil || *cfg.https == false {
+	if cfg.https == nil || !*cfg.https {
 		cfg.scheme = "http"
 	} else {
 		cfg.scheme = "https"
@@ -468,9 +468,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 	msvc := &microservice{
 		availableDelay: 5,
 		name:           "controller",
-		labels: map[string]string{
-			"datasance.com/component": "controller",
-		},
+		labels:         util.ComponentLabel("controller"),
 		rbacRules: []rbacv1.PolicyRule{
 			{
 				Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
@@ -728,7 +726,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 	}
 
 	// Add TLS secret details if type is https and secretname is provided
-	if cfg.https != nil && *cfg.https == true {
+	if cfg.https != nil && *cfg.https {
 		msvc.volumes = append(msvc.volumes, corev1.Volume{
 			Name: "controller-cert",
 			VolumeSource: corev1.VolumeSource{
@@ -740,7 +738,7 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].volumeMounts = append(msvc.containers[0].volumeMounts, corev1.VolumeMount{
 			Name:      "controller-cert",
-			MountPath: "/etc/pot/controller-cert/",
+			MountPath: "/etc/iofog/controller-cert/",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
@@ -750,17 +748,17 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_CERT",
-			Value: "/etc/pot/controller-cert/tls.crt",
+			Value: "/etc/iofog/controller-cert/tls.crt",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_KEY",
-			Value: "/etc/pot/controller-cert/tls.key",
+			Value: "/etc/iofog/controller-cert/tls.key",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
 			Name:  "SSL_PATH_INTERMEDIATE_CERT",
-			Value: "/etc/pot/controller-cert/ca.crt",
+			Value: "/etc/iofog/controller-cert/ca.crt",
 		})
 
 	}
@@ -902,12 +900,11 @@ func newRouterMicroservice(cfg routerMicroserviceConfig) *microservice {
 
 	return &microservice{
 		name: routerName,
-		labels: map[string]string{
-			"datasance.com/component": routerName,
-			"application":             "interior-router",
-			"skupper.io/component":    "router",
-			"skupper.io/type":         "site",
-		},
+		labels: mergeLabels(map[string]string{
+			"application":          "interior-router",
+			"skupper.io/component": "router",
+			"skupper.io/type":      "site",
+		}, util.ComponentLabel(routerName)),
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",
 			"prometheus.io/scrape": "true",
@@ -1213,7 +1210,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 		volumeClaimTemplates:   []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "js-data"}, Spec: pvcSpec}},
 		imagePullSecret:        cfg.imagePullSecret,
 		replicas:               cfg.replicas,
-		labels:                 map[string]string{"datasance.com/component": "nats"},
+		labels:                 util.ComponentLabel("nats"),
 		services: []service{
 			{name: nats.HeadlessServiceName, serviceType: "ClusterIP", headless: true, ports: headlessPorts},
 			{name: nats.ClientServiceName, serviceType: cfg.serviceType, serviceAnnotations: cfg.serviceAnnotations, trafficPolicy: getTrafficPolicy(cfg.serviceType, cfg.externalTrafficPolicy), ports: clientPorts},
@@ -1312,12 +1309,11 @@ func newRouterMicroserviceWithName(cfg routerMicroserviceConfig, name string) *m
 
 	return &microservice{
 		name: name,
-		labels: map[string]string{
-			"datasance.com/component": routerName,
-			"application":             "interior-router",
-			"skupper.io/component":    "router",
-			"skupper.io/type":         "site",
-		},
+		labels: mergeLabels(map[string]string{
+			"application":          "interior-router",
+			"skupper.io/component": "router",
+			"skupper.io/type":      "site",
+		}, util.ComponentLabel(routerName)),
 		annotations: map[string]string{
 			"prometheus.io/port":   "9090",
 			"prometheus.io/scrape": "true",

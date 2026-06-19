@@ -2,7 +2,8 @@ package util
 
 import "fmt"
 
-// These values are set by the linker, e.g. "LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1".
+// Image defaults are set by the linker, e.g. "LDFLAGS += -X $(PREFIX).controllerTag=v3.0.0-beta1".
+// Mirror flavor labels: see flavor.go (componentLabelDomain).
 var (
 	repo          = "undefined" //nolint:gochecknoglobals
 	controllerTag = "undefined" //nolint:gochecknoglobals
