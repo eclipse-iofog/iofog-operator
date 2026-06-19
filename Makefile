@@ -276,6 +276,29 @@ release-manifests: kustomize ## Build manifest tarball for one flavor (FLAVOR + 
 	@chmod +x hack/release-manifests.sh
 	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) hack/release-manifests.sh $(FLAVOR) $(VERSION_TAG)
 
+.PHONY: package-helm package-helm-all
+package-helm-all: ## Build Helm chart tarballs for both flavors (VERSION_TAG required)
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@chmod +x hack/package-helm.sh
+	@IMAGE_REGISTRY=ghcr.io/datasance OPERATOR_CRD_GROUP=datasance.com hack/package-helm.sh datasance $(VERSION_TAG)
+	@IMAGE_REGISTRY=ghcr.io/eclipse-iofog OPERATOR_CRD_GROUP=iofog.org hack/package-helm.sh iofog $(VERSION_TAG)
+
+package-helm: ## Build Helm chart tarball for one flavor (FLAVOR + VERSION_TAG required)
+	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@chmod +x hack/package-helm.sh
+	@IMAGE_REGISTRY=$(IMAGE_REGISTRY) OPERATOR_CRD_GROUP=$(OPERATOR_CRD_GROUP) hack/package-helm.sh $(FLAVOR) $(VERSION_TAG)
+
+.PHONY: render-helm-docs
+render-helm-docs: ## Render flavor-stamped gh-pages landing HTML (FLAVOR + VERSION_TAG + OUTPUT_DIR required)
+	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
+	@test -n "$(VERSION_TAG)" || (echo "VERSION_TAG is required" && exit 1)
+	@test -n "$(OUTPUT_DIR)" || (echo "OUTPUT_DIR is required" && exit 1)
+	@chmod +x hack/render-helm-docs.sh
+	@HELM_REPO_BASE_URL=$(HELM_REPO_BASE_URL) OCI_SOURCE_REPO=$(OCI_SOURCE_REPO) \
+		IMAGE_REGISTRY=$(IMAGE_REGISTRY) OPERATOR_CRD_GROUP=$(OPERATOR_CRD_GROUP) \
+		hack/render-helm-docs.sh $(FLAVOR) $(VERSION_TAG) $(OUTPUT_DIR)
+
 .PHONY: bundle
 bundle: kustomize ## Generate flavor-specific OLM bundle (FLAVOR=datasance|iofog required)
 	@test -n "$(FLAVOR)" || (echo "FLAVOR is required (datasance|iofog)" && exit 1)
