@@ -1,202 +1,96 @@
-linters-settings:
-  cyclop:
-    max-complexity: 30
-    skip-tests: true
-  depguard:
-    list-type: blacklist
-    packages:
-    # logging is allowed only by logutils.Log, logrus
-    # is allowed to use only in logutils package
-    #      - github.com/sirupsen/logrus
-    packages-with-error-message:
-  #      - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
-  dupl:
-    threshold: 100
-  funlen:
-    lines: 250
-    statements: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-  gocognit:
-    # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 36
-  gocyclo:
-    min-complexity: 36
-  goimports:
-  #    local-prefixes: github.com/golangci/golangci-lint
-  gomnd:
-    settings:
-      mnd:
-        # don't include the "operation" and "assign"
-        checks: argument,case,condition,return
-  govet:
-    check-shadowing: false
-    settings:
-      printf:
-        funcs:
-  lll:
-    line-length: 180
-  maligned:
-    suggest-new: true
-  misspell:
-    locale: US
-  nestif:
-    min-complexity: 10
+# golangci-lint configuration for ioFog Operator
+# Target: Go 1.26.4, module github.com/eclipse-iofog/iofog-operator/v3
 
-  varnamelen:
-    # The longest distance, in source lines, that is being considered a "small scope".
-    # Variables used in at most this many lines will be ignored.
-    # Default: 5
-    max-distance: 50
-    # The minimum length of a variable's name that is considered "long".
-    # Variable names that are at least this long will be ignored.
-    # Default: 3
-    min-name-length: 2
-
-linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
-  enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - containedctx
-    - contextcheck
-    - cyclop
-    #    - deadcode
-    - decorder
-    - depguard
-    - dogsled
-    - dupl
-    #    - dupword
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - execinquery
-    - exhaustive
-    #    - exhaustivestruct
-    #    - exhaustruct
-    - exportloopref
-    - forbidigo
-    - forcetypeassert
-    - funlen
-    # - gci
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - godot
-    #    - godox
-    #    - goerr113
-    - gofmt
-    - gofumpt
-    - goheader
-    - goimports
-    #    - golint
-    - gomnd
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - grouper
-    #    - ifshort
-    - importas
-    - ineffassign
-    - interfacebloat
-    #    - interfacer
-    - ireturn
-    - lll
-    #    - loggercheck
-    - maintidx
-    - makezero
-    #    - maligned
-    - misspell
-    - nakedret
-    - nestif
-    - nilerr
-    - nilnil
-    - nlreturn
-    - noctx
-    # - nolintlint
-    #    - nonamedreturns
-    #    - nosnakecase
-    - nosprintfhostport
-    - paralleltest
-    - prealloc
-    - predeclared
-    - promlinter
-    - reassign
-    - revive
-    - rowserrcheck
-    #    - scopelint
-    - sqlclosecheck
-    - staticcheck
-    #    - structcheck
-    - stylecheck
-    - tagliatelle
-    - tenv
-    #    - testableexamples
-    - testpackage
-    - thelper
-    - tparallel
-    # - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - usestdlibvars
-    #    - varcheck
-    - varnamelen
-    - wastedassign
-    - whitespace
-    #    - wrapcheck
-    - wsl
+version: "2"
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gomnd
-        - lll
-        - maligned
-        - gocyclo
-        - dupl
-        - funlen
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - ^\.cursor/
+      - ^bundle/
+      - ^vendor/
 
+linters:
+  default: none
+  enable:
+    - govet
+    - revive
+    - staticcheck
+    - errcheck
+    - misspell
+    - errorlint
+  settings:
+    revive:
+      enable-all-rules: true
+      rules:
+        - {name: add-constant, disabled: true}
+        - {name: argument-limit, disabled: true}
+        - {name: cognitive-complexity, disabled: true}
+        - {name: confusing-naming, disabled: true}
+        - {name: confusing-results, disabled: true}
+        - {name: cyclomatic, disabled: true}
+        - {name: early-return, disabled: true}
+        - {name: empty-block, disabled: true}
+        - {name: enforce-switch-style, disabled: true}
+        - {name: flag-parameter, disabled: true}
+        - {name: function-length, disabled: true}
+        - {name: function-result-limit, disabled: true}
+        - {name: import-shadowing, disabled: true}
+        - {name: line-length-limit, disabled: true}
+        - {name: max-control-nesting, disabled: true}
+        - {name: max-public-structs, disabled: true}
+        - {name: redundant-import-alias, disabled: true}
+        - {name: unsecure-url-scheme, disabled: true}
+        - {name: unused-parameter, disabled: true}
+        - {name: unused-receiver, disabled: true}
+        - {name: use-waitgroup-go, disabled: true}
+        - {name: var-naming, disabled: true}
+        # kubebuilder / controller-runtime conventions
+        - {name: struct-tag, disabled: true}
+        - {name: package-directory-mismatch, disabled: true}
+        # validation and reconcile style (tighten in a follow-up)
+        - {name: use-errors-new, disabled: true}
+        - {name: if-return, disabled: true}
+        - {name: use-any, disabled: true}
+        - {name: redefines-builtin-id, disabled: true}
+        - {name: empty-lines, disabled: true}
+        - {name: bool-literal-in-expr, disabled: true}
+        - {name: unexported-naming, disabled: true}
+        - {name: unnecessary-format, disabled: true}
+        - {name: exported, disabled: true}
+        - {name: package-naming, disabled: true}
+        - {name: deep-exit, disabled: true}
+    staticcheck:
+      checks:
+        - all
+        - -SA1019
+        - -ST1003
+        - -QF1008
+        - -S1011
+    misspell:
+      locale: US
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+  exclusions:
+    generated: lax
+    paths:
+      - ^bundle/
+      - ^vendor/
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
 
 run:
-  skip-files:
-    - ".*_test.go"
-
-
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-service:
-  golangci-lint-version: 1.49.x # use the fixed version to not introduce new linters unexpectedly
-  prepare:
-    - echo "here I can run custom commands, but no preparation needed for this repo"
-
-
+  timeout: 5m

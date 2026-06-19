@@ -1,0 +1,528 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ioFog Operator Helm Values",
+  "description": "Configuration values for the ioFog operator chart. The operator watches ControlPlane custom resources; the created ControlPlane name defaults to the Helm release name.",
+  "type": "object",
+  "properties": {
+    "nameOverride": {
+      "type": "string",
+      "title": "Name Override",
+      "description": "Override the chart name used in resource names and labels.",
+      "default": "iofog-operator"
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "title": "Full Name Override",
+      "description": "Override the full name used for operator resources (e.g. deployment, service account).",
+      "default": "iofog-operator"
+    },
+    "crdGroup": {
+      "type": "string",
+      "title": "CRD API Group",
+      "description": "API group for ControlPlane resources (datasance.com or iofog.org).",
+      "enum": ["datasance.com", "iofog.org"],
+      "default": "datasance.com"
+    },
+    "imageRegistry": {
+      "type": "string",
+      "title": "Image Registry",
+      "description": "Container registry prefix for operator and component images (stamped per mirror at package time).",
+      "default": "ghcr.io/datasance"
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "title": "Image Pull Secrets",
+      "description": "Global image pull secrets for pulling container images.",
+      "items": { "type": "object" }
+    },
+    "crds": {
+      "type": "object",
+      "title": "Custom Resource Definitions",
+      "description": "Control installation of the ControlPlane CRD.",
+      "properties": {
+        "install": {
+          "type": "boolean",
+          "title": "Install CRDs",
+          "description": "Whether to install the ControlPlane CRD with this chart.",
+          "default": true
+        }
+      }
+    },
+    "rbac": {
+      "type": "object",
+      "title": "RBAC",
+      "description": "Role-based access control for the operator.",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "title": "Create RBAC",
+          "description": "Whether to create RBAC resources (ClusterRole, Role, bindings).",
+          "default": true
+        }
+      }
+    },
+    "operator": {
+      "type": "object",
+      "title": "Operator",
+      "description": "ioFog operator deployment configuration.",
+      "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "title": "Replica Count",
+          "description": "Number of operator replicas.",
+          "default": 1,
+          "minimum": 0
+        },
+        "image": {
+          "type": "string",
+          "title": "Operator Image",
+          "description": "Container image for the operator.",
+          "default": "ghcr.io/datasance/operator:3.8.0"
+        },
+        "imagePullPolicy": {
+          "type": "string",
+          "title": "Image Pull Policy",
+          "description": "Image pull policy for the operator.",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "default": "Always"
+        },
+        "serviceAccount": {
+          "type": "object",
+          "title": "Service Account",
+          "properties": {
+            "create": {
+              "type": "boolean",
+              "title": "Create Service Account",
+              "default": true
+            },
+            "name": {
+              "type": "string",
+              "title": "Service Account Name",
+              "default": "iofog-operator"
+            },
+            "annotations": {
+              "type": "object",
+              "title": "Annotations",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        },
+        "podAnnotations": {
+          "type": "object",
+          "title": "Pod Annotations",
+          "additionalProperties": { "type": "string" }
+        },
+        "podLabels": {
+          "type": "object",
+          "title": "Pod Labels",
+          "additionalProperties": { "type": "string" }
+        },
+        "podSecurityContext": {
+          "type": "object",
+          "title": "Pod Security Context"
+        },
+        "securityContext": {
+          "type": "object",
+          "title": "Container Security Context"
+        },
+        "resources": {
+          "type": "object",
+          "title": "Resources",
+          "description": "CPU/memory resource requests and limits."
+        },
+        "nodeSelector": {
+          "type": "object",
+          "title": "Node Selector",
+          "additionalProperties": { "type": "string" }
+        },
+        "tolerations": {
+          "type": "array",
+          "title": "Tolerations",
+          "items": { "type": "object" }
+        },
+        "affinity": {
+          "type": "object",
+          "title": "Affinity"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "title": "Image Pull Secrets",
+          "items": { "type": "object" }
+        },
+        "extraEnv": {
+          "type": "array",
+          "title": "Extra Environment Variables",
+          "items": { "type": "object" }
+        },
+        "extraArgs": {
+          "type": "array",
+          "title": "Extra Arguments",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "controlplane": {
+      "type": "object",
+      "title": "ControlPlane",
+      "description": "ControlPlane custom resource to create. Its name defaults to the Helm release name so the operator watches this instance.",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "title": "Create ControlPlane",
+          "description": "Whether to create a ControlPlane CR instance.",
+          "default": true
+        },
+        "name": {
+          "type": "string",
+          "title": "ControlPlane Name",
+          "description": "Name of the ControlPlane resource. Defaults to the Helm release name if unset.",
+          "default": "pot"
+        },
+        "namespace": {
+          "type": "string",
+          "title": "Namespace",
+          "description": "Namespace for the ControlPlane resource. Defaults to the release namespace."
+        },
+        "annotations": {
+          "type": "object",
+          "title": "Annotations",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "title": "Labels",
+          "additionalProperties": { "type": "string" }
+        },
+        "spec": {
+          "type": "object",
+          "title": "ControlPlane Spec",
+          "description": "Desired state of the ControlPlane (auth, controller, database, services, nats, vault, etc.).",
+          "properties": {
+            "replicas": {
+              "type": "object",
+              "title": "Replicas",
+              "properties": {
+                "controller": {
+                  "type": "integer",
+                  "title": "Controller Replicas",
+                  "default": 1,
+                  "minimum": 0
+                },
+                "nats": {
+                  "type": "integer",
+                  "title": "NATS Replicas",
+                  "description": "Number of NATS server replicas (default 2, min 2 when NATS enabled).",
+                  "minimum": 2
+                }
+              }
+            },
+            "auth": {
+              "type": "object",
+              "title": "Auth (OIDC)",
+              "description": "Controller OIDC configuration (embedded local IdP or external). mode is required when controlplane.create is true.",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "title": "Auth Mode",
+                  "description": "embedded (local OIDC) or external (IdP).",
+                  "enum": ["embedded", "external"]
+                },
+                "insecureAllowHttp": {
+                  "type": "boolean",
+                  "title": "Insecure Allow HTTP",
+                  "description": "Allow HTTP for OIDC endpoints (dev only).",
+                  "default": false
+                },
+                "insecureAllowBootstrapLog": {
+                  "type": "boolean",
+                  "title": "Insecure Allow Bootstrap Log",
+                  "description": "Log bootstrap credentials (dev only).",
+                  "default": false
+                },
+                "bootstrap": {
+                  "type": "object",
+                  "title": "Bootstrap",
+                  "description": "Admin bootstrap credentials; required when mode=embedded.",
+                  "properties": {
+                    "username": { "type": "string", "title": "Username", "default": "admin" },
+                    "password": { "type": "string", "title": "Password", "description": "≥12 chars, 1 upper, 1 special (or use passwordSecretRef)." },
+                    "passwordSecretRef": {
+                      "type": "object",
+                      "title": "Password Secret Ref",
+                      "properties": {
+                        "name": { "type": "string", "title": "Secret Name" },
+                        "key": { "type": "string", "title": "Secret Key" },
+                        "optional": { "type": "boolean", "title": "Optional" }
+                      },
+                      "required": ["name", "key"]
+                    }
+                  }
+                },
+                "issuerUrl": {
+                  "type": "string",
+                  "title": "Issuer URL",
+                  "description": "OIDC issuer URL; required when mode=external."
+                },
+                "client": {
+                  "type": "object",
+                  "title": "OAuth2 Client",
+                  "description": "Controller API client credentials; required when mode=external.",
+                  "properties": {
+                    "id": { "type": "string", "title": "Client ID" },
+                    "secret": { "type": "string", "title": "Client Secret" }
+                  }
+                },
+                "consoleClient": {
+                  "type": "string",
+                  "title": "Console Client ID",
+                  "description": "OIDC client id for EdgeOps Console (embedded only)."
+                },
+                "consoleClientEnabled": {
+                  "type": "boolean",
+                  "title": "Console Client Enabled",
+                  "description": "Register the console OIDC client (embedded only)."
+                },
+                "rateLimit": {
+                  "type": "object",
+                  "title": "Rate Limit",
+                  "description": "Auth rate limiting (embedded only).",
+                  "properties": {
+                    "enabled": { "type": "boolean", "title": "Enabled" },
+                    "maxRequestsPerWindow": { "type": "integer", "title": "Max Requests Per Window" },
+                    "windowMs": { "type": "integer", "title": "Window Ms" }
+                  }
+                },
+                "sessionStore": {
+                  "type": "object",
+                  "title": "Session Store",
+                  "description": "Session storage (embedded only).",
+                  "properties": {
+                    "type": { "type": "string", "title": "Type", "enum": ["memory", "database"] },
+                    "ttlMs": { "type": "integer", "title": "TTL Ms" },
+                    "secret": { "type": "string", "title": "Secret" }
+                  }
+                },
+                "tokenTtl": {
+                  "type": "object",
+                  "title": "Token TTL",
+                  "description": "Access/refresh token TTLs (embedded only).",
+                  "properties": {
+                    "accessTokenTtlSeconds": { "type": "integer", "title": "Access Token TTL Seconds" },
+                    "refreshTokenTtlSeconds": { "type": "integer", "title": "Refresh Token TTL Seconds" }
+                  }
+                },
+                "oidcTtl": {
+                  "type": "object",
+                  "title": "OIDC TTL",
+                  "description": "OIDC interaction/grant/session TTLs (embedded only).",
+                  "properties": {
+                    "interactionTtlSeconds": { "type": "integer", "title": "Interaction TTL Seconds" },
+                    "grantTtlSeconds": { "type": "integer", "title": "Grant TTL Seconds" },
+                    "sessionTtlSeconds": { "type": "integer", "title": "Session TTL Seconds" },
+                    "idTokenTtlSeconds": { "type": "integer", "title": "ID Token TTL Seconds" }
+                  }
+                }
+              },
+              "required": ["mode"]
+            },
+            "database": {
+              "type": "object",
+              "title": "Database",
+              "description": "Database configuration for ioFog Controller (required in CRD v3).",
+              "properties": {
+                "provider": { "type": "string", "title": "Provider" },
+                "user": { "type": "string", "title": "User" },
+                "host": { "type": "string", "title": "Host" },
+                "port": { "type": "integer", "title": "Port" },
+                "password": { "type": "string", "title": "Password" },
+                "databaseName": { "type": "string", "title": "Database Name" },
+                "ssl": { "type": "boolean", "title": "SSL" },
+                "ca": { "type": "string", "title": "CA" }
+              }
+            },
+            "events": {
+              "type": "object",
+              "title": "Events",
+              "description": "Event retention and audit settings.",
+              "properties": {
+                "auditEnabled": { "type": "boolean", "title": "Audit Enabled", "default": true },
+                "retentionDays": { "type": "integer", "title": "Retention Days", "default": 14 },
+                "cleanupInterval": { "type": "integer", "title": "Cleanup Interval", "default": 86400 },
+                "captureIpAddress": { "type": "boolean", "title": "Capture IP Address", "default": true }
+              }
+            },
+            "images": {
+              "type": "object",
+              "title": "Images",
+              "description": "Container images for Controller, Router, and NATS.",
+              "properties": {
+                "pullSecret": { "type": "string", "title": "Pull Secret" },
+                "controller": { "type": "string", "title": "Controller Image", "default": "ghcr.io/datasance/controller:3.8.0-rc.1" },
+                "router": { "type": "string", "title": "Router Image", "default": "ghcr.io/datasance/router:3.8.0-rc.1" },
+                "nats": { "type": "string", "title": "NATS Image", "default": "ghcr.io/datasance/nats:2.14.2-rc.1" }
+              }
+            },
+            "services": {
+              "type": "object",
+              "title": "Services",
+              "description": "Service types and options for Controller, Router, NATS, and NATS Server.",
+              "properties": {
+                "controller": {
+                  "type": "object",
+                  "title": "Controller Service",
+                  "properties": {
+                    "type": { "type": "string", "title": "Type", "default": "LoadBalancer" },
+                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "externalTrafficPolicy": { "type": "string", "title": "External Traffic Policy", "description": "Local or Cluster" }
+                  }
+                },
+                "router": {
+                  "type": "object",
+                  "title": "Router Service",
+                  "properties": {
+                    "type": { "type": "string", "title": "Type", "default": "LoadBalancer" },
+                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "externalTrafficPolicy": { "type": "string", "title": "External Traffic Policy" }
+                  }
+                },
+                "nats": {
+                  "type": "object",
+                  "title": "NATS Service",
+                  "properties": {
+                    "type": { "type": "string", "title": "Type", "default": "ClusterIP" },
+                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "externalTrafficPolicy": { "type": "string", "title": "External Traffic Policy" }
+                  }
+                },
+                "natsServer": {
+                  "type": "object",
+                  "title": "NATS Server Service",
+                  "properties": {
+                    "type": { "type": "string", "title": "Type", "default": "ClusterIP" },
+                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "externalTrafficPolicy": { "type": "string", "title": "External Traffic Policy" }
+                  }
+                }
+              }
+            },
+            "nats": {
+              "type": "object",
+              "title": "NATS Hub",
+              "description": "NATS hub configuration (StatefulSet, JetStream).",
+              "properties": {
+                "enabled": { "type": "boolean", "title": "Enabled", "default": true },
+                "jetStream": {
+                  "type": "object",
+                  "title": "JetStream",
+                  "properties": {
+                    "memoryStoreSize": { "type": "string", "title": "Memory Store Size", "description": "Default 1Gi" },
+                    "storageSize": { "type": "string", "title": "Storage Size", "description": "Default 10Gi" },
+                    "storageClassName": { "type": "string", "title": "Storage Class Name" }
+                  }
+                }
+              }
+            },
+            "controller": {
+              "type": "object",
+              "title": "Controller Config",
+              "description": "Runtime configuration for ioFog Controller.",
+              "properties": {
+                "publicUrl": { "type": "string", "title": "Public URL", "description": "External controller URL; defaulted from ingress or LoadBalancer when omitted." },
+                "trustProxy": { "type": "boolean", "title": "Trust Proxy", "description": "Trust X-Forwarded-* headers; defaults true when ingress host is set." },
+                "consoleUrl": { "type": "string", "title": "Console URL" },
+                "consolePort": { "type": "integer", "title": "Console Port" },
+                "https": { "type": "boolean", "title": "HTTPS", "default": false },
+                "logLevel": { "type": "string", "title": "Log Level", "default": "info" },
+                "pidBaseDir": { "type": "string", "title": "PID Base Dir" },
+                "secretName": { "type": "string", "title": "Secret Name" }
+              }
+            },
+            "ingresses": {
+              "type": "object",
+              "title": "Ingresses",
+              "description": "Ingress configuration for Controller, Router, and NATS.",
+              "properties": {
+                "controller": {
+                  "type": "object",
+                  "properties": {
+                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "ingressClassName": { "type": "string" },
+                    "host": { "type": "string" },
+                    "secretName": { "type": "string" }
+                  }
+                },
+                "router": {
+                  "type": "object",
+                  "properties": {
+                    "address": { "type": "string" },
+                    "messagePort": { "type": "integer" },
+                    "interiorPort": { "type": "integer" },
+                    "edgePort": { "type": "integer" }
+                  }
+                },
+                "nats": {
+                  "type": "object",
+                  "description": "NATS ingress (address and ports for hub registration).",
+                  "properties": {
+                    "address": { "type": "string" },
+                    "serverPort": { "type": "integer" },
+                    "clusterPort": { "type": "integer" },
+                    "leafPort": { "type": "integer" },
+                    "mqttPort": { "type": "integer" },
+                    "httpPort": { "type": "integer" }
+                  }
+                }
+              }
+            },
+            "vault": {
+              "type": "object",
+              "title": "Vault",
+              "description": "Optional vault provider for secrets (hashicorp, aws, azure, google).",
+              "properties": {
+                "enabled": { "type": "boolean", "title": "Enabled" },
+                "provider": {
+                  "type": "string",
+                  "title": "Provider",
+                  "description": "hashicorp | openbao | vault | aws | aws-secrets-manager | azure | azure-key-vault | google | google-secret-manager"
+                },
+                "basePath": { "type": "string", "title": "Base Path", "description": "e.g. pot/$namespace/secrets" },
+                "hashicorp": {
+                  "type": "object",
+                  "properties": {
+                    "address": { "type": "string" },
+                    "mount": { "type": "string" },
+                    "token": { "type": "string" }
+                  }
+                },
+                "aws": {
+                  "type": "object",
+                  "properties": {
+                    "accessKeyId": { "type": "string" },
+                    "accessKey": { "type": "string" },
+                    "region": { "type": "string" }
+                  }
+                },
+                "azure": {
+                  "type": "object",
+                  "properties": {
+                    "url": { "type": "string" },
+                    "tenantId": { "type": "string" },
+                    "clientId": { "type": "string" },
+                    "clientSecret": { "type": "string" }
+                  }
+                },
+                "google": {
+                  "type": "object",
+                  "properties": {
+                    "projectId": { "type": "string" },
+                    "credentials": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

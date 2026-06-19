@@ -1,0 +1,10 @@
+# Flavor overlay for OLM bundle generation (datasance.com CRD group).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../bases/iofog-operator.clusterserviceversion.yaml
+- ../../../operator
+- ../../../crd/bases/datasance.com_controlplanes.yaml
+- ../../../cr
+- ../../../rbac

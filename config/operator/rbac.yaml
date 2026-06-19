@@ -42,31 +42,7 @@ rules:
     verbs:
       - '*'
   - apiGroups:
-      - iofog.org
-    resources:
-      - applications
-      - apps
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - iofog.org
-    resources:
-      - apps/status
-      - applications/status
-      - apps/finalizers
-      - applications/finalizers
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - iofog.org
+      - datasance.com
     resources:
       - controlplanes
     verbs:
@@ -78,7 +54,7 @@ rules:
       - update
       - watch
   - apiGroups:
-      - iofog.org
+      - datasance.com
     resources:
       - controlplanes/status
       - controlplanes/finalizers

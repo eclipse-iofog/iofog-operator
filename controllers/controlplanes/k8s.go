@@ -2,15 +2,16 @@ package controllers
 
 import (
 	"context"
-	"crypto/tls"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"maps"
+	"reflect"
 	"strings"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
+	"github.com/eclipse-iofog/iofog-operator/v3/internal/auth/controllerlogin"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -266,11 +267,60 @@ func (r *ControlPlaneReconciler) createService(ctx context.Context, ms *microser
 			return err
 		}
 
-		// Resource already exists - don't requeue
+		if serviceNeedsPatch(found, svc) {
+			r.log.Info("Updating existing Service", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+			applyServicePatch(found, svc)
+			if err := r.Client.Update(ctx, found); err != nil {
+				return err
+			}
+			continue
+		}
+
 		r.log.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
 	}
 
 	return nil
+}
+
+func serviceNeedsPatch(existing, desired *corev1.Service) bool {
+	if existing.Spec.Type != desired.Spec.Type {
+		return true
+	}
+	if existing.Spec.ExternalTrafficPolicy != desired.Spec.ExternalTrafficPolicy {
+		return true
+	}
+	if !servicePortsEqual(existing.Spec.Ports, desired.Spec.Ports) {
+		return true
+	}
+	return !maps.Equal(existing.Annotations, desired.Annotations)
+}
+
+func servicePortsEqual(existing, desired []corev1.ServicePort) bool {
+	if len(existing) != len(desired) {
+		return false
+	}
+	byName := func(ports []corev1.ServicePort) map[string]corev1.ServicePort {
+		m := make(map[string]corev1.ServicePort, len(ports))
+		for _, p := range ports {
+			m[p.Name] = p
+		}
+		return m
+	}
+	ex := byName(existing)
+	for name, want := range byName(desired) {
+		got, ok := ex[name]
+		if !ok || got.Port != want.Port || got.Protocol != want.Protocol || got.TargetPort != want.TargetPort {
+			return false
+		}
+	}
+	return true
+}
+
+func applyServicePatch(existing, desired *corev1.Service) {
+	existing.Annotations = desired.Annotations
+	existing.Spec.Type = desired.Spec.Type
+	existing.Spec.ExternalTrafficPolicy = desired.Spec.ExternalTrafficPolicy
+	existing.Spec.Ports = desired.Spec.Ports
 }
 
 func (r *ControlPlaneReconciler) createIngress(ctx context.Context, cfg *controllerIngressConfig) error {
@@ -299,14 +349,81 @@ func (r *ControlPlaneReconciler) createIngress(ctx context.Context, cfg *control
 		return err
 	}
 
-	// Resource already exists - don't requeue
-	r.log.Info(" Ingress already exists, updating existing Ingress:", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
-
-	if err := r.Client.Update(ctx, ingress); err != nil {
-		return err
+	if ingressNeedsPatch(found, ingress) {
+		r.log.Info("Updating existing Ingress", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
+		applyIngressPatch(found, ingress)
+		if err := r.Client.Update(ctx, found); err != nil {
+			return err
+		}
+		return nil
 	}
 
+	r.log.Info("Skip reconcile: Ingress already exists", "Ingress.Namespace", found.Namespace, "Ingress.Name", found.Name)
 	return nil
+}
+
+func ingressNeedsPatch(existing, desired *networkingv1.Ingress) bool {
+	if !maps.Equal(existing.Annotations, desired.Annotations) {
+		return true
+	}
+	if !ingressClassNameEqual(existing.Spec.IngressClassName, desired.Spec.IngressClassName) {
+		return true
+	}
+	if !ingressTLSEqual(existing.Spec.TLS, desired.Spec.TLS) {
+		return true
+	}
+	if ingressHost(existing) != ingressHost(desired) {
+		return true
+	}
+	return !ingressRulesEqual(existing.Spec.Rules, desired.Spec.Rules)
+}
+
+func ingressRulesEqual(a, b []networkingv1.IngressRule) bool {
+	return reflect.DeepEqual(a, b)
+}
+
+func ingressClassNameEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func ingressHost(ing *networkingv1.Ingress) string {
+	if len(ing.Spec.Rules) == 0 {
+		return ""
+	}
+	return ing.Spec.Rules[0].Host
+}
+
+func ingressTLSEqual(a, b []networkingv1.IngressTLS) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].SecretName != b[i].SecretName {
+			return false
+		}
+		if len(a[i].Hosts) != len(b[i].Hosts) {
+			return false
+		}
+		for j := range a[i].Hosts {
+			if a[i].Hosts[j] != b[i].Hosts[j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func applyIngressPatch(existing, desired *networkingv1.Ingress) {
+	existing.Annotations = desired.Annotations
+	existing.Spec.IngressClassName = desired.Spec.IngressClassName
+	existing.Spec.TLS = desired.Spec.TLS
+	existing.Spec.Rules = desired.Spec.Rules
 }
 
 func (r *ControlPlaneReconciler) createServiceAccount(ctx context.Context, ms *microservice) error {
@@ -426,57 +543,44 @@ func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *micr
 	return nil
 }
 
-func (r *ControlPlaneReconciler) loginIofogClient(iofogClient *iofogclient.Client) error {
-	authURL := r.cp.Spec.Auth.URL
-	realm := r.cp.Spec.Auth.Realm
-	clientID := r.cp.Spec.Auth.ControllerClient
-	clientSecret := r.cp.Spec.Auth.ControllerSecret
+func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClient *iofogclient.Client) error {
+	auth := r.cp.Spec.Auth
 
-	type LoginResponse struct {
-		AccessToken string `json:"access_token"`
+	switch auth.Mode {
+	case cpv3.AuthModeEmbedded:
+		if auth.Bootstrap == nil {
+			return fmt.Errorf("auth.bootstrap is required when mode=embedded")
+		}
+		username := strings.TrimSpace(auth.Bootstrap.Username)
+		if username == "" {
+			return fmt.Errorf("auth.bootstrap.username is required when mode=embedded")
+		}
+		password, err := resolveBootstrapPassword(ctx, r.Client, r.cp.Namespace, &auth)
+		if err != nil {
+			return fmt.Errorf("resolve bootstrap password: %w", err)
+		}
+		if password == "" {
+			return fmt.Errorf("auth.bootstrap password is required when mode=embedded")
+		}
+		r.log.Info("Logging in to Controller with bootstrap credentials")
+		return controllerlogin.EmbeddedBootstrapLogin(iofogClient, username, password)
+	case cpv3.AuthModeExternal:
+		if auth.IssuerUrl == "" {
+			return fmt.Errorf("auth.issuerUrl is required when mode=external")
+		}
+		if auth.Client == nil || auth.Client.ID == "" || auth.Client.Secret == "" {
+			return fmt.Errorf("auth.client id and secret are required when mode=external")
+		}
+		r.log.Info("Generating Client Access Token")
+		return controllerlogin.ExternalClientCredentialsLogin(
+			iofogClient,
+			auth.IssuerUrl,
+			auth.Client.ID,
+			auth.Client.Secret,
+		)
+	default:
+		return fmt.Errorf("unsupported auth mode: %q", auth.Mode)
 	}
-
-	r.log.Info("Generating Client Access Token")
-	// Construct the URL for token request
-	url := fmt.Sprintf("%srealms/%s/protocol/openid-connect/token", authURL, realm)
-	method := "POST"
-	payload := fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
-
-	// Create HTTP client with custom transport to skip certificate verification
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	// Create request
-	req, err := http.NewRequest(method, url, strings.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Cache-Control", "no-cache")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	// Send request
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	// Check response status
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
-	// Read response body
-	var response LoginResponse
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return err
-	}
-
-	// Assign access token
-	iofogClient.SetAccessToken(response.AccessToken)
-	return nil
 }
 
 func newInt(val int) *int {
@@ -524,7 +628,7 @@ func (r *ControlPlaneReconciler) createDefaultNatsHub(iofogClient *iofogclient.C
 		ClusterPort: &clusterPort,
 		LeafPort:    &leafPort,
 		MqttPort:    &mqttPort,
-		HttpPort:    &httpPort,
+		HTTPPort:    &httpPort,
 	}
 	_, err := iofogClient.UpsertNatsHub(req)
 	return err

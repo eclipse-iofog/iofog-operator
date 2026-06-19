@@ -1,0 +1,170 @@
+# Global overrides
+nameOverride: "iofog-operator"
+fullnameOverride: "iofog-operator"
+
+# CRD API group for ControlPlane resources (datasance.com or iofog.org)
+crdGroup: datasance.com
+
+# Container registry prefix (stamped per mirror at package time)
+imageRegistry: ghcr.io/datasance
+
+imagePullSecrets: []
+
+crds:
+  install: true
+
+rbac:
+  create: true
+
+operator:
+  replicaCount: 1
+  image: ghcr.io/datasance/operator:3.8.0-rc.1
+  imagePullPolicy: Always
+  serviceAccount:
+    create: true
+    name: "iofog-operator"
+    annotations: {}
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  imagePullSecrets: []
+  extraEnv: []
+  extraArgs: []
+
+controlplane:
+  create: true
+  name: pot
+  namespace: ""
+  annotations: {}
+  labels: {}
+  spec:
+    # --- replicas ---
+    replicas:
+      controller: 1
+      nats: 2
+
+    # --- database (required in ControlPlane CRD v3) ---
+    database:
+      provider: sqlite
+      user: ""
+      host: ""
+      port: 0
+      password: ""
+      databaseName: ""
+      ssl: false
+      ca: ""
+
+    # --- auth (required) — embedded OIDC or external IdP (v3.8; no Keycloak) ---
+    auth:
+      mode: embedded
+      insecureAllowHttp: false
+      insecureAllowBootstrapLog: false
+      bootstrap:
+        username: admin
+        password: ""  # required when mode=embedded — ≥12 chars, 1 upper, 1 special (or use passwordSecretRef)
+      # mode: external
+      # issuerUrl: https://auth.example.com/realms/myrealm
+      # client:
+      #   id: controller
+      #   secret: ""
+      # consoleClient: edgeops-console
+      # consoleClientEnabled: false
+
+    # --- events ---
+    events:
+      auditEnabled: true
+      retentionDays: 14
+      cleanupInterval: 86400
+      captureIpAddress: true
+
+    # --- images ---
+    images:
+      controller: "ghcr.io/datasance/controller:3.8.0-rc.1"
+      router: "ghcr.io/datasance/router:3.8.0-rc.1"
+      nats: "ghcr.io/datasance/nats:2.14.2-rc.1"
+      # pullSecret: ""
+
+    # --- services ---
+    services:
+      controller:
+        type: LoadBalancer
+        # annotations: {}
+        # externalTrafficPolicy: ""  # "Local" or "Cluster"
+      router:
+        type: LoadBalancer
+        # annotations: {}
+        # externalTrafficPolicy: ""
+      nats:
+        type: ClusterIP
+        # annotations: {}
+        # externalTrafficPolicy: ""
+      natsServer:
+        type: ClusterIP
+        # annotations: {}
+        # externalTrafficPolicy: ""
+
+    # --- nats (NATS hub / StatefulSet) ---
+    nats:
+      enabled: true
+      # jetStream:
+      #   memoryStoreSize: "1Gi"
+      #   storageSize: "10Gi"
+      #   storageClassName: ""
+
+    # --- controller runtime ---
+    controller:
+      https: false
+      logLevel: "info"
+      # publicUrl: https://controller.example.com
+      # trustProxy: true
+      # consoleUrl: ""
+      # consolePort: 0
+      # pidBaseDir: ""
+      # secretName: ""
+
+    # --- ingresses (optional; use when not relying on LoadBalancer/NodePort) ---
+    # ingresses:
+    #   controller:
+    #     host: ""
+    #     ingressClassName: ""
+    #     secretName: ""
+    #     annotations: {}
+    #   router:
+    #     address: ""
+    #     messagePort: 5671
+    #     interiorPort: 55671
+    #     edgePort: 45671
+    #   nats:
+    #     address: ""
+    #     serverPort: 4222
+    #     clusterPort: 6222
+    #     leafPort: 7422
+    #     mqttPort: 8883
+    #     httpPort: 8222
+
+    # --- vault (optional secrets provider) ---
+    # vault:
+    #   enabled: false
+    #   provider: ""  # hashicorp | openbao | vault | aws | aws-secrets-manager | azure | azure-key-vault | google | google-secret-manager
+    #   basePath: ""  # e.g. iofog/$namespace/secrets
+    #   hashicorp:
+    #     address: ""
+    #     mount: ""
+    #     token: ""
+    #   aws:
+    #     accessKeyId: ""
+    #     accessKey: ""
+    #     region: ""
+    #   azure:
+    #     url: ""
+    #     tenantId: ""
+    #     clientId: ""
+    #     clientSecret: ""
+    #   google:
+    #     projectId: ""
+    #     credentials: ""

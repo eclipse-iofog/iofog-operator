@@ -1,0 +1,16 @@
+apiVersion: v2
+name: iofog-operator
+description: Helm chart for the ioFog operator and ControlPlane
+type: application
+version: 3.8.0
+appVersion: "3.8.0"
+home: https://github.com/eclipse-iofog/iofog-operator
+sources:
+  - https://github.com/eclipse-iofog/iofog-operator
+annotations:
+  artifacthub.io/links: |
+    - name: source
+      url: https://github.com/eclipse-iofog/iofog-operator
+  artifacthub.io/maintainers: |
+    - name: Eclipse ioFog
+      email: iofog-dev@eclipse.org

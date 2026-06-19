@@ -3,6 +3,6 @@ resources:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: ghcr.io/eclipse-iofog/operator
+- name: ghcr.io/datasance/operator
   newName: ghcr.io/eclipse-iofog/operator
-  newTag: 3.7.2
+  newTag: 3.8.0

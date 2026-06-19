@@ -1,0 +1,71 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "iofog-operator.fullname" . }}
+  labels:
+    {{- include "iofog-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - '*'
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+      - rolebindings
+    verbs:
+      - '*'
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+      - ingresses/status
+    verbs:
+      - '*'
+  - apiGroups:
+      - {{ include "iofog-operator.crdGroup" . }}
+    resources:
+      - controlplanes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - {{ include "iofog-operator.crdGroup" . }}
+    resources:
+      - controlplanes/status
+      - controlplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - configmaps
+      - configmaps/status
+      - events
+      - serviceaccounts
+      - services
+      - persistentvolumeclaims
+      - secrets
+    verbs:
+      - '*'
+{{- end }}
+
