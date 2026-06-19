@@ -1,4 +1,4 @@
-# Datasance PoT Helm chart — deprecated
+# Datasance PoT Helm chart - deprecated
 
 > **Copy this file to [Datasance/helm](https://github.com/Datasance/helm) `README.md` in a separate PR** (final v3.7.2 redirect). Do not publish from this repo.
 
@@ -24,7 +24,7 @@ Documentation: [charts/iofog-operator/README.md](https://github.com/Datasance/io
 
 ## Migration from v3.7 (`datasance/pot`)
 
-**v3.8.0 is greenfield** — there is no supported in-place upgrade from the legacy `pot` chart or Keycloak-shaped `auth` values.
+**v3.8.0 is greenfield** - there is no supported in-place upgrade from the legacy `pot` chart or Keycloak-shaped `auth` values.
 
 1. Uninstall the v3.7 release and remove legacy CRDs if no longer needed.
 2. Rewrite ControlPlane auth for embedded or external OIDC (see operator README / CHANGELOG).

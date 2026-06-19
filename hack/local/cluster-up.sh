@@ -12,7 +12,7 @@ POSTGRES_PATH="${POSTGRES_PATH:-$ROOT/config/local/postgres}"
 
 require_kubectl
 
-print_header "Step 1 — namespace + postgres (${TEST_NAMESPACE})"
+print_header "Step 1 - namespace + postgres (${TEST_NAMESPACE})"
 
 if ! "$KUBECTL" get namespace "$TEST_NAMESPACE" >/dev/null 2>&1; then
   log "Creating namespace ${TEST_NAMESPACE}"

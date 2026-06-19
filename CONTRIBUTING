@@ -9,7 +9,7 @@ Thank you for contributing to the ioFog / Datasance **Kubernetes operator**.
 | Upstream (canonical module path) | [eclipse-iofog/iofog-operator](https://github.com/eclipse-iofog/iofog-operator) | `ghcr.io/eclipse-iofog/operator` |
 | Mirror (primary development remote) | [Datasance/iofog-operator](https://github.com/Datasance/iofog-operator) | `ghcr.io/datasance/operator` |
 
-The git tree is identical on both remotes. Product flavor (CRD API group, registry URL, Helm gh-pages index, OCI labels) is selected by **CI repository variables** — not by forked application code.
+The git tree is identical on both remotes. Product flavor (CRD API group, registry URL, Helm gh-pages index, OCI labels) is selected by **CI repository variables** - not by forked application code.
 
 Module import path is always **`github.com/eclipse-iofog/iofog-operator/v3`**, even when cloning the Datasance mirror.
 
@@ -24,7 +24,7 @@ Typical flow:
 
 1. Branch from **`develop`** on **`Datasance/iofog-operator`**.
 2. Open a pull request to **`eclipse-iofog/iofog-operator`** **`develop`**.
-3. Ensure CI is green — quality, unit tests, CRD drift (`make gen-check`), and a smoke Docker build run on `develop` pushes and PRs. **No GHCR push** on branch builds.
+3. Ensure CI is green - quality, unit tests, CRD drift (`make gen-check`), and a smoke Docker build run on `develop` pushes and PRs. **No GHCR push** on branch builds.
 4. After merge, release maintainers tag identical **`v*`** semver on both remotes; **`release.yml`** publishes container images, manifest tarballs, OLM bundle, and Helm chart.
 
 
@@ -65,7 +65,7 @@ When a variable is unset, the action picks defaults from `github.repository`. Ov
 
 | Workflow | Trigger | Publishes artifacts |
 |----------|---------|---------------------|
-| **`ci.yml`** | `develop` push, PRs to `develop` / `main` / `release/**` | No — preflight only |
+| **`ci.yml`** | `develop` push, PRs to `develop` / `main` / `release/**` | No - preflight only |
 | **`release.yml`** | **`v*`** tag push | Images, manifest tarballs, OLM bundle, Helm chart |
 | **`govulncheck.yml`** | Scheduled + manual | No |
 
@@ -79,7 +79,7 @@ When a variable is unset, the action picks defaults from `github.repository`. Ov
 ## Releases
 
 - Git tags: **`v3.8.0`**, **`v3.8.0-rc.1`**, etc. Image tags omit the `v` prefix (`:3.8.0`).
-- Artifacts publish only on **`v*` tag push** — not on ordinary `develop` commits.
+- Artifacts publish only on **`v*` tag push** - not on ordinary `develop` commits.
 - Tag the **same commit** on both remotes so Eclipse and Datasance fleets receive matching builds.
 
 ## Eclipse Contributor Agreement

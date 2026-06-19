@@ -203,7 +203,7 @@ jobs:
             echo "exists=true" >> "${GITHUB_OUTPUT}"
           else
             echo "exists=false" >> "${GITHUB_OUTPUT}"
-            echo "charts/iofog-operator/ not present — skip (Plan 11)"
+            echo "charts/iofog-operator/ not present - skip (Plan 11)"
           fi
 
       - name: Install Helm
@@ -247,6 +247,8 @@ jobs:
           fi
 
           cp "${CHART}" "${PAGES_DIR}/"
+          tar -xzf "${CHART}" -O iofog-operator/values.yaml > "${PAGES_DIR}/values.yaml"
+          cp "${PAGES_DIR}/values.yaml" "${PAGES_DIR}/values-${VERSION}.yaml"
           chmod +x "${WORKSPACE}/hack/render-helm-docs.sh"
           HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL}" OCI_SOURCE_REPO="${OCI_SOURCE_REPO}" \
             IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \

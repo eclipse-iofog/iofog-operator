@@ -1,4 +1,4 @@
-# Local E2E ControlPlane — used with: make local-deploy-cr
+# Local E2E ControlPlane - used with: make local-deploy-cr
 # Requires postgres in the same namespace (make local-cluster-up).
 apiVersion: datasance.com/v3
 kind: ControlPlane

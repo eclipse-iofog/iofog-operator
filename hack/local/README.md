@@ -1,6 +1,6 @@
-# Local E2E — Plan 5-4 (reconcile hot-path)
+# Local E2E - Plan 5-4 (reconcile hot-path)
 
-Manual end-to-end tests for **service**, **ingress**, and **auth** patch behavior on a local Kubernetes cluster (OrbStack k3s). Uses the operator **binary** (`make run`) — no Docker image build required.
+Manual end-to-end tests for **service**, **ingress**, and **auth** patch behavior on a local Kubernetes cluster (OrbStack k3s). Uses the operator **binary** (`make run`) - no Docker image build required.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ kubectl get nodes
 
 ## Quick start (three terminals)
 
-### Terminal 1 — one-time setup
+### Terminal 1 - one-time setup
 
 ```bash
 make local-e2e-setup
@@ -25,11 +25,11 @@ make local-e2e-setup
 
 This runs:
 
-1. `make local-cluster-up` — namespace `iofog-test` + Postgres
-2. `make local-prep` — install CRDs + build `bin/iofog-operator`
-3. `make local-deploy-cr` — apply local ControlPlane CR
+1. `make local-cluster-up` - namespace `iofog-test` + Postgres
+2. `make local-prep` - install CRDs + build `bin/iofog-operator`
+3. `make local-deploy-cr` - apply local ControlPlane CR
 
-### Terminal 2 — operator
+### Terminal 2 - operator
 
 ```bash
 make run
@@ -37,7 +37,7 @@ make run
 
 Leave running. The operator watches `TEST_NAMESPACE` (default `iofog-test`).
 
-### Terminal 1 (or 3) — wait, then test
+### Terminal 1 (or 3) - wait, then test
 
 ```bash
 make local-wait-baseline    # wait for Service, Ingress, Deployment, auth secret
@@ -72,10 +72,10 @@ make local-scenarios
 
 This runs:
 
-1. `make local-cluster-up` — namespace `iofog-test` + Postgres
-2. `make local-deploy-operator` — Deployment + RBAC from `IMG` in `TEST_NAMESPACE`
-3. `make install` — cluster CRDs
-4. `make local-deploy-cr` — local ControlPlane CR
+1. `make local-cluster-up` - namespace `iofog-test` + Postgres
+2. `make local-deploy-operator` - Deployment + RBAC from `IMG` in `TEST_NAMESPACE`
+3. `make install` - cluster CRDs
+4. `make local-deploy-cr` - local ControlPlane CR
 
 Requires pull access to `IMG` and to component images in `config/cr/local/controlplane.yaml`.
 
@@ -87,7 +87,7 @@ make local-deploy-operator IMG=ghcr.io/datasance/operator:3.8.0-beta.0
 
 ## Test scenarios
 
-### Scenario A — Service patch
+### Scenario A - Service patch
 
 **Script:** `hack/local/scenario-service-patch.sh` · **Make:** `make local-scenario-a`
 
@@ -108,7 +108,7 @@ make local-scenario-a
 
 To re-test from a clean ControlPlane spec, edit `config/cr/local/controlplane.yaml` and `kubectl apply`, or delete/recreate the namespace with `make local-cluster-down && make local-e2e-setup`.
 
-### Scenario B — Ingress patch
+### Scenario B - Ingress patch
 
 **Script:** `hack/local/scenario-ingress-patch.sh` · **Make:** `make local-scenario-b`
 
@@ -122,9 +122,9 @@ To re-test from a clean ControlPlane spec, edit `config/cr/local/controlplane.ya
 - TLS secret → `pot-tls`
 - Annotation `cert-manager.io/cluster-issuer` → `local-test`
 
-**Note:** OrbStack/k3s ships **without an ingress controller** by default. The local CR uses **controller `LoadBalancer`** so deploy can reach Ready without ingress. Scenario B temporarily switches to `ClusterIP` to create `pot-controller`; the operator may log `no LoadBalancer ingress found` — that is expected and does not block **spec** patch verification.
+**Note:** OrbStack/k3s ships **without an ingress controller** by default. The local CR uses **controller `LoadBalancer`** so deploy can reach Ready without ingress. Scenario B temporarily switches to `ClusterIP` to create `pot-controller`; the operator may log `no LoadBalancer ingress found` - that is expected and does not block **spec** patch verification.
 
-### Scenario C — Auth patch
+### Scenario C - Auth patch
 
 **Script:** `hack/local/scenario-auth-patch.sh` · **Make:** `make local-scenario-c`
 
@@ -177,7 +177,7 @@ hack/local/
 | Symptom | Fix |
 |---------|-----|
 | `Timed out waiting for baseline resources` | Ensure `make run` is running in another terminal |
-| Postgres not ready | `kubectl get pods -n iofog-test` — re-run `make local-cluster-up` |
+| Postgres not ready | `kubectl get pods -n iofog-test` - re-run `make local-cluster-up` |
 | Image pull errors | Log in to GHCR or edit images in `config/cr/local/controlplane.yaml` |
 | Scenario fails after prior run | Scenarios are cumulative; run `make local-cluster-down` and setup again for a clean run |
 | Operator not reconciling | Check operator pod: `kubectl get pods -n iofog-test -l name=iofog-operator`. For binary flow, `WATCH_NAMESPACE` must match `TEST_NAMESPACE` |
@@ -189,7 +189,7 @@ make local-cluster-down   # removes iofog-test namespace
 make uninstall            # optional: remove CRDs
 ```
 
-## Optional — in-cluster operator (Docker)
+## Optional - in-cluster operator (Docker)
 
 After binary tests pass:
 
