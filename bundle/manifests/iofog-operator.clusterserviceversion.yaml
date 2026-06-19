@@ -126,10 +126,6 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Application defines an ioFog application.
-      kind: Application
-      name: applications.datasance.com
-      version: v3
     - description: ControlPlane deploys and manages the ioFog control plane.
       kind: ControlPlane
       name: controlplanes.datasance.com

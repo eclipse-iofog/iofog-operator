@@ -19,7 +19,6 @@ rules:
 - apiGroups:
   - datasance.com
   resources:
-  - applications
   - controlplanes
   verbs:
   - create
@@ -32,8 +31,6 @@ rules:
 - apiGroups:
   - datasance.com
   resources:
-  - applications/finalizers
-  - applications/status
   - controlplanes/finalizers
   - controlplanes/status
   verbs:

@@ -93,10 +93,6 @@ spec:
       kind: ControlPlane
       name: controlplanes.datasance.com
       version: v3
-    - description: Application defines an ioFog application.
-      kind: Application
-      name: applications.datasance.com
-      version: v3
   description: ioFog Control Plane on Kubernetes
   displayName: iofog-operator
   icon:
