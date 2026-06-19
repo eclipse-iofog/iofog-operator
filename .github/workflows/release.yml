@@ -172,6 +172,8 @@ jobs:
     name: Helm package
     runs-on: ubuntu-latest
     needs: preflight
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -204,9 +206,49 @@ jobs:
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
-          helm lint charts/iofog-operator
-          helm package charts/iofog-operator --version "${VERSION}" --app-version "${VERSION}" -d dist/
+          chmod +x hack/package-helm.sh
+          IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
+            hack/package-helm.sh "${FLAVOR}" "${VERSION}"
           ls -la dist/
+
+      - name: Publish Helm repo to gh-pages
+        if: steps.chart.outputs.exists == 'true'
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          CHART="dist/iofog-operator-${VERSION}.tgz"
+          PAGES_DIR="$(mktemp -d)"
+          REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --heads "${REPO}" gh-pages | grep -q gh-pages; then
+            git clone --depth 1 -b gh-pages "${REPO}" "${PAGES_DIR}"
+          else
+            git clone --depth 1 "${REPO}" "${PAGES_DIR}"
+            cd "${PAGES_DIR}"
+            git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
+          fi
+          cp "${CHART}" "${PAGES_DIR}/"
+          chmod +x hack/render-helm-docs.sh
+          HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL}" OCI_SOURCE_REPO="${OCI_SOURCE_REPO}" \
+            IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
+            hack/render-helm-docs.sh "${FLAVOR}" "${VERSION}" "${PAGES_DIR}"
+          if [ -f "${PAGES_DIR}/index.yaml" ]; then
+            helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}" --merge "${PAGES_DIR}/index.yaml"
+          else
+            helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}"
+          fi
+          cd "${PAGES_DIR}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No gh-pages changes to publish"
+          else
+            git commit -m "Publish iofog-operator ${VERSION}"
+            git push "${REPO}" gh-pages
+          fi
 
       - name: Upload Helm chart
         if: steps.chart.outputs.exists == 'true'
@@ -216,12 +258,10 @@ jobs:
           path: dist/iofog-operator-*.tgz
           if-no-files-found: error
 
-      # gh-pages index publish is Plan 11; chart .tgz attaches to GitHub Release when present.
-
   github-release:
     name: GitHub Release
     runs-on: ubuntu-latest
-    needs: [preflight, image, manifests, bundle]
+    needs: [preflight, image, manifests, bundle, helm]
     permissions:
       contents: write
     steps:
@@ -267,6 +307,17 @@ jobs:
             echo "## Manifest tarballs"
             echo "- \`manifests-datasance-${{ needs.preflight.outputs.version }}.tar.gz\`"
             echo "- \`manifests-iofog-${{ needs.preflight.outputs.version }}.tar.gz\`"
+            echo ""
+            echo "## Helm chart"
+            echo "- \`iofog-operator-${{ needs.preflight.outputs.version }}.tgz\`"
+            echo ""
+            echo "## Helm repository"
+            echo '```bash'
+            echo "helm repo add iofog-operator ${HELM_REPO_BASE_URL}"
+            echo "helm repo update"
+            echo "helm install pot iofog-operator/iofog-operator --version ${{ needs.preflight.outputs.version }} \\"
+            echo "  --set controlplane.spec.auth.bootstrap.password='...'"
+            echo '```'
           } >> release_notes.md
 
       - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
