@@ -1,58 +1,57 @@
-# Contributing to Eclipse iofog-operator
+# Contributing
 
-Thanks for your interest in this project.
+Thank you for contributing to the ioFog / Datasance **Kubernetes operator**.
 
-## Project description
+## Repositories
 
-iofog-operator is a custom iofog extension to allow our k8s deployments.
+| Role | GitHub | Container registry |
+|------|--------|------------------|
+| Upstream (canonical module path) | [eclipse-iofog/iofog-operator](https://github.com/eclipse-iofog/iofog-operator) | `ghcr.io/eclipse-iofog/operator` |
+| Mirror (primary development remote) | [Datasance/iofog-operator](https://github.com/Datasance/iofog-operator) | `ghcr.io/datasance/operator` |
 
-* https://projects.eclipse.org/projects/iot.iofog
+The git tree is identical on both remotes. Product flavor (CRD API group, registry URL, Helm gh-pages index, OCI labels) is selected by **CI repository variables** — not by forked application code.
 
-## Developer resources
+Module import path is always **`github.com/eclipse-iofog/iofog-operator/v3`**, even when cloning the Datasance mirror.
 
-Information regarding source code management, builds, coding standards, and
-more.
+## Branch workflow
 
-* https://projects.eclipse.org/projects/iot.iofog/developer
+| Branch | Purpose |
+|--------|---------|
+| **`develop`** | Integration branch on **both** remotes (same SHA after sync) |
+| **`operator/<plan>-<topic>`** | Feature / plan branches (e.g. `operator/10-docs`) |
 
-The project maintains the following source code repositories
+Typical flow:
 
-* https://github.com/eclipse-iofog
-* http://git.eclipse.org/c/iofog/org.eclipse.iofog.git
+1. Branch from **`develop`** on **`Datasance/iofog-operator`**.
+2. Open a pull request to **`eclipse-iofog/iofog-operator`** **`develop`**.
+3. Ensure CI is green — quality, unit tests, CRD drift (`make gen-check`), and a smoke Docker build run on `develop` pushes and PRs. **No GHCR push** on branch builds.
+4. After merge, release maintainers tag identical **`v*`** semver on both remotes; **`release.yml`** publishes container images, manifest tarballs, OLM bundle, and Helm chart.
 
-This project uses Bugzilla to track ongoing development and issues.
 
-* Search for issues: https://eclipse.org/bugs/buglist.cgi?product=IoFog
-* Create a new report: https://eclipse.org/bugs/enter_bug.cgi?product=IoFog
 
-Be sure to search for existing bugs before you create another one. Remember that
-contributions are always welcome!
+## Development setup
 
-## Eclipse Contributor Agreement
+| Tool | Version |
+|------|---------|
+| Go | **1.26.4** (see `go.mod`) |
+| Kubernetes | **1.22+** for cluster testing |
+| Helm | **3.x** (for chart work) |
 
-Before your contribution can be accepted by the project team contributors must
-electronically sign the Eclipse Contributor Agreement (ECA).
+Run from the repository root before pushing:
 
-* http://www.eclipse.org/legal/ECA.php
+```bash
+make quality    # golangci-lint + gosec + govulncheck
+make test
+make gen-check  # both CRD flavors must match committed YAML
+```
 
-Commits that are provided by non-committers must have a Signed-off-by field in
-the footer indicating that the author is aware of the terms by which the
-contribution has been provided to the project. The non-committer must
-additionally have an Eclipse Foundation account and must have a signed Eclipse
-Contributor Agreement (ECA) on file.
+Local operator run and E2E reconcile checklist: [hack/local/README.md](hack/local/README.md).
 
-For more information, please see the Eclipse Committer Handbook:
-https://www.eclipse.org/projects/handbook/#resources-commit
-
-## Contact
-
-Contact the project developers via the project's "dev" list.
-
-* https://dev.eclipse.org/mailman/listinfo/iofog-dev
+On Datasance **`develop`**, the canonical Go source CRD group is **`datasance.com/v3`** (`SOURCE_CRD_GROUP` in the Makefile). Eclipse CI builds **`iofog.org/v3`** via `OPERATOR_CRD_GROUP`. **Both** generated CRD YAML sets are committed; `make gen-check` must pass.
 
 ## CI repository variables
 
-The same git SHA is built on both [eclipse-iofog/iofog-operator](https://github.com/eclipse-iofog/iofog-operator) and [Datasance/iofog-operator](https://github.com/Datasance/iofog-operator). Mirror-specific publish settings come from **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables), resolved by `.github/actions/set-build-env`.
+The same git SHA is built on both remotes. Mirror-specific publish settings come from **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables), resolved by [`.github/actions/set-build-env`](.github/actions/set-build-env).
 
 | Variable | Eclipse default | Datasance default |
 |----------|-----------------|-------------------|
@@ -62,4 +61,31 @@ The same git SHA is built on both [eclipse-iofog/iofog-operator](https://github.
 | `OCI_SOURCE_REPO` | `https://github.com/eclipse-iofog/iofog-operator` | `https://github.com/Datasance/iofog-operator` |
 | `OPERATOR_COMPONENT_LABEL_DOMAIN` | `iofog.org` | `datasance.com` |
 
-When a variable is unset, the action picks defaults from `github.repository`. Override any value explicitly on a mirror when needed. Preflight CI (`ci.yml`) does not publish images; release (`release.yml`) pushes container images and manifest tarballs on `v*` tags only.
+When a variable is unset, the action picks defaults from `github.repository`. Override any value explicitly on a mirror when needed.
+
+| Workflow | Trigger | Publishes artifacts |
+|----------|---------|---------------------|
+| **`ci.yml`** | `develop` push, PRs to `develop` / `main` / `release/**` | No — preflight only |
+| **`release.yml`** | **`v*`** tag push | Images, manifest tarballs, OLM bundle, Helm chart |
+| **`govulncheck.yml`** | Scheduled + manual | No |
+
+## Pull requests
+
+- Target **`develop`**, not `main`.
+- Keep changes focused; one active implementation plan per branch when following the v3.8 modernization wave.
+- Update **CHANGELOG.md** under `[Unreleased]` for user-facing changes that land before the next tagged release.
+- Do not reintroduce: per-file copyright headers, removed ControlPlane auth schema fields, Application CRD/reconciler, legacy Azure Pipelines CI, or CI image push on ordinary branch commits.
+
+## Releases
+
+- Git tags: **`v3.8.0`**, **`v3.8.0-rc.1`**, etc. Image tags omit the `v` prefix (`:3.8.0`).
+- Artifacts publish only on **`v*` tag push** — not on ordinary `develop` commits.
+- Tag the **same commit** on both remotes so Eclipse and Datasance fleets receive matching builds.
+
+## Eclipse Contributor Agreement
+
+Upstream contributions to **eclipse-iofog/iofog-operator** require a signed [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php). Commits from non-committers must include a `Signed-off-by` line. See the [Eclipse Committer Handbook](https://www.eclipse.org/projects/handbook/#resources-commit).
+
+## Questions
+
+Open an issue on the mirror you are developing against, or contact the ioFog / Datasance maintainers for release coordination between remotes.
