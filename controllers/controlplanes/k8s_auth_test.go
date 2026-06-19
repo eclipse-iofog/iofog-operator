@@ -69,7 +69,7 @@ func TestLoginIofogClient_EmbeddedPasswordSecretRef(t *testing.T) {
 	)
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "pot-ns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "cp-ns"},
 		Data:       map[string][]byte{"password": []byte(password)},
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +311,7 @@ func newLoginTestReconciler(t *testing.T, auth cpv3.Auth, objects ...client.Obje
 	return &ControlPlaneReconciler{
 		Client: builder.Build(),
 		cp: cpv3.ControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "pot-ns", Name: "test-cp"},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "cp-ns", Name: "test-cp"},
 			Spec:       cpv3.ControlPlaneSpec{Auth: auth},
 		},
 	}

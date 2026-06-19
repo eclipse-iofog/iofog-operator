@@ -20,7 +20,7 @@ func TestControlPlaneSpec_UnmarshalRefSample(t *testing.T) {
 	var cp ControlPlane
 	require.NoError(t, yaml.Unmarshal(data, &cp))
 
-	require.Equal(t, "pot", cp.Name)
+	require.Equal(t, "iofog", cp.Name)
 	require.Equal(t, AuthModeEmbedded, cp.Spec.Auth.Mode)
 	require.NotNil(t, cp.Spec.Auth.Bootstrap)
 	require.Equal(t, "admin", cp.Spec.Auth.Bootstrap.Username)

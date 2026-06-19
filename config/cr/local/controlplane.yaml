@@ -3,13 +3,13 @@
 apiVersion: datasance.com/v3
 kind: ControlPlane
 metadata:
-  name: pot
+  name: iofog
 spec:
   replicas:
     controller: 1
     nats: 2
   controller:
-    # publicUrl: http://pot.local
+    # publicUrl: http://iofog.local
     trustProxy: false
     https: false
   database:
@@ -70,7 +70,7 @@ spec:
       type: ClusterIP
   # ingresses:
   #   controller:
-  #     host: pot.local
+  #     host: iofog.local
   #     secretName: ""
   #     annotations: {}
   #   router:

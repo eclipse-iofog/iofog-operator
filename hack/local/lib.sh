@@ -5,7 +5,7 @@ set -euo pipefail
 
 TEST_NAMESPACE="${TEST_NAMESPACE:-iofog-test}"
 KUBECTL="${KUBECTL:-kubectl}"
-CONTROLPLANE_NAME="${CONTROLPLANE_NAME:-pot}"
+CONTROLPLANE_NAME="${CONTROLPLANE_NAME:-iofog}"
 RECONCILE_WAIT_SECS="${RECONCILE_WAIT_SECS:-15}"
 BASELINE_WAIT_SECS="${BASELINE_WAIT_SECS:-600}"
 
@@ -41,7 +41,7 @@ wait_baseline_resources() {
     fi
     local ingress_ok=true
     if $has_ingress_check; then
-      if ! "$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+      if ! "$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
         ingress_ok=false
       fi
     fi

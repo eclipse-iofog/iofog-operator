@@ -426,7 +426,7 @@ spec:
                     type: object
                   basePath:
                     description: BasePath for secrets in vault; $namespace is replaced
-                      with the ControlPlane namespace (e.g. pot/$namespace/secrets).
+                      with the ControlPlane namespace (e.g. iofog/$namespace/secrets).
                     type: string
                   enabled:
                     type: boolean

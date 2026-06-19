@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewControllerMicroservice_ExposesAPIAndConsoleServicePorts(t *testing.T) {
-	ms := newControllerMicroservice("pot-ns", &controllerMicroserviceConfig{
+	ms := newControllerMicroservice("cp-ns", &controllerMicroserviceConfig{
 		replicas: 1,
 		db:       &cpv3.Database{Provider: "postgres"},
 		auth:     &cpv3.Auth{Mode: cpv3.AuthModeEmbedded},
@@ -27,7 +27,7 @@ func TestNewControllerMicroservice_ExposesAPIAndConsoleServicePorts(t *testing.T
 }
 
 func TestNewControllerMicroservice_ConsolePortFromCR(t *testing.T) {
-	ms := newControllerMicroservice("pot-ns", &controllerMicroserviceConfig{
+	ms := newControllerMicroservice("cp-ns", &controllerMicroserviceConfig{
 		replicas:    1,
 		consolePort: 9000,
 		db:          &cpv3.Database{Provider: "postgres"},
@@ -47,7 +47,7 @@ func TestNewControllerMicroservice_ConsolePortFromCR(t *testing.T) {
 }
 
 func TestNewControllerMicroservice_ConsoleURLFromCR(t *testing.T) {
-	ms := newControllerMicroservice("pot-ns", &controllerMicroserviceConfig{
+	ms := newControllerMicroservice("cp-ns", &controllerMicroserviceConfig{
 		replicas:   1,
 		consoleUrl: "https://ui.example.com",
 		db:         &cpv3.Database{Provider: "postgres"},

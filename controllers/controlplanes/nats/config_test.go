@@ -20,7 +20,7 @@ func TestBuildServerConf_OmitsLeafAdvertiseWhenEmpty(t *testing.T) {
 		CertName:       "nats-site-server",
 		MqttCertName:   "nats-mqtt-server",
 		JWTDir:         "/home/runner/nats/jwt",
-		ControllerName: "pot",
+		ControllerName: "iofog",
 		MaxMemoryStore: "512M",
 		MaxFileStore:   "2G",
 	})
@@ -44,7 +44,7 @@ func TestBuildServerConf_IncludesLeafAdvertiseWhenSet(t *testing.T) {
 		CertName:       "nats-site-server",
 		MqttCertName:   "nats-mqtt-server",
 		JWTDir:         "/home/runner/nats/jwt",
-		ControllerName: "pot",
+		ControllerName: "iofog",
 		MaxMemoryStore: "512M",
 		MaxFileStore:   "2G",
 	})

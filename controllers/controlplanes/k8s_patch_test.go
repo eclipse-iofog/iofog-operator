@@ -46,7 +46,7 @@ func TestServiceNeedsPatch_Ports(t *testing.T) {
 }
 
 func TestNewControllerIngress_ExposesConsoleAndAPIBackends(t *testing.T) {
-	ing := newControllerIngress("pot-ns", "test-cp", &controllerIngressConfig{host: "pot.local"})
+	ing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{host: "controller.local"})
 	require.Len(t, ing.Spec.Rules, 1)
 	paths := ing.Spec.Rules[0].HTTP.Paths
 	require.Len(t, paths, 2)
@@ -59,7 +59,7 @@ func TestNewControllerIngress_ExposesConsoleAndAPIBackends(t *testing.T) {
 }
 
 func TestIngressRulesEqual_DetectsLegacyConsoleBackend(t *testing.T) {
-	desired := newControllerIngress("pot-ns", "test-cp", &controllerIngressConfig{host: "pot.local"})
+	desired := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{host: "controller.local"})
 	legacy := desired.DeepCopy()
 	legacy.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name = "ecn-viewer"
 

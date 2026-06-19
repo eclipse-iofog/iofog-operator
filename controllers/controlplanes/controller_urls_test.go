@@ -15,15 +15,15 @@ func TestResolveControllerAccess_IngressDefaults(t *testing.T) {
 			Controller: cpv3.Service{Type: string(corev1.ServiceTypeClusterIP)},
 		},
 		Ingresses: cpv3.Ingresses{
-			Controller: cpv3.ControllerIngress{Host: "pot.local"},
+			Controller: cpv3.ControllerIngress{Host: "controller.local"},
 		},
 		Controller: cpv3.Controller{},
 	}
 
 	access, needLB := resolveControllerAccess(spec, "")
 	require.False(t, needLB)
-	require.Equal(t, "http://pot.local", access.PublicURL)
-	require.Equal(t, "http://pot.local", access.ConsoleURL)
+	require.Equal(t, "http://controller.local", access.PublicURL)
+	require.Equal(t, "http://controller.local", access.ConsoleURL)
 	require.NotNil(t, access.TrustProxy)
 	require.True(t, *access.TrustProxy)
 }
@@ -34,13 +34,13 @@ func TestResolveControllerAccess_IngressHTTPSFromTLSSecret(t *testing.T) {
 			Controller: cpv3.Service{Type: string(corev1.ServiceTypeClusterIP)},
 		},
 		Ingresses: cpv3.Ingresses{
-			Controller: cpv3.ControllerIngress{Host: "pot.local", SecretName: "pot-tls"},
+			Controller: cpv3.ControllerIngress{Host: "controller.local", SecretName: "controller-tls"},
 		},
 		Controller: cpv3.Controller{Https: ptr.To(false)},
 	}
 
 	access, _ := resolveControllerAccess(spec, "")
-	require.Equal(t, "https://pot.local", access.PublicURL)
+	require.Equal(t, "https://controller.local", access.PublicURL)
 }
 
 func TestResolveControllerAccess_IngressRespectsExplicitTrustProxy(t *testing.T) {
@@ -49,7 +49,7 @@ func TestResolveControllerAccess_IngressRespectsExplicitTrustProxy(t *testing.T)
 			Controller: cpv3.Service{Type: string(corev1.ServiceTypeClusterIP)},
 		},
 		Ingresses: cpv3.Ingresses{
-			Controller: cpv3.ControllerIngress{Host: "pot.local"},
+			Controller: cpv3.ControllerIngress{Host: "controller.local"},
 		},
 		Controller: cpv3.Controller{TrustProxy: ptr.To(false)},
 	}

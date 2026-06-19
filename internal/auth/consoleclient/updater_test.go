@@ -23,12 +23,12 @@ func TestNoopUpdater_UpdateConsoleURLs(t *testing.T) {
 func TestConfigFromAuth(t *testing.T) {
 	cfg := ConfigFromAuth(cpv3.Auth{
 		Mode:                 cpv3.AuthModeExternal,
-		IssuerUrl:            "https://idp.example.com/realms/pot",
+		IssuerUrl:            "https://idp.example.com/realms/iofog",
 		ConsoleClient:        "edgeops-console",
 		ConsoleClientEnabled: ptr.To(true),
 	})
 	require.Equal(t, cpv3.AuthModeExternal, cfg.Mode)
-	require.Equal(t, "https://idp.example.com/realms/pot", cfg.IssuerURL)
+	require.Equal(t, "https://idp.example.com/realms/iofog", cfg.IssuerURL)
 	require.Equal(t, "edgeops-console", cfg.ConsoleClient)
 	require.True(t, cfg.ConsoleClientEnabled)
 }

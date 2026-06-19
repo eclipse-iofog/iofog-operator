@@ -57,7 +57,7 @@ type Vault struct {
 	// Provider: hashicorp, openbao, vault, aws, aws-secrets-manager, azure, azure-key-vault, google, google-secret-manager.
 	// +optional
 	Provider string `json:"provider,omitempty"`
-	// BasePath for secrets in vault; $namespace is replaced with the ControlPlane namespace (e.g. pot/$namespace/secrets).
+	// BasePath for secrets in vault; $namespace is replaced with the ControlPlane namespace (e.g. iofog/$namespace/secrets).
 	// +optional
 	BasePath string `json:"basePath,omitempty"`
 	// Hashicorp (and openbao/vault) provider config. Set when provider is hashicorp, openbao, or vault.
@@ -343,8 +343,8 @@ func (cp *ControlPlane) setCondition(conditionType string, log *logr.Logger) {
 		condition := &cp.Status.Conditions[idx]
 		// Migration: all lower case, no spaces, no -
 		condition.Reason = strings.ToLower(condition.Reason)
-		condition.Reason = strings.Replace(condition.Reason, " ", "_", -1)
-		condition.Reason = strings.Replace(condition.Reason, "-", "_", -1)
+		condition.Reason = strings.ReplaceAll(condition.Reason, " ", "_")
+		condition.Reason = strings.ReplaceAll(condition.Reason, "-", "_")
 
 		if condition.Status == metav1.ConditionTrue {
 			condition.Status = metav1.ConditionFalse

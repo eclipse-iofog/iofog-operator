@@ -33,7 +33,7 @@ const rawRouterConfig = `
             "id": "default-router",
             "mode": "interior",
             "helloMaxAgeSeconds": "3",
-            "metadata": "{\"id\":\"default-router\",\"version\":\"pot\",\"platform\":\"kubernetes\",\"pot-config\":\"1.0.0\"}"
+            "metadata": "{\"id\":\"default-router\",\"version\":\"iofog\",\"platform\":\"kubernetes\",\"iofog-config\":\"1.0.0\"}"
         }
     ],
     [
@@ -42,7 +42,7 @@ const rawRouterConfig = `
             "name": "default-router",
             "platform": "kubernetes",
             "namespace": "<NAMESPACE>",
-            "version": "pot"
+            "version": "iofog"
         }
     ],
     [

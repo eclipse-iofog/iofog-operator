@@ -22,7 +22,7 @@ func TestCreateService_PatchesExistingServiceType(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "controller",
-			Namespace: "pot-ns",
+			Namespace: "cp-ns",
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
@@ -38,7 +38,7 @@ func TestCreateService_PatchesExistingServiceType(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "controller"}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: "controller"}, updated))
 	require.Equal(t, corev1.ServiceTypeLoadBalancer, updated.Spec.Type)
 }
 
@@ -46,7 +46,7 @@ func TestCreateService_PatchesConsolePort(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "controller",
-			Namespace: "pot-ns",
+			Namespace: "cp-ns",
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -62,7 +62,7 @@ func TestCreateService_PatchesConsolePort(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "controller"}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: "controller"}, updated))
 	require.Len(t, updated.Spec.Ports, 2)
 	require.Equal(t, controllerConsolePortName, updated.Spec.Ports[1].Name)
 	require.Equal(t, int32(controllerConsoleServicePort), updated.Spec.Ports[1].Port)
@@ -73,7 +73,7 @@ func TestCreateService_PatchesAnnotationsAndExternalTrafficPolicy(t *testing.T) 
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "controller",
-			Namespace:   "pot-ns",
+			Namespace:   "cp-ns",
 			Annotations: map[string]string{"old": "value"},
 		},
 		Spec: corev1.ServiceSpec{
@@ -94,7 +94,7 @@ func TestCreateService_PatchesAnnotationsAndExternalTrafficPolicy(t *testing.T) 
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "controller"}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: "controller"}, updated))
 	require.Equal(t, map[string]string{"service.beta.kubernetes.io/aws-load-balancer-type": "nlb"}, updated.Annotations)
 	require.Equal(t, corev1.ServiceExternalTrafficPolicyTypeLocal, updated.Spec.ExternalTrafficPolicy)
 }
@@ -103,7 +103,7 @@ func TestCreateService_PatchesRouterServiceAnnotations(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "router",
-			Namespace:   "pot-ns",
+			Namespace:   "cp-ns",
 			Annotations: map[string]string{"old": "value"},
 		},
 		Spec: corev1.ServiceSpec{
@@ -125,7 +125,7 @@ func TestCreateService_PatchesRouterServiceAnnotations(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "router"}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: "router"}, updated))
 	require.Equal(t, map[string]string{"service.beta.kubernetes.io/aws-load-balancer-type": "nlb"}, updated.Annotations)
 }
 
@@ -133,7 +133,7 @@ func TestCreateService_PatchesNatsClientServiceAnnotations(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        nats.ClientServiceName,
-			Namespace:   "pot-ns",
+			Namespace:   "cp-ns",
 			Annotations: map[string]string{"old": "value"},
 		},
 		Spec: corev1.ServiceSpec{
@@ -158,7 +158,7 @@ func TestCreateService_PatchesNatsClientServiceAnnotations(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: nats.ClientServiceName}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: nats.ClientServiceName}, updated))
 	require.Equal(t, map[string]string{"service.beta.kubernetes.io/aws-load-balancer-type": "nlb"}, updated.Annotations)
 }
 
@@ -166,7 +166,7 @@ func TestCreateService_PatchesNatsServerServiceType(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nats.ServerServiceName,
-			Namespace: "pot-ns",
+			Namespace: "cp-ns",
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
@@ -188,7 +188,7 @@ func TestCreateService_PatchesNatsServerServiceType(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	updated := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: nats.ServerServiceName}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: nats.ServerServiceName}, updated))
 	require.Equal(t, corev1.ServiceTypeLoadBalancer, updated.Spec.Type)
 }
 
@@ -197,14 +197,14 @@ func TestCreateService_SkipsUpdateWhenUnchanged(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "controller",
-			Namespace:       "pot-ns",
+			Namespace:       "cp-ns",
 			Annotations:     annotations,
 			ResourceVersion: "42",
 		},
 		Spec: corev1.ServiceSpec{
 			Type:                  corev1.ServiceTypeLoadBalancer,
 			ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyTypeLocal,
-			Ports: controllerServicePortsFixture(),
+			Ports:                 controllerServicePortsFixture(),
 		},
 	}
 
@@ -214,7 +214,7 @@ func TestCreateService_SkipsUpdateWhenUnchanged(t *testing.T) {
 	require.NoError(t, r.createService(context.Background(), ms))
 
 	unchanged := &corev1.Service{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: "controller"}, unchanged))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: "controller"}, unchanged))
 	require.Equal(t, "42", unchanged.ResourceVersion)
 }
 
@@ -234,7 +234,7 @@ func newServiceTestReconciler(t *testing.T, objects ...runtime.Object) *ControlP
 		Client: builder.Build(),
 		Scheme: scheme,
 		cp: cpv3.ControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "pot-ns", Name: "test-cp"},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "cp-ns", Name: "test-cp"},
 		},
 	}
 }

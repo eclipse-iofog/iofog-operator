@@ -8,7 +8,7 @@ metadata:
           "apiVersion": "datasance.com/v3",
           "kind": "ControlPlane",
           "metadata": {
-            "name": "pot"
+            "name": "iofog"
           },
           "spec": {
             "replicas": {
@@ -132,7 +132,6 @@ spec:
   keywords:
   - iofog
   - datasance
-  - pot
   links:
   - name: Datasance PoT // Iofog Operator
     url: https://datasance.com

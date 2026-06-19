@@ -13,10 +13,10 @@ require_kubectl
 wait_baseline_resources
 
 ensure_controller_ingress() {
-  if "$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+  if "$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
     return 0
   fi
-  log "No pot-controller Ingress — switching controller Service to ClusterIP to create one..."
+  log "No controller Ingress — switching controller Service to ClusterIP to create one..."
   "$KUBECTL" patch controlplane "$CONTROLPLANE_NAME" -n "$TEST_NAMESPACE" --type merge -p '
 spec:
   services:
@@ -24,21 +24,21 @@ spec:
       type: ClusterIP
   ingresses:
     controller:
-      host: pot.local
+      host: iofog.local
       secretName: ""
       annotations: {}
 '
   wait_for_patch \
-    "$KUBECTL get ingress pot-controller -n $TEST_NAMESPACE >/dev/null 2>&1" \
-    "pot-controller Ingress created" 120
+    "$KUBECTL get ingress controller -n $TEST_NAMESPACE >/dev/null 2>&1" \
+    "controller Ingress created" 120
 }
 
 ensure_controller_ingress
 
-print_header "Scenario B — Ingress patch (pot-controller)"
+print_header "Scenario B — Ingress patch (controller)"
 
-UID_BEFORE="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
-HOST_BEFORE="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.rules[0].host}')"
+UID_BEFORE="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
+HOST_BEFORE="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.rules[0].host}')"
 GEN_BEFORE="$(cp_generation)"
 
 log "Before — Ingress UID: ${UID_BEFORE}"
@@ -51,22 +51,22 @@ spec:
   ingresses:
     controller:
       ingressClassName: traefik
-      host: pot-v2.local
-      secretName: pot-tls
+      host: iofog-v2.local
+      secretName: iofog-tls
       annotations:
         cert-manager.io/cluster-issuer: local-test
 '
 
 fail=0
 wait_for_patch \
-  "[[ \"\$($KUBECTL get ingress pot-controller -n $TEST_NAMESPACE -o jsonpath='{.spec.rules[0].host}')\" == \"pot-v2.local\" ]]" \
-  "ingress host pot-v2.local" 120 || fail=1
+  "[[ \"\$($KUBECTL get ingress controller -n $TEST_NAMESPACE -o jsonpath='{.spec.rules[0].host}')\" == \"iofog-v2.local\" ]]" \
+  "ingress host iofog-v2.local" 120 || fail=1
 
-UID_AFTER="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
-HOST_AFTER="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.rules[0].host}')"
-CLASS_AFTER="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.ingressClassName}')"
-TLS_AFTER="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.tls[0].secretName}')"
-ISSUER_AFTER="$("$KUBECTL" get ingress pot-controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.annotations.cert-manager\.io/cluster-issuer}')"
+UID_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
+HOST_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.rules[0].host}')"
+CLASS_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.ingressClassName}')"
+TLS_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.tls[0].secretName}')"
+ISSUER_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.annotations.cert-manager\.io/cluster-issuer}')"
 GEN_AFTER="$(cp_generation)"
 
 log "After — Ingress UID: ${UID_AFTER}"
@@ -76,9 +76,9 @@ log "After — TLS secretName: ${TLS_AFTER}"
 log "After — cert-manager annotation: ${ISSUER_AFTER}"
 
 assert_eq "Ingress UID unchanged" "$UID_BEFORE" "$UID_AFTER" || fail=1
-assert_eq "ingress host" "pot-v2.local" "$HOST_AFTER" || fail=1
+assert_eq "ingress host" "iofog-v2.local" "$HOST_AFTER" || fail=1
 assert_eq "ingressClassName" "traefik" "$CLASS_AFTER" || fail=1
-assert_eq "TLS secretName" "pot-tls" "$TLS_AFTER" || fail=1
+assert_eq "TLS secretName" "iofog-tls" "$TLS_AFTER" || fail=1
 assert_eq "cert-manager annotation" "local-test" "$ISSUER_AFTER" || fail=1
 [[ "$GEN_AFTER" -gt "$GEN_BEFORE" ]] && log "PASS ControlPlane generation increased" || { log "FAIL ControlPlane generation did not increase"; fail=1; }
 

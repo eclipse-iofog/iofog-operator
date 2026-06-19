@@ -144,7 +144,7 @@ func TestBuildControllerSecrets_AuthSecretMatchesCRSpec(t *testing.T) {
 		},
 	}
 
-	secrets := buildControllerSecrets("pot-ns", cfg)
+	secrets := buildControllerSecrets("cp-ns", cfg)
 	require.Len(t, secrets, 2)
 
 	var authSecret *corev1.Secret
@@ -155,7 +155,7 @@ func TestBuildControllerSecrets_AuthSecretMatchesCRSpec(t *testing.T) {
 		}
 	}
 	require.NotNil(t, authSecret)
-	require.Equal(t, "pot-ns", authSecret.Namespace)
+	require.Equal(t, "cp-ns", authSecret.Namespace)
 	require.Equal(t, map[string]string{
 		controllerAuthModeSecretKey:          "embedded",
 		controllerAuthBootstrapUserSecretKey: "admin",
@@ -185,7 +185,7 @@ func TestBuildControllerSecrets_AuthSecretUsesResolvedPasswordSecretRef(t *testi
 		},
 	}
 
-	secrets := buildControllerSecrets("pot-ns", cfg)
+	secrets := buildControllerSecrets("cp-ns", cfg)
 	var authSecret *corev1.Secret
 	for i := range secrets {
 		if secrets[i].Name == controlllerAuthCredentialsSecretName {
@@ -221,7 +221,7 @@ func TestAppendControllerAuthEnv_PasswordSecretRef(t *testing.T) {
 }
 
 func TestResolveBootstrapPassword_Inline(t *testing.T) {
-	password, err := resolveBootstrapPassword(context.Background(), fake.NewClientBuilder().Build(), "pot-ns", &cpv3.Auth{
+	password, err := resolveBootstrapPassword(context.Background(), fake.NewClientBuilder().Build(), "cp-ns", &cpv3.Auth{
 		Mode: cpv3.AuthModeEmbedded,
 		Bootstrap: &cpv3.AuthBootstrap{
 			Password: "ReplaceMe1!",
@@ -233,12 +233,12 @@ func TestResolveBootstrapPassword_Inline(t *testing.T) {
 
 func TestResolveBootstrapPassword_FromSecretRef(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "pot-ns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "cp-ns"},
 		Data:       map[string][]byte{"password": []byte("FromSecretRef1!")},
 	}
 	cl := fake.NewClientBuilder().WithObjects(secret).Build()
 
-	password, err := resolveBootstrapPassword(context.Background(), cl, "pot-ns", &cpv3.Auth{
+	password, err := resolveBootstrapPassword(context.Background(), cl, "cp-ns", &cpv3.Auth{
 		Mode: cpv3.AuthModeEmbedded,
 		Bootstrap: &cpv3.AuthBootstrap{
 			PasswordSecretRef: &corev1.SecretKeySelector{
@@ -253,12 +253,12 @@ func TestResolveBootstrapPassword_FromSecretRef(t *testing.T) {
 
 func TestResolveBootstrapPassword_SecretRefPrecedenceOverInline(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "pot-ns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "cp-ns"},
 		Data:       map[string][]byte{"password": []byte("FromSecretRef1!")},
 	}
 	cl := fake.NewClientBuilder().WithObjects(secret).Build()
 
-	password, err := resolveBootstrapPassword(context.Background(), cl, "pot-ns", &cpv3.Auth{
+	password, err := resolveBootstrapPassword(context.Background(), cl, "cp-ns", &cpv3.Auth{
 		Mode: cpv3.AuthModeEmbedded,
 		Bootstrap: &cpv3.AuthBootstrap{
 			Password: "InlineShouldNotWin",
@@ -275,12 +275,12 @@ func TestResolveBootstrapPassword_SecretRefPrecedenceOverInline(t *testing.T) {
 func TestResolveBootstrapPassword_ErrorDoesNotContainPassword(t *testing.T) {
 	const sensitive = "SuperSecret99!"
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "pot-ns"},
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-bootstrap", Namespace: "cp-ns"},
 		Data:       map[string][]byte{"other-key": []byte(sensitive)},
 	}
 	cl := fake.NewClientBuilder().WithObjects(secret).Build()
 
-	_, err := resolveBootstrapPassword(context.Background(), cl, "pot-ns", &cpv3.Auth{
+	_, err := resolveBootstrapPassword(context.Background(), cl, "cp-ns", &cpv3.Auth{
 		Mode: cpv3.AuthModeEmbedded,
 		Bootstrap: &cpv3.AuthBootstrap{
 			PasswordSecretRef: &corev1.SecretKeySelector{
@@ -295,7 +295,7 @@ func TestResolveBootstrapPassword_ErrorDoesNotContainPassword(t *testing.T) {
 }
 
 func TestResolveBootstrapPassword_ExternalModeSkipsResolution(t *testing.T) {
-	password, err := resolveBootstrapPassword(context.Background(), fake.NewClientBuilder().Build(), "pot-ns", &cpv3.Auth{
+	password, err := resolveBootstrapPassword(context.Background(), fake.NewClientBuilder().Build(), "cp-ns", &cpv3.Auth{
 		Mode: cpv3.AuthModeExternal,
 		Bootstrap: &cpv3.AuthBootstrap{
 			Password: "ShouldNotResolve",

@@ -18,7 +18,7 @@ import (
 func TestCreateIngress_PatchesHostClassTLSAndAnnotations(t *testing.T) {
 	classA := "nginx-a"
 	classB := "nginx-b"
-	existing := newControllerIngress("pot-ns", "test-cp", &controllerIngressConfig{
+	existing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
 		annotations:      map[string]string{"old": "value"},
 		ingressClassName: classA,
 		host:             "old.example.com",
@@ -37,7 +37,7 @@ func TestCreateIngress_PatchesHostClassTLSAndAnnotations(t *testing.T) {
 	require.NoError(t, r.createIngress(context.Background(), cfg))
 
 	updated := &networkingv1.Ingress{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: controllerIngressName}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: controllerIngressName}, updated))
 	require.Equal(t, map[string]string{"cert-manager.io/cluster-issuer": "letsencrypt"}, updated.Annotations)
 	require.Equal(t, &classB, updated.Spec.IngressClassName)
 	require.Equal(t, "new-tls", updated.Spec.TLS[0].SecretName)
@@ -49,7 +49,7 @@ func TestCreateIngress_PatchesHostClassTLSAndAnnotations(t *testing.T) {
 }
 
 func TestCreateIngress_PatchesLegacyConsoleBackend(t *testing.T) {
-	legacy := newControllerIngress("pot-ns", "test-cp", &controllerIngressConfig{
+	legacy := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
 		host:       "ctrl.example.com",
 		secretName: "ctrl-tls",
 	})
@@ -65,7 +65,7 @@ func TestCreateIngress_PatchesLegacyConsoleBackend(t *testing.T) {
 	require.NoError(t, r.createIngress(context.Background(), cfg))
 
 	updated := &networkingv1.Ingress{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: controllerIngressName}, updated))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: controllerIngressName}, updated))
 	require.Equal(t, controllerConsolePortName, updated.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name)
 }
 
@@ -78,14 +78,14 @@ func TestCreateIngress_SkipsUpdateWhenUnchanged(t *testing.T) {
 		host:             "ctrl.example.com",
 		secretName:       "ctrl-tls",
 	}
-	existing := newControllerIngress("pot-ns", "test-cp", cfg)
+	existing := newControllerIngress("cp-ns", "test-cp", cfg)
 	existing.ResourceVersion = "42"
 
 	r := newIngressTestReconciler(t, existing)
 	require.NoError(t, r.createIngress(context.Background(), cfg))
 
 	unchanged := &networkingv1.Ingress{}
-	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "pot-ns", Name: controllerIngressName}, unchanged))
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: controllerIngressName}, unchanged))
 	require.Equal(t, "42", unchanged.ResourceVersion)
 }
 
@@ -105,7 +105,7 @@ func newIngressTestReconciler(t *testing.T, objects ...runtime.Object) *ControlP
 		Client: builder.Build(),
 		Scheme: scheme,
 		cp: cpv3.ControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Namespace: "pot-ns", Name: "test-cp"},
+			ObjectMeta: metav1.ObjectMeta{Namespace: "cp-ns", Name: "test-cp"},
 		},
 	}
 }
