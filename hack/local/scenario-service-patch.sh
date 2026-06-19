@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scenario A — Service patch: annotations apply without Service delete.
+# Scenario A - Service patch: annotations apply without Service delete.
 
 set -euo pipefail
 
@@ -10,13 +10,13 @@ source "$ROOT/hack/local/lib.sh"
 require_kubectl
 wait_baseline_resources
 
-print_header "Scenario A — Service patch (controller annotations)"
+print_header "Scenario A - Service patch (controller annotations)"
 
 UID_BEFORE="$("$KUBECTL" get svc controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
 GEN_BEFORE="$(cp_generation)"
 
-log "Before — controller Service UID: ${UID_BEFORE}"
-log "Before — ControlPlane generation: ${GEN_BEFORE}"
+log "Before - controller Service UID: ${UID_BEFORE}"
+log "Before - ControlPlane generation: ${GEN_BEFORE}"
 
 log "Patching ControlPlane (controller service annotations)..."
 "$KUBECTL" patch controlplane "$CONTROLPLANE_NAME" -n "$TEST_NAMESPACE" --type merge -p '
@@ -41,7 +41,7 @@ assert_eq "Service UID unchanged" "$UID_BEFORE" "$UID_AFTER" || fail=1
 assert_eq "annotation test.io/patch" "phase-5-4" "$ANNOTATION" || fail=1
 [[ "$GEN_AFTER" -gt "$GEN_BEFORE" ]] && log "PASS ControlPlane generation increased" || { log "FAIL ControlPlane generation did not increase"; fail=1; }
 
-print_header "Scenario A — Service patch (router annotations + externalTrafficPolicy)"
+print_header "Scenario A - Service patch (router annotations + externalTrafficPolicy)"
 
 ROUTER_UID_BEFORE="$("$KUBECTL" get svc router -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
 "$KUBECTL" patch controlplane "$CONTROLPLANE_NAME" -n "$TEST_NAMESPACE" --type merge -p '

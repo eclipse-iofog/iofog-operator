@@ -20,7 +20,7 @@ type Updater interface {
 	UpdateConsoleURLs(ctx context.Context, cfg Config, consoleURL string) error
 }
 
-// NoopUpdater is the default v3.8 stub — logs at V(1) and returns nil.
+// NoopUpdater is the default v3.8 stub - logs at V(1) and returns nil.
 type NoopUpdater struct {
 	Log logr.Logger
 }

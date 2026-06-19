@@ -7,11 +7,11 @@ endif
 
 export PATH := $(GOBIN):$(PATH)
 
-# golangci-lint — pinned version; override with GOLANGCI_LINT_VERSION=vX.Y.Z
+# golangci-lint - pinned version; override with GOLANGCI_LINT_VERSION=vX.Y.Z
 GOLANGCI_LINT_VERSION ?= v2.12.2
 GOLANGCI_LINT         := $(GOBIN)/golangci-lint
 
-# Security tooling — gosec runs outside golangci-lint (edgelet / go-sdk pattern)
+# Security tooling - gosec runs outside golangci-lint (edgelet / go-sdk pattern)
 GOVULNCHECK_VERSION ?= v1.1.4
 GOSEC_VERSION       ?= v2.22.2
 GOSEC_SCOPE         := ./...
@@ -22,7 +22,7 @@ PREFIX = github.com/eclipse-iofog/iofog-operator/v3/internal/util
 # Canonical CRD group in Go source (see apis/*/v3/groupversion_info.go).
 SOURCE_CRD_GROUP = datasance.com
 
-# Dual-mirror flavor (override in CI — see RFC R6–R12)
+# Dual-mirror flavor (override in CI - see RFC R6–R12)
 OPERATOR_CRD_GROUP ?= iofog.org
 OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
@@ -53,7 +53,7 @@ BUNDLE_CHANNEL ?= stable
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
 
-# Local testing (no image build) — see hack/local/README.md
+# Local testing (no image build) - see hack/local/README.md
 KUBECONFIG ?= $(HOME)/.kube/config
 TEST_NAMESPACE ?= iofog-test
 CR_PATH ?= config/cr/
@@ -109,20 +109,25 @@ local-wait-baseline: ## Wait until operator created Service, Ingress, Deployment
 	bash $(LOCAL_SCRIPTS)/wait-baseline.sh
 
 .PHONY: local-scenario-a
-local-scenario-a: ## E2E scenario A — service patch (controller + router)
+local-scenario-a: ## E2E scenario A - service patch (controller + router)
 	bash $(LOCAL_SCRIPTS)/scenario-service-patch.sh
 
 .PHONY: local-scenario-b
-local-scenario-b: ## E2E scenario B — ingress patch (host, class, TLS, annotations)
+local-scenario-b: ## E2E scenario B - ingress patch (host, class, TLS, annotations)
 	bash $(LOCAL_SCRIPTS)/scenario-ingress-patch.sh
 
 .PHONY: local-scenario-c
-local-scenario-c: ## E2E scenario C — auth password patch + secret update
+local-scenario-c: ## E2E scenario C - auth password patch + secret update
 	bash $(LOCAL_SCRIPTS)/scenario-auth-patch.sh
 
 .PHONY: local-scenarios
 local-scenarios: ## Run E2E scenarios A, B, C in order (operator must be running)
 	bash $(LOCAL_SCRIPTS)/run-scenarios.sh
+
+.PHONY: local-deploy-operator
+local-deploy-operator: kustomize create-namespace ## Deploy published operator image (IMG) into TEST_NAMESPACE
+	@test -n "$(IMG)" || (echo "IMG is required, e.g. IMG=ghcr.io/datasance/operator:3.8.0-beta.1" && exit 1)
+	bash $(LOCAL_SCRIPTS)/deploy-operator.sh
 
 .PHONY: local-e2e-setup
 local-e2e-setup: local-cluster-up local-prep local-deploy-cr ## Cluster + CRDs + build + Postgres + ControlPlane CR
@@ -131,6 +136,14 @@ local-e2e-setup: local-cluster-up local-prep local-deploy-cr ## Cluster + CRDs +
 	@echo "Then wait for baseline:                 make local-wait-baseline"
 	@echo "Run reconcile E2E tests:                  make local-scenarios"
 	@echo "Full guide:                               hack/local/README.md"
+
+.PHONY: local-e2e-setup-image
+local-e2e-setup-image: local-cluster-up local-deploy-operator install local-deploy-cr ## Local E2E with published operator image (IMG=...)
+	@echo ""
+	@echo "Setup complete. Wait for baseline:  make local-wait-baseline"
+	@echo "Run reconcile E2E tests:           make local-scenarios"
+	@echo "Operator image: $(IMG)"
+	@echo "Full guide:                         hack/local/README.md"
 
 .PHONY: run
 run: build ## Run operator locally (uses KUBECONFIG, WATCH_NAMESPACE=TEST_NAMESPACE)
@@ -161,7 +174,7 @@ rbac-manifests: controller-gen ## Generate RBAC and webhook manifests
 
 gen-check: gen manifests-all ## Verify committed CRDs match dual-flavor CRD output
 	@git diff --exit-code -- config/crd/bases/ \
-		|| (echo "ERROR: CRD drift — run 'make manifests' and commit" && exit 1)
+		|| (echo "ERROR: CRD drift - run 'make manifests' and commit" && exit 1)
 	@echo "config/crd/bases/ is up to date"
 
 fmt: ## Run gofmt against code

@@ -55,7 +55,7 @@ wait_baseline_resources() {
     fi
     sleep 5
   done
-  die "Timed out waiting for baseline resources. Is 'make run' running in another terminal?"
+  die "Timed out waiting for baseline resources. Is the operator running (make run or local-deploy-operator)?"
 }
 
 wait_controlplane_ready() {
@@ -123,7 +123,7 @@ assert_contains() {
   local haystack="$2"
   local needle="$3"
   if [[ "$haystack" != *"$needle"* ]]; then
-    printf '[local-e2e] FAIL %s — output does not contain %q\n%s\n' "$label" "$needle" "$haystack" >&2
+    printf '[local-e2e] FAIL %s - output does not contain %q\n%s\n' "$label" "$needle" "$haystack" >&2
     return 1
   fi
   printf '[local-e2e] PASS %s\n' "$label"

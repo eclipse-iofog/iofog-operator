@@ -9,38 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Dual-mirror publish model** — identical source tree; Eclipse (`iofog.org/v3`) and Datasance (`datasance.com/v3`) flavors differ at CI publish time (container registry, CRD API group, Helm index URL, OCI labels).
-- **ControlPlane auth schema** — `spec.auth.mode: embedded | external` with bootstrap credentials (`username`, `password`, optional `passwordSecretRef`) or external OIDC (`issuerUrl`, `client.id`, `client.secret`); optional embedded-only `consoleClient`, rate limits, and session store.
-- **Controller v3.8 env mapping** — operator maps `AUTH_*`, `OIDC_*`, and `CONSOLE_*` env vars into the Controller pod per Controller `env-mapping.js`.
-- **Operator → Controller API auth** — embedded: `POST /api/v3/user/login` with bootstrap creds from Secret; external: OAuth2 `client_credentials` via issuer `.well-known/openid-configuration` discovery.
-- **NATS hub** — optional `spec.nats` block (JetStream storage, enable/disable); NATS services and ingress fields on ControlPlane.
-- **Vault integration** — optional `spec.vault` block; operator creates credentials Secret and injects `VAULT_*` env vars.
+- **Dual-mirror publish model** - identical source tree; Eclipse (`iofog.org/v3`) and Datasance (`datasance.com/v3`) flavors differ at CI publish time (container registry, CRD API group, Helm index URL, OCI labels).
+- **ControlPlane auth schema** - `spec.auth.mode: embedded | external` with bootstrap credentials (`username`, `password`, optional `passwordSecretRef`) or external OIDC (`issuerUrl`, `client.id`, `client.secret`); optional embedded-only `consoleClient`, rate limits, and session store.
+- **Controller v3.8 env mapping** - operator maps `AUTH_*`, `OIDC_*`, and `CONSOLE_*` env vars into the Controller pod per Controller `env-mapping.js`.
+- **Operator → Controller API auth** - embedded: `POST /api/v3/user/login` with bootstrap creds from Secret; external: OAuth2 `client_credentials` via issuer `.well-known/openid-configuration` discovery.
+- **NATS hub** - optional `spec.nats` block (JetStream storage, enable/disable); NATS services and ingress fields on ControlPlane.
+- **Vault integration** - optional `spec.vault` block; operator creates credentials Secret and injects `VAULT_*` env vars.
 - **In-repo Helm chart** at `charts/iofog-operator/`; published to each mirror's gh-pages on `v*` tags.
-- **GitHub Actions CI** — `ci.yml` preflight on PR/`develop`; `release.yml` and `govulncheck.yml` on tags; `azure-pipelines.yml` removed.
-- **OLM** — package `iofog-operator`, channel `stable`; flavor-aware bundle via `make bundle`.
-- **Release artifacts per flavor** — manifest tarballs (`manifests-iofog-*`, `manifests-datasance-*`), OLM bundle images, Helm chart index entries.
+- **GitHub Actions CI** - `ci.yml` preflight on PR/`develop`; `release.yml` and `govulncheck.yml` on tags; `azure-pipelines.yml` removed.
+- **OLM** - package `iofog-operator`, channel `stable`; flavor-aware bundle via `make bundle`.
+- **Release artifacts per flavor** - manifest tarballs (`manifests-iofog-*`, `manifests-datasance-*`), OLM bundle images, Helm chart index entries.
 
 ### Deprecated
 
-- **[Datasance/helm](https://github.com/Datasance/helm)** — standalone Helm repo (`https://datasance.github.io/helm`, chart `pot`) is retired. Charts ship from **`charts/iofog-operator/`** in this repository and publish to each mirror's gh-pages (`https://datasance.github.io/iofog-operator`, `https://eclipse-iofog.github.io/iofog-operator`). Redirect README stub: [`docs/helm/datasance-helm-deprecation-README.md`](docs/helm/datasance-helm-deprecation-README.md).
+- **[Datasance/helm](https://github.com/Datasance/helm)** - standalone Helm repo (`https://datasance.github.io/helm`, chart `pot`) is retired. Charts ship from **`charts/iofog-operator/`** in this repository and publish to each mirror's gh-pages (`https://datasance.github.io/iofog-operator`, `https://eclipse-iofog.github.io/iofog-operator`). Redirect README stub: [`docs/helm/datasance-helm-deprecation-README.md`](docs/helm/datasance-helm-deprecation-README.md).
 
 ### Changed
 
-- **Go toolchain** — Go **1.26.4**; module path **`github.com/eclipse-iofog/iofog-operator/v3`**; SDK **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.8.0`** train.
-- **Default component images** — `ghcr.io/eclipse-iofog/*` (Eclipse) or `ghcr.io/datasance/*` (Datasance); `spec.images` overrides defaults.
-- **Controller spec** — `publicUrl`, `trustProxy`, `consoleUrl`, `consolePort`; URL defaulting from ingress host or LoadBalancer IP.
-- **Reconcile hot-path** — patch Services and Ingresses on spec change; restart Controller pods when auth or DB secrets change.
-- **Copyright** — per-file headers removed; sole attribution in root `NOTICE`.
-- **NATS TLS env** — `NATS_SSL_DIR` renamed to `NATS_TLS_DIR` (align with Controller v3.8).
+- **Go toolchain** - Go **1.26.4**; module path **`github.com/eclipse-iofog/iofog-operator/v3`**; SDK **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.8.0`** train.
+- **Default component images** - `ghcr.io/eclipse-iofog/*` (Eclipse) or `ghcr.io/datasance/*` (Datasance); `spec.images` overrides defaults.
+- **Controller spec** - `publicUrl`, `trustProxy`, `consoleUrl`, `consolePort`; URL defaulting from ingress host or LoadBalancer IP.
+- **Reconcile hot-path** - patch Services and Ingresses on spec change; restart Controller pods when auth or DB secrets change.
+- **Copyright** - per-file headers removed; sole attribution in root `NOTICE`.
+- **NATS TLS env** - `NATS_SSL_DIR` renamed to `NATS_TLS_DIR` (align with Controller v3.8).
 
 ### Removed
 
-- **v3.7 in-place upgrade path** — see [Migration](#migration-greenfield-v380) below.
-- **Application CRD and reconciler** — operator scope is **ControlPlane only**; deploy applications via **potctl**, **iofogctl**, or **iofog-go-sdk** (`pkg/apps`). `OPERATOR_DEPLOY_API_VERSION` build arg removed.
-- **Keycloak auth fields** on ControlPlane — `auth.url`, `realm`, `realmKey`, `ssl`, `viewerClient`; all `KC_*` Controller env vars.
-- **Keycloak Admin API** — `UpdateECNViewerClientRootURL` and console client IdP registration removed; `NoopUpdater` stub for future OIDC admin.
-- **Controller ecnViewer fields** — `ecnViewerPort`, `ecnViewerUrl` dropped from ControlPlane spec.
-- **Legacy PoT runtime identifiers** — `pot` naming scrubbed from labels, leader election ID, and samples (product strings `Datasance PoT` / `Eclipse ioFog` remain in docs/CSV where appropriate).
+- **v3.7 in-place upgrade path** - see [Migration](#migration-greenfield-v380) below.
+- **Application CRD and reconciler** - operator scope is **ControlPlane only**; deploy applications via **potctl**, **iofogctl**, or **iofog-go-sdk** (`pkg/apps`). `OPERATOR_DEPLOY_API_VERSION` build arg removed.
+- **Keycloak auth fields** on ControlPlane - `auth.url`, `realm`, `realmKey`, `ssl`, `viewerClient`; all `KC_*` Controller env vars.
+- **Keycloak Admin API** - `UpdateECNViewerClientRootURL` and console client IdP registration removed; `NoopUpdater` stub for future OIDC admin.
+- **Controller ecnViewer fields** - `ecnViewerPort`, `ecnViewerUrl` dropped from ControlPlane spec.
+- **Legacy PoT runtime identifiers** - `pot` naming scrubbed from labels, leader election ID, and samples (product strings `Datasance PoT` / `Eclipse ioFog` remain in docs/CSV where appropriate).
 
 ### Security
 
@@ -52,15 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **v3.8.0 is a greenfield release.** There is no supported upgrade from v3.7.x.
 
 1. **Uninstall** the legacy operator deployment and **delete v3.7 CRDs** (`ControlPlane`, `Application`, and any flavor-specific variants).
-2. **Rewrite ControlPlane manifests** — replace Keycloak `auth` block with embedded or external OIDC per [`config/cr/controlplane.yaml`](config/cr/controlplane.yaml) (flavor-specific samples ship in release manifest tarballs).
-3. **Migrate application workloads** — export app definitions from removed `Application` CRs; redeploy with potctl, iofogctl, or the Go SDK. Pass API version per flavor (`iofog.org/v3` or `datasance.com/v3`) via CLI/SDK options.
+2. **Rewrite ControlPlane manifests** - replace Keycloak `auth` block with embedded or external OIDC per [`config/cr/controlplane.yaml`](config/cr/controlplane.yaml) (flavor-specific samples ship in release manifest tarballs).
+3. **Migrate application workloads** - export app definitions from removed `Application` CRs; redeploy with potctl, iofogctl, or the Go SDK. Pass API version per flavor (`iofog.org/v3` or `datasance.com/v3`) via CLI/SDK options.
 4. **Install v3.8** using your mirror's channel:
-   - **Helm (recommended)** — add the mirror-specific repo, then `helm install`:
+   - **Helm (recommended)** - add the mirror-specific repo, then `helm install`:
      - Eclipse: `https://eclipse-iofog.github.io/iofog-operator`
      - Datasance: `https://datasance.github.io/iofog-operator`
-   - **Manifest tarballs** — `manifests-iofog-<version>.tar.gz` or `manifests-datasance-<version>.tar.gz` from GitHub Releases.
-   - **OLM** — `ghcr.io/eclipse-iofog/operator-bundle:<version>` or `ghcr.io/datasance/operator-bundle:<version>`.
-5. **Deprecate [Datasance/helm](https://github.com/Datasance/helm)** — use the in-repo chart published to gh-pages above.
+   - **Manifest tarballs** - `manifests-iofog-<version>.tar.gz` or `manifests-datasance-<version>.tar.gz` from GitHub Releases.
+   - **OLM** - `ghcr.io/eclipse-iofog/operator-bundle:<version>` or `ghcr.io/datasance/operator-bundle:<version>`.
+5. **Deprecate [Datasance/helm](https://github.com/Datasance/helm)** - use the in-repo chart published to gh-pages above.
 
 See [README.md](README.md) for install examples and dual-mirror workflow.
 

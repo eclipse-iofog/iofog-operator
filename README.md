@@ -13,7 +13,7 @@
 
 **Upstream:** [eclipse-iofog/iofog-operator](https://github.com/eclipse-iofog/iofog-operator) · **Datasance mirror:** [Datasance/iofog-operator](https://github.com/Datasance/iofog-operator)
 
-Kubernetes operator for **Eclipse ioFog** and **Datasance PoT** control planes. It reconciles `ControlPlane` custom resources to deploy Controller, Router, NATS, and related cluster resources. Application workloads are deployed via potctl, iofogctl, or the ioFog Go SDK — not through this operator.
+Kubernetes operator for **Eclipse ioFog** and **Datasance PoT** control planes. It reconciles `ControlPlane` custom resources to deploy Controller, Router, NATS, and related cluster resources. Application workloads are deployed via potctl, iofogctl, or the ioFog Go SDK - not through this operator.
 
 ## Container images
 
@@ -30,7 +30,7 @@ Release tags use the semver without a `v` prefix (e.g. `:3.8.0`). Images, manife
 
 1. Develop on **`Datasance/iofog-operator`** branch **`develop`** (or feature branches `operator/<plan>-<topic>`).
 2. Open PR to **`eclipse-iofog/iofog-operator`** **`develop`**.
-3. CI runs on `develop` and PRs — **no GHCR push** on branch builds.
+3. CI runs on `develop` and PRs - **no GHCR push** on branch builds.
 4. After merge, tag identical **`v*`** releases on both remotes; **`release.yml`** publishes images, manifest tarballs, OLM bundle, and Helm chart.
 
 See [CONTRIBUTING](CONTRIBUTING) for CI repository variables and contributor workflow.
@@ -49,11 +49,11 @@ See [CONTRIBUTING](CONTRIBUTING) for CI repository variables and contributor wor
 
 ## Installation
 
-Choose the channel that matches your fleet — Eclipse (`iofog.org/v3`) or Datasance (`datasance.com/v3`). Artifacts are published to GitHub Releases and mirror-specific registries on `v*` tags.
+Choose the channel that matches your fleet - Eclipse (`iofog.org/v3`) or Datasance (`datasance.com/v3`). Artifacts are published to GitHub Releases and mirror-specific registries on `v*` tags.
 
 ### Helm (recommended)
 
-Helm charts are published to each mirror's gh-pages index. The legacy standalone repo [Datasance/helm](https://github.com/Datasance/helm) (`datasance.github.io/helm`, chart `pot`) is **deprecated** — use the URLs below instead.
+Helm charts are published to each mirror's gh-pages index. The legacy standalone repo [Datasance/helm](https://github.com/Datasance/helm) (`datasance.github.io/helm`, chart `pot`) is **deprecated** - use the URLs below instead.
 
 | Mirror | `helm repo add` URL |
 |--------|---------------------|
@@ -61,7 +61,7 @@ Helm charts are published to each mirror's gh-pages index. The legacy standalone
 | Datasance | `https://datasance.github.io/iofog-operator` |
 
 ```bash
-# Eclipse example — use datasance.github.io URL for the Datasance mirror
+# Eclipse example - use datasance.github.io URL for the Datasance mirror
 helm repo add iofog-operator https://eclipse-iofog.github.io/iofog-operator
 helm repo update
 helm install iofog-operator iofog-operator/iofog-operator \
@@ -116,4 +116,4 @@ Run `make help` for all targets (manifest generation, bundle, release tarballs).
 
 ## License
 
-Eclipse Public License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Eclipse Public License 2.0 - see [LICENSE](LICENSE) and [NOTICE](NOTICE).

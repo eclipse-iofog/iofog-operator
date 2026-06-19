@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scenario C — Auth patch: bootstrap password in secret updates; controller Deployment restarts.
+# Scenario C - Auth patch: bootstrap password in secret updates; controller Deployment restarts.
 
 set -euo pipefail
 
@@ -10,15 +10,15 @@ source "$ROOT/hack/local/lib.sh"
 require_kubectl
 wait_baseline_resources
 
-print_header "Scenario C — Auth patch + controller restart"
+print_header "Scenario C - Auth patch + controller restart"
 
 PASS_BEFORE="$(auth_password)"
 DEPLOY_GEN_BEFORE="$("$KUBECTL" get deploy controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.generation}')"
 GEN_BEFORE="$(cp_generation)"
 
-log "Before — auth-bootstrap-password: ${PASS_BEFORE}"
-log "Before — controller Deployment generation: ${DEPLOY_GEN_BEFORE}"
-log "Before — ControlPlane generation: ${GEN_BEFORE}"
+log "Before - auth-bootstrap-password: ${PASS_BEFORE}"
+log "Before - controller Deployment generation: ${DEPLOY_GEN_BEFORE}"
+log "Before - ControlPlane generation: ${GEN_BEFORE}"
 
 if [[ "$PASS_BEFORE" != "LocalTest12!" ]]; then
   log "WARN: expected initial password LocalTest12! (got ${PASS_BEFORE}); continuing anyway"
@@ -38,9 +38,9 @@ PASS_AFTER="$(auth_password)"
 DEPLOY_GEN_AFTER="$("$KUBECTL" get deploy controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.generation}')"
 GEN_AFTER="$(cp_generation)"
 
-log "After — auth-bootstrap-password: ${PASS_AFTER}"
-log "After — controller Deployment generation: ${DEPLOY_GEN_AFTER}"
-log "After — ControlPlane generation: ${GEN_AFTER}"
+log "After - auth-bootstrap-password: ${PASS_AFTER}"
+log "After - controller Deployment generation: ${DEPLOY_GEN_AFTER}"
+log "After - ControlPlane generation: ${GEN_AFTER}"
 
 fail=0
 assert_eq "auth secret password updated" "LocalTest13!" "$PASS_AFTER" || fail=1
@@ -50,7 +50,7 @@ assert_eq "auth secret password updated" "LocalTest13!" "$PASS_AFTER" || fail=1
 if [[ "$DEPLOY_GEN_AFTER" -gt "$DEPLOY_GEN_BEFORE" ]]; then
   log "PASS controller Deployment generation increased"
 else
-  log "NOTE: Deployment generation unchanged — checking pod restart timestamps..."
+  log "NOTE: Deployment generation unchanged - checking pod restart timestamps..."
   "$KUBECTL" get pods -n "$TEST_NAMESPACE" -l app.kubernetes.io/component=controller -o wide
 fi
 

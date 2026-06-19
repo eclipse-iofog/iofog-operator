@@ -203,7 +203,7 @@ jobs:
             echo "exists=true" >> "${GITHUB_OUTPUT}"
           else
             echo "exists=false" >> "${GITHUB_OUTPUT}"
-            echo "charts/iofog-operator/ not present — skip (Plan 11)"
+            echo "charts/iofog-operator/ not present - skip (Plan 11)"
           fi
 
       - name: Install Helm
@@ -227,27 +227,39 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          CHART="dist/iofog-operator-${VERSION}.tgz"
+          WORKSPACE="${GITHUB_WORKSPACE}"
+          CHART="${WORKSPACE}/dist/iofog-operator-${VERSION}.tgz"
           PAGES_DIR="$(mktemp -d)"
           REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if ! [ -f "${CHART}" ]; then
+            echo "ERROR: chart not found at ${CHART}" >&2
+            ls -la "${WORKSPACE}/dist/" || true
+            exit 1
+          fi
+
           if git ls-remote --heads "${REPO}" gh-pages | grep -q gh-pages; then
             git clone --depth 1 -b gh-pages "${REPO}" "${PAGES_DIR}"
           else
             git clone --depth 1 "${REPO}" "${PAGES_DIR}"
-            cd "${PAGES_DIR}"
-            git checkout --orphan gh-pages
-            git rm -rf . 2>/dev/null || true
+            git -C "${PAGES_DIR}" checkout --orphan gh-pages
+            git -C "${PAGES_DIR}" rm -rf . 2>/dev/null || true
           fi
+
           cp "${CHART}" "${PAGES_DIR}/"
-          chmod +x hack/render-helm-docs.sh
+          tar -xzf "${CHART}" -O iofog-operator/values.yaml > "${PAGES_DIR}/values.yaml"
+          cp "${PAGES_DIR}/values.yaml" "${PAGES_DIR}/values-${VERSION}.yaml"
+          chmod +x "${WORKSPACE}/hack/render-helm-docs.sh"
           HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL}" OCI_SOURCE_REPO="${OCI_SOURCE_REPO}" \
             IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
-            hack/render-helm-docs.sh "${FLAVOR}" "${VERSION}" "${PAGES_DIR}"
+            "${WORKSPACE}/hack/render-helm-docs.sh" "${FLAVOR}" "${VERSION}" "${PAGES_DIR}"
+
           if [ -f "${PAGES_DIR}/index.yaml" ]; then
             helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}" --merge "${PAGES_DIR}/index.yaml"
           else
             helm repo index "${PAGES_DIR}" --url "${HELM_REPO_BASE_URL}"
           fi
+
           cd "${PAGES_DIR}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

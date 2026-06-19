@@ -32,6 +32,7 @@
     }
     h1 { font-size: 1.75rem; line-height: 1.25; }
     h2 { font-size: 1.15rem; margin-top: 2rem; }
+    h3 { font-size: 1rem; margin-top: 1.25rem; color: var(--text); }
     p, li { color: var(--muted); }
     a { color: var(--link); }
     code, pre {
@@ -55,14 +56,27 @@
       padding-left: 1rem;
       margin: 1.5rem 0;
     }
+    ul.downloads li { margin-bottom: 0.35rem; }
   </style>
 </head>
 <body>
   <h1>${PRODUCT_NAME} Operator — Helm repository</h1>
   <p class="meta">
-    This page is the human-friendly landing site for the <strong>${PRODUCT_NAME}</strong> Helm chart index.
+    Human-friendly index for the <strong>${PRODUCT_NAME}</strong> Helm chart.
     Charts are pre-configured for <code>${CRD_GROUP}/v3</code> and images from <code>${IMAGE_REGISTRY}</code>.
+    Release <strong>v${VERSION}</strong>.
   </p>
+
+  <h2>Download configuration</h2>
+  <ul class="downloads">
+    <li><a href="values.yaml">values.yaml</a> — default values for the latest publish on this site (stamped for this mirror)</li>
+    <li><a href="values-${VERSION}.yaml">values-${VERSION}.yaml</a> — defaults for chart version <code>${VERSION}</code></li>
+    <li><a href="iofog-operator-${VERSION}.tgz">iofog-operator-${VERSION}.tgz</a> — chart tarball</li>
+    <li><a href="index.yaml">index.yaml</a> — Helm repository index</li>
+  </ul>
+  <pre># Or via Helm CLI (after helm repo add)
+helm show values iofog-operator/iofog-operator --version ${VERSION} &gt; my-values.yaml
+helm pull iofog-operator/iofog-operator --version ${VERSION} --untar</pre>
 
   <h2>Quick install</h2>
   <pre>helm repo add iofog-operator ${HELM_REPO_BASE_URL}
@@ -72,13 +86,38 @@ helm install pot iofog-operator/iofog-operator \
   --version ${VERSION} \
   --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'</pre>
 
-  <p>Bootstrap password rules when <code>auth.mode=embedded</code>: at least 12 characters, one uppercase letter, and one special character. Or use <code>passwordSecretRef</code> instead of <code>--set</code>.</p>
+  <p>Embedded bootstrap password: at least 12 characters, one uppercase letter, and one special character. Use <code>passwordSecretRef</code> or a values file instead of <code>--set</code> in production.</p>
+
+  <h2>Install from a values file</h2>
+  <pre>helm show values iofog-operator/iofog-operator --version ${VERSION} &gt; my-values.yaml
+# edit my-values.yaml
+helm install pot iofog-operator/iofog-operator \
+  --namespace iofog-system --create-namespace \
+  --version ${VERSION} \
+  -f my-values.yaml</pre>
+
+  <h2>LoadBalancer and externalTrafficPolicy</h2>
+  <p>Defaults use <strong>LoadBalancer</strong> for controller and router Services. When <code>externalTrafficPolicy</code> is omitted, the operator sets <strong>Local</strong> on LoadBalancer Services (and <strong>Cluster</strong> on NodePort).</p>
+  <div class="note">
+    <p><strong>Local</strong> preserves client source IP and suits many cloud load balancers.</p>
+    <p><strong>Cluster</strong> may be required when your cluster networking or LoadBalancer controller does not support <code>Local</code> well — for example Services that stay <code>&lt;pending&gt;</code> or never receive an external address. Set per service in values:</p>
+  </div>
+  <pre>controlplane:
+  spec:
+    services:
+      controller:
+        type: LoadBalancer
+        externalTrafficPolicy: Cluster
+      router:
+        type: LoadBalancer
+        externalTrafficPolicy: Cluster</pre>
 
   <h2>Verify</h2>
   <pre>kubectl get pods -n iofog-system
+kubectl get svc -n iofog-system
 kubectl get controlplanes.${CRD_GROUP} -n iofog-system</pre>
 
-  <h2>External auth example</h2>
+  <h2>External auth</h2>
   <pre>helm upgrade pot iofog-operator/iofog-operator \
   --namespace iofog-system \
   --version ${VERSION} \
@@ -87,20 +126,29 @@ kubectl get controlplanes.${CRD_GROUP} -n iofog-system</pre>
   --set controlplane.spec.auth.client.id=controller \
   --set controlplane.spec.auth.client.secret='...'</pre>
 
+  <h2>Container images (this release)</h2>
+  <ul>
+    <li><code>${IMAGE_REGISTRY}/operator:${VERSION}</code></li>
+    <li><code>${IMAGE_REGISTRY}/controller:${VERSION}</code></li>
+    <li><code>${IMAGE_REGISTRY}/router:${VERSION}</code></li>
+    <li><code>${IMAGE_REGISTRY}/operator-bundle:${VERSION}</code> (OLM)</li>
+  </ul>
+
   <div class="note">
-    <p><strong>Greenfield v3.8.</strong> There is no in-place upgrade from v3.7. Uninstall the legacy operator and CRDs before installing v3.8.</p>
+    <p><strong>Greenfield v3.8.</strong> No in-place upgrade from v3.7 or legacy <code>Datasance/helm</code>. Uninstall the old operator and CRDs before installing v3.8.</p>
   </div>
 
-  <h2>More documentation</h2>
+  <h2>Documentation</h2>
   <ul>
-    <li><a href="${CHART_README_URL}">Chart README</a> — values overview and configuration notes</li>
-    <li><a href="${OCI_SOURCE_REPO}">Operator repository</a> — manifests, OLM, and release artifacts</li>
-    <li><a href="${OCI_SOURCE_REPO}/releases/tag/v${VERSION}">Release v${VERSION}</a> — downloadable chart tarball and release notes</li>
+    <li><a href="${CHART_README_URL}">Chart README</a> — full values reference and examples</li>
+    <li><a href="${OCI_SOURCE_REPO}/blob/develop/charts/iofog-operator/values.schema.json">values.schema.json</a> — JSON Schema for values</li>
+    <li><a href="${OCI_SOURCE_REPO}">Operator repository</a> — source, manifests, OLM</li>
+    <li><a href="${OCI_SOURCE_REPO}/releases/tag/v${VERSION}">Release v${VERSION}</a> — release notes and artifacts</li>
   </ul>
 
   <h2>Other mirror</h2>
   <p>
-    Using <strong>${SIBLING_PRODUCT}</strong> instead?
+    Using <strong>${SIBLING_PRODUCT}</strong>?
     Add repo <code>${SIBLING_HELM_URL}</code> — same chart name, different CRD group and registry.
   </p>
 </body>

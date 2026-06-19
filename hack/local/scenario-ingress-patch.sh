@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Scenario B — Ingress patch: host, class, TLS secret, annotations apply without Ingress delete.
+# Scenario B - Ingress patch: host, class, TLS secret, annotations apply without Ingress delete.
 # OrbStack/k3s has no ingress controller by default; switch controller to ClusterIP to create
-# the Ingress object (operator reconcile may log ingress LB status errors — patch spec is what we test).
+# the Ingress object (operator reconcile may log ingress LB status errors - patch spec is what we test).
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ ensure_controller_ingress() {
   if "$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
     return 0
   fi
-  log "No controller Ingress — switching controller Service to ClusterIP to create one..."
+  log "No controller Ingress - switching controller Service to ClusterIP to create one..."
   "$KUBECTL" patch controlplane "$CONTROLPLANE_NAME" -n "$TEST_NAMESPACE" --type merge -p '
 spec:
   services:
@@ -35,15 +35,15 @@ spec:
 
 ensure_controller_ingress
 
-print_header "Scenario B — Ingress patch (controller)"
+print_header "Scenario B - Ingress patch (controller)"
 
 UID_BEFORE="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.uid}')"
 HOST_BEFORE="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.spec.rules[0].host}')"
 GEN_BEFORE="$(cp_generation)"
 
-log "Before — Ingress UID: ${UID_BEFORE}"
-log "Before — host: ${HOST_BEFORE}"
-log "Before — ControlPlane generation: ${GEN_BEFORE}"
+log "Before - Ingress UID: ${UID_BEFORE}"
+log "Before - host: ${HOST_BEFORE}"
+log "Before - ControlPlane generation: ${GEN_BEFORE}"
 
 log "Patching ControlPlane (ingress host, class, TLS secret, annotations)..."
 "$KUBECTL" patch controlplane "$CONTROLPLANE_NAME" -n "$TEST_NAMESPACE" --type merge -p '
@@ -69,11 +69,11 @@ TLS_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath=
 ISSUER_AFTER="$("$KUBECTL" get ingress controller -n "$TEST_NAMESPACE" -o jsonpath='{.metadata.annotations.cert-manager\.io/cluster-issuer}')"
 GEN_AFTER="$(cp_generation)"
 
-log "After — Ingress UID: ${UID_AFTER}"
-log "After — host: ${HOST_AFTER}"
-log "After — ingressClassName: ${CLASS_AFTER}"
-log "After — TLS secretName: ${TLS_AFTER}"
-log "After — cert-manager annotation: ${ISSUER_AFTER}"
+log "After - Ingress UID: ${UID_AFTER}"
+log "After - host: ${HOST_AFTER}"
+log "After - ingressClassName: ${CLASS_AFTER}"
+log "After - TLS secretName: ${TLS_AFTER}"
+log "After - cert-manager annotation: ${ISSUER_AFTER}"
 
 assert_eq "Ingress UID unchanged" "$UID_BEFORE" "$UID_AFTER" || fail=1
 assert_eq "ingress host" "iofog-v2.local" "$HOST_AFTER" || fail=1
