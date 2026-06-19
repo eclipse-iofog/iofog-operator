@@ -22,11 +22,33 @@ spec:
     ssl: false
   auth:
     mode: embedded
+    insecureAllowHttp: true
     bootstrap:
       username: admin
       password: "LocalTest12!"   # ≥12 chars; Controller validates at bootstrap
+    # rateLimit: optional for  embedded
+    #   enabled: true
+    #   maxRequestsPerWindow: 60
+    #   windowMs: 60000
+    # sessionStore: optional for  embedded
+    #   type: memory                 # memory | database
+    #   ttlMs: 600000
+    #   secret: ""
+    # tokenTtl: optional for  embedded
+    #   accessTokenTtlSeconds: 900
+    #   refreshTokenTtlSeconds: 3600
+    # oidcTtl: optional for  embedded
+    #   interactionTtlSeconds:
+    #   grantTtlSeconds:
+    #   sessionTtlSeconds:
+    #   idTokenTtlSeconds:
+    # mode: external
+    # issuerUrl: ""
+    # client:
+    #   id: controller
+    #   secret: ""
   images:
-    controller: emirhandurmus/controller:3.8.0-rc.1
+    controller: ghcr.io/datasance/controller:3.8.0-rc.1
     router: ghcr.io/datasance/router:3.8.0-rc.1
     nats: ghcr.io/datasance/nats:2.14.2-rc.1
   nats:
