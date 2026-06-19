@@ -4,6 +4,12 @@ WORKDIR /operator
 
 RUN apk add --update --no-cache bash curl git make
 
+ARG IMAGE_REGISTRY=ghcr.io/eclipse-iofog
+ARG OPERATOR_COMPONENT_LABEL_DOMAIN=iofog.org
+
+ENV IMAGE_REGISTRY=$IMAGE_REGISTRY \
+    OPERATOR_COMPONENT_LABEL_DOMAIN=$OPERATOR_COMPONENT_LABEL_DOMAIN
+
 COPY ./go.* ./
 COPY ./Makefile ./
 RUN make controller-gen
@@ -19,8 +25,13 @@ RUN cp ./bin/iofog-operator /bin
 
 FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 WORKDIR /
+
+ARG OCI_SOURCE_REPO=https://github.com/eclipse-iofog/iofog-operator
+ARG IMAGE_REGISTRY=ghcr.io/eclipse-iofog
+
 COPY --from=builder /bin/iofog-operator /bin/
 LABEL org.opencontainers.image.description=operator
-LABEL org.opencontainers.image.source=https://github.com/eclipse-iofog/iofog-operator
+LABEL org.opencontainers.image.source=${OCI_SOURCE_REPO}
+LABEL org.opencontainers.image.url=${IMAGE_REGISTRY}/operator
 LABEL org.opencontainers.image.licenses=EPL2.0
 ENTRYPOINT ["/bin/iofog-operator", "--enable-leader-election"]
