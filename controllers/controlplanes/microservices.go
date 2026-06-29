@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -454,6 +455,34 @@ func filterControllerConfig(cfg *controllerMicroserviceConfig) {
 	}
 }
 
+func controllerReadinessProbe(cfg *controllerMicroserviceConfig) *corev1.Probe {
+	probe := &corev1.Probe{
+		InitialDelaySeconds: 10,
+		TimeoutSeconds:      10,
+		PeriodSeconds:       5,
+		FailureThreshold:    2,
+	}
+
+	if cfg.https != nil && *cfg.https {
+		statusURL := fmt.Sprintf("https://127.0.0.1:%d/api/v3/status", controllerAPIPort)
+		probe.ProbeHandler = corev1.ProbeHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"curl", "-sfk", statusURL},
+			},
+		}
+		return probe
+	}
+
+	probe.ProbeHandler = corev1.ProbeHandler{
+		HTTPGet: &corev1.HTTPGetAction{
+			Path:   "/api/v3/status",
+			Port:   intstr.FromInt(controllerAPIPort),
+			Scheme: corev1.URISchemeHTTP,
+		},
+	}
+	return probe
+}
+
 func getControllerPort(msvc *microservice) (int, error) {
 	if len(msvc.services) == 0 || len(msvc.services[0].ports) == 0 {
 		return 0, errors.New("controller microservice does not have requisite ports")
@@ -534,20 +563,8 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 				name:            "controller",
 				image:           cfg.image,
 				imagePullPolicy: "Always",
-				readinessProbe: &corev1.Probe{
-					ProbeHandler: corev1.ProbeHandler{
-						HTTPGet: &corev1.HTTPGetAction{
-							Path:   "/api/v3/status",
-							Port:   intstr.FromInt(51121), //nolint:gomnd
-							Scheme: corev1.URIScheme(strings.ToUpper(cfg.scheme)),
-						},
-					},
-					InitialDelaySeconds: 10,
-					TimeoutSeconds:      10,
-					PeriodSeconds:       5,
-					FailureThreshold:    2,
-				},
-				volumeMounts: []corev1.VolumeMount{},
+				readinessProbe:  controllerReadinessProbe(cfg),
+				volumeMounts:    []corev1.VolumeMount{},
 				env: []corev1.EnvVar{
 					{
 						Name:  "DB_PROVIDER",
