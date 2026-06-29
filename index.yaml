@@ -9,8 +9,28 @@ entries:
         - name: Eclipse ioFog
           email: iofog-dev@eclipse.org
     apiVersion: v2
+    appVersion: 3.8.0-rc.2
+    created: "2026-06-29T13:48:17.84480936Z"
+    description: Helm chart for the ioFog operator and ControlPlane
+    digest: 4fcc0c2781fee4e6538ce1667f689387f4ec6c703895bf398f43d67745e02ca8
+    home: https://github.com/eclipse-iofog/iofog-operator
+    name: iofog-operator
+    sources:
+    - https://github.com/eclipse-iofog/iofog-operator
+    type: application
+    urls:
+    - https://eclipse-iofog.github.io/iofog-operator/iofog-operator-3.8.0-rc.2.tgz
+    version: 3.8.0-rc.2
+  - annotations:
+      artifacthub.io/links: |
+        - name: source
+          url: https://github.com/eclipse-iofog/iofog-operator
+      artifacthub.io/maintainers: |
+        - name: Eclipse ioFog
+          email: iofog-dev@eclipse.org
+    apiVersion: v2
     appVersion: 3.8.0-rc.1
-    created: "2026-06-19T15:43:30.320063662Z"
+    created: "2026-06-29T13:48:17.844076106Z"
     description: Helm chart for the ioFog operator and ControlPlane
     digest: 15c153ebce56b7df798a527b0703f05fb26884ba002fcf82298da0dee7f46451
     home: https://github.com/eclipse-iofog/iofog-operator
@@ -21,4 +41,4 @@ entries:
     urls:
     - https://eclipse-iofog.github.io/iofog-operator/iofog-operator-3.8.0-rc.1.tgz
     version: 3.8.0-rc.1
-generated: "2026-06-19T15:43:30.319189151Z"
+generated: "2026-06-29T13:48:17.843186215Z"
