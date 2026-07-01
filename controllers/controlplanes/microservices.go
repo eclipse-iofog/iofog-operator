@@ -764,17 +764,17 @@ func newControllerMicroservice(namespace string, cfg *controllerMicroserviceConf
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
-			Name:  "SSL_PATH_CERT",
+			Name:  "TLS_PATH_CERT",
 			Value: "/etc/iofog/controller-cert/tls.crt",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
-			Name:  "SSL_PATH_KEY",
+			Name:  "TLS_PATH_KEY",
 			Value: "/etc/iofog/controller-cert/tls.key",
 		})
 
 		msvc.containers[0].env = append(msvc.containers[0].env, corev1.EnvVar{
-			Name:  "SSL_PATH_INTERMEDIATE_CERT",
+			Name:  "TLS_PATH_INTERMEDIATE_CERT",
 			Value: "/etc/iofog/controller-cert/ca.crt",
 		})
 
