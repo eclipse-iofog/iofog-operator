@@ -357,9 +357,9 @@
               "description": "Container images for Controller, Router, and NATS.",
               "properties": {
                 "pullSecret": { "type": "string", "title": "Pull Secret" },
-                "controller": { "type": "string", "title": "Controller Image", "default": "ghcr.io/datasance/controller:3.8.0-rc.1" },
-                "router": { "type": "string", "title": "Router Image", "default": "ghcr.io/datasance/router:3.8.0-rc.1" },
-                "nats": { "type": "string", "title": "NATS Image", "default": "ghcr.io/datasance/nats:2.14.2-rc.1" }
+                "controller": { "type": "string", "title": "Controller Image", "default": "ghcr.io/datasance/controller:3.8.0" },
+                "router": { "type": "string", "title": "Router Image", "default": "ghcr.io/datasance/router:3.8.0" },
+                "nats": { "type": "string", "title": "NATS Image", "default": "ghcr.io/datasance/nats:2.14.3" }
               }
             },
             "services": {
