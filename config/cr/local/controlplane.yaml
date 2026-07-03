@@ -50,7 +50,7 @@ spec:
   images:
     controller: ghcr.io/datasance/controller:3.8.0
     router: ghcr.io/datasance/router:3.8.0
-    nats: ghcr.io/datasance/nats:2.14.2
+    nats: ghcr.io/datasance/nats:2.14.3
   nats:
     enabled: true
     jetStream:
