@@ -2,7 +2,7 @@
 
 > **Copy this file to [Datasance/helm](https://github.com/Datasance/helm) `README.md` in a separate PR** (final v3.7.2 redirect). Do not publish from this repo.
 
-The standalone [Datasance/helm](https://github.com/Datasance/helm) repository is **deprecated** as of ioFog Operator **v3.8.0**. Charts are maintained in-repo and published from each product mirror on release tags.
+The standalone [Datasance/helm](https://github.com/Datasance/helm) repository is **deprecated** as of ioFog Operator **v3.8.1**. Charts are maintained in-repo and published from each product mirror on release tags.
 
 ## Use the new Helm repository
 
@@ -16,7 +16,7 @@ helm repo add iofog-operator https://datasance.github.io/iofog-operator
 helm repo update
 helm install pot iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.0 \
+  --version 3.8.1 \
   --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'
 ```
 
@@ -24,7 +24,7 @@ Documentation: [charts/iofog-operator/README.md](https://github.com/Datasance/io
 
 ## Migration from v3.7 (`datasance/pot`)
 
-**v3.8.0 is greenfield** - there is no supported in-place upgrade from the legacy `pot` chart or Keycloak-shaped `auth` values.
+**v3.8.1 is greenfield** - there is no supported in-place upgrade from the legacy `pot` chart or Keycloak-shaped `auth` values.
 
 1. Uninstall the v3.7 release and remove legacy CRDs if no longer needed.
 2. Rewrite ControlPlane auth for embedded or external OIDC (see operator README / CHANGELOG).
