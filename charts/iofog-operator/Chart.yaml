@@ -2,8 +2,8 @@ apiVersion: v2
 name: iofog-operator
 description: Helm chart for the ioFog operator and ControlPlane
 type: application
-version: 3.8.1
-appVersion: "3.8.1"
+version: 3.8.2
+appVersion: "3.8.2"
 home: https://github.com/eclipse-iofog/iofog-operator
 sources:
   - https://github.com/eclipse-iofog/iofog-operator

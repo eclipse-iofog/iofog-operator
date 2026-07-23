@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.2] - 2026-07-23
+
+### Changed
+
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.8.2`**.
+- **Default component image tags** - operator and controller **3.8.2**; router **3.8.1**; NATS **2.14.3-1** (Makefile `LDFLAGS`, Helm `values.yaml`, OLM bundle CSV).
+- **Release packaging** - Helm chart `version` / `appVersion`, `VERSION_TAG` defaults, and install docs updated to **3.8.2**.
+- **Container base image** - refreshed UBI9 minimal digest in `Dockerfile`.
+
+### Fixed
+
+- **NATS default in samples and OLM bundle** - `config/cr/controlplane.yaml` and bundle CSV example now use **`2.14.3-1`** instead of stale **`2.12.4`** (Makefile and Helm were already correct in 3.8.1).
+
 ## [3.8.1] - 2026-07-10
 
 ### Changed
