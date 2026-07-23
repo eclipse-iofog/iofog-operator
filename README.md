@@ -24,7 +24,7 @@ Identical git tree; registry, CRD API group, and Helm index URL differ by mirror
 | Eclipse ioFog (upstream) | `ghcr.io/eclipse-iofog/operator` | `ghcr.io/eclipse-iofog/operator-bundle` |
 | Datasance (PoT-facing) | `ghcr.io/datasance/operator` | `ghcr.io/datasance/operator-bundle` |
 
-Release tags use the semver without a `v` prefix (e.g. `:3.8.1`). Images, manifest tarballs, OLM bundles, and Helm charts publish on **`v*` tags** from each mirror's `release.yml`.
+Release tags use the semver without a `v` prefix (e.g. `:3.8.2`). Images, manifest tarballs, OLM bundles, and Helm charts publish on **`v*` tags** from each mirror's `release.yml`.
 
 ## Dual-mirror workflow
 
@@ -45,7 +45,7 @@ See [CONTRIBUTING](CONTRIBUTING) for CI repository variables and contributor wor
 
 ## Greenfield release (v3.8)
 
-**v3.8.1 is a greenfield release.** There is no in-place upgrade path from v3.7. Uninstall the legacy operator and CRDs before installing v3.8. The v3.8 operator manages **ControlPlane** resources only; the Application CRD and legacy auth fields are removed.
+**v3.8.0 is a greenfield release.** There is no in-place upgrade path from v3.7. Uninstall the legacy operator and CRDs before installing v3.8. The v3.8 operator manages **ControlPlane** resources only; the Application CRD and legacy auth fields are removed.
 
 ## Installation
 
@@ -66,7 +66,7 @@ helm repo add iofog-operator https://eclipse-iofog.github.io/iofog-operator
 helm repo update
 helm install iofog-operator iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.1
+  --version 3.8.2
 ```
 
 ### Manifest tarballs
@@ -74,7 +74,7 @@ helm install iofog-operator iofog-operator/iofog-operator \
 GitHub Releases attach flavor-specific tarballs: `manifests-iofog-<version>.tar.gz` and `manifests-datasance-<version>.tar.gz`.
 
 ```bash
-VERSION=3.8.1
+VERSION=3.8.2
 FLAVOR=iofog   # or datasance
 
 curl -fsSL -o manifests.tar.gz \
@@ -92,7 +92,7 @@ OLM bundles are published as container images (`operator-bundle:<version>`). Pac
 
 ```bash
 # Cluster must have OLM installed (Operator Lifecycle Manager)
-VERSION=3.8.1
+VERSION=3.8.2
 REGISTRY=ghcr.io/eclipse-iofog   # or ghcr.io/datasance
 
 operator-sdk run bundle "${REGISTRY}/operator-bundle:${VERSION}" \
