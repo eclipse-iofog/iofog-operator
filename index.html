@@ -64,36 +64,36 @@
   <p class="meta">
     Human-friendly index for the <strong>Eclipse ioFog</strong> Helm chart.
     Charts are pre-configured for <code>iofog.org/v3</code> and images from <code>ghcr.io/eclipse-iofog</code>.
-    Release <strong>v3.8.1</strong>.
+    Release <strong>v3.8.2</strong>.
   </p>
 
   <h2>Download configuration</h2>
   <ul class="downloads">
     <li><a href="values.yaml">values.yaml</a> — default values for the latest publish on this site (stamped for this mirror)</li>
-    <li><a href="values-3.8.1.yaml">values-3.8.1.yaml</a> — defaults for chart version <code>3.8.1</code></li>
-    <li><a href="iofog-operator-3.8.1.tgz">iofog-operator-3.8.1.tgz</a> — chart tarball</li>
+    <li><a href="values-3.8.2.yaml">values-3.8.2.yaml</a> — defaults for chart version <code>3.8.2</code></li>
+    <li><a href="iofog-operator-3.8.2.tgz">iofog-operator-3.8.2.tgz</a> — chart tarball</li>
     <li><a href="index.yaml">index.yaml</a> — Helm repository index</li>
   </ul>
   <pre># Or via Helm CLI (after helm repo add)
-helm show values iofog-operator/iofog-operator --version 3.8.1 &gt; my-values.yaml
-helm pull iofog-operator/iofog-operator --version 3.8.1 --untar</pre>
+helm show values iofog-operator/iofog-operator --version 3.8.2 &gt; my-values.yaml
+helm pull iofog-operator/iofog-operator --version 3.8.2 --untar</pre>
 
   <h2>Quick install</h2>
   <pre>helm repo add iofog-operator https://eclipse-iofog.github.io/iofog-operator
 helm repo update
 helm install pot iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.1 \
+  --version 3.8.2 \
   --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'</pre>
 
   <p>Embedded bootstrap password: at least 12 characters, one uppercase letter, and one special character. Use <code>passwordSecretRef</code> or a values file instead of <code>--set</code> in production.</p>
 
   <h2>Install from a values file</h2>
-  <pre>helm show values iofog-operator/iofog-operator --version 3.8.1 &gt; my-values.yaml
+  <pre>helm show values iofog-operator/iofog-operator --version 3.8.2 &gt; my-values.yaml
 # edit my-values.yaml
 helm install pot iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.1 \
+  --version 3.8.2 \
   -f my-values.yaml</pre>
 
   <h2>LoadBalancer and externalTrafficPolicy</h2>
@@ -120,7 +120,7 @@ kubectl get controlplanes.iofog.org -n iofog-system</pre>
   <h2>External auth</h2>
   <pre>helm upgrade pot iofog-operator/iofog-operator \
   --namespace iofog-system \
-  --version 3.8.1 \
+  --version 3.8.2 \
   --set controlplane.spec.auth.mode=external \
   --set controlplane.spec.auth.issuerUrl=https://auth.example.com/realms/myrealm \
   --set controlplane.spec.auth.client.id=controller \
@@ -128,10 +128,10 @@ kubectl get controlplanes.iofog.org -n iofog-system</pre>
 
   <h2>Container images (this release)</h2>
   <ul>
-    <li><code>ghcr.io/eclipse-iofog/operator:3.8.1</code></li>
-    <li><code>ghcr.io/eclipse-iofog/controller:3.8.1</code></li>
-    <li><code>ghcr.io/eclipse-iofog/router:3.8.1</code></li>
-    <li><code>ghcr.io/eclipse-iofog/operator-bundle:3.8.1</code> (OLM)</li>
+    <li><code>ghcr.io/eclipse-iofog/operator:3.8.2</code></li>
+    <li><code>ghcr.io/eclipse-iofog/controller:3.8.2</code></li>
+    <li><code>ghcr.io/eclipse-iofog/router:3.8.2</code></li>
+    <li><code>ghcr.io/eclipse-iofog/operator-bundle:3.8.2</code> (OLM)</li>
   </ul>
 
   <div class="note">
@@ -143,7 +143,7 @@ kubectl get controlplanes.iofog.org -n iofog-system</pre>
     <li><a href="https://github.com/eclipse-iofog/iofog-operator/blob/develop/charts/iofog-operator/README.md">Chart README</a> — full values reference and examples</li>
     <li><a href="https://github.com/eclipse-iofog/iofog-operator/blob/develop/charts/iofog-operator/values.schema.json">values.schema.json</a> — JSON Schema for values</li>
     <li><a href="https://github.com/eclipse-iofog/iofog-operator">Operator repository</a> — source, manifests, OLM</li>
-    <li><a href="https://github.com/eclipse-iofog/iofog-operator/releases/tag/v3.8.1">Release v3.8.1</a> — release notes and artifacts</li>
+    <li><a href="https://github.com/eclipse-iofog/iofog-operator/releases/tag/v3.8.2">Release v3.8.2</a> — release notes and artifacts</li>
   </ul>
 
   <h2>Other mirror</h2>
