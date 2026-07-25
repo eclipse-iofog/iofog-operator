@@ -85,8 +85,8 @@ controlplane:
     # --- images ---
     images:
       controller: "ghcr.io/datasance/controller:3.8.2"
-      router: "ghcr.io/datasance/router:3.8.1"
-      nats: "ghcr.io/datasance/nats:2.14.3-1"
+      router: "ghcr.io/datasance/router:3.8.2"
+      nats: "ghcr.io/datasance/nats:2.14.3-2"
       # pullSecret: ""
 
     # --- services ---

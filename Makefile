@@ -27,10 +27,10 @@ OPERATOR_CRD_GROUP ?= iofog.org
 OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
 
-# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:3.8.1)
+# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:3.8.2)
 CONTROLLER_IMAGE_TAG ?= 3.8.2
-ROUTER_IMAGE_TAG ?= 3.8.1
-NATS_IMAGE_TAG ?= 2.14.3-1
+ROUTER_IMAGE_TAG ?= 3.8.2
+NATS_IMAGE_TAG ?= 2.14.3-2
 
 LDFLAGS += -X $(PREFIX).routerTag=$(ROUTER_IMAGE_TAG)
 LDFLAGS += -X $(PREFIX).controllerTag=$(CONTROLLER_IMAGE_TAG)
