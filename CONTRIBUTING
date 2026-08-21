@@ -33,7 +33,7 @@ Typical flow:
 
 | Tool | Version |
 |------|---------|
-| Go | **1.26.5** (see `go.mod`) |
+| Go | **1.26.6** (see `go.mod`) |
 | Kubernetes | **1.22+** for cluster testing |
 | Helm | **3.x** (for chart work) |
 

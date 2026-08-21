@@ -1,5 +1,5 @@
 # golangci-lint configuration for ioFog Operator
-# Target: Go 1.26.5, module github.com/eclipse-iofog/iofog-operator/v3
+# Target: Go 1.26.6, module github.com/eclipse-iofog/iofog-operator/v3
 
 version: "2"
 
