@@ -2,7 +2,7 @@
 
 > **Copy this file to [Datasance/helm](https://github.com/Datasance/helm) `README.md` in a separate PR** (final v3.7.2 redirect). Do not publish from this repo.
 
-The standalone [Datasance/helm](https://github.com/Datasance/helm) repository is **deprecated** as of ioFog Operator **v3.8.2**. Charts are maintained in-repo and published from each product mirror on release tags.
+The standalone [Datasance/helm](https://github.com/Datasance/helm) repository is **deprecated** as of ioFog Operator **v3.8.3-rc.1**. Charts are maintained in-repo and published from each product mirror on release tags.
 
 ## Use the new Helm repository
 
@@ -16,7 +16,7 @@ helm repo add iofog-operator https://datasance.github.io/iofog-operator
 helm repo update
 helm install pot iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.2 \
+  --version 3.8.3-rc.1 \
   --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'
 ```
 

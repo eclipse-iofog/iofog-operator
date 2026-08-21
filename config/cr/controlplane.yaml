@@ -57,7 +57,7 @@ spec:
     pullSecret:
     controller:
     router:
-    nats: ghcr.io/datasance/nats:2.14.3-1  # NATS server image (optional)
+    nats: ghcr.io/datasance/nats:2.14.5-rc.1  # NATS server image (optional)
   services:
     controller:
       type:  # LoadBalancer / ClusterIP / NodePort; use Ingress when ClusterIP

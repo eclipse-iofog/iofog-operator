@@ -48,7 +48,7 @@ metadata:
             },
             "images": {
               "controller": null,
-              "nats": "ghcr.io/datasance/nats:2.14.3-2",
+              "nats": "ghcr.io/datasance/nats:2.14.5-rc.1",
               "pullSecret": null,
               "router": null
             },
@@ -119,10 +119,10 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2026-07-25T09:08:37Z"
+    createdAt: "2026-08-21T07:38:03Z"
     operators.operatorframework.io/builder: operator-sdk-v1.37.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-  name: iofog-operator.v3.8.2
+  name: iofog-operator.v3.8.3-rc.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -170,7 +170,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: iofog-operator
-                image: ghcr.io/eclipse-iofog/operator:3.8.2
+                image: ghcr.io/eclipse-iofog/operator:3.8.3-rc.1
                 imagePullPolicy: Always
                 name: iofog-operator
                 resources: {}
@@ -196,4 +196,4 @@ spec:
   minKubeVersion: 1.18.0
   provider:
     name: Datasance
-  version: 3.8.2
+  version: 3.8.3-rc.1
