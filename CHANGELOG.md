@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.3-rc.2] - 2026-08-26
+
+### Changed
+
+- **Default component image tags** - operator, controller, and router **3.8.3-rc.2**; NATS **2.14.5-rc.1** (Makefile `LDFLAGS`, Helm `values.yaml` / `values.schema.json`, sample CRs, testdata, OLM bundle CSV, `hack/package-helm.sh`).
+- **Container base image** - refreshed UBI9 minimal digest in `Dockerfile`.
+- **Helm schema defaults** - controller/router/NATS image defaults aligned with the **3.8.3-rc.2** train.
+
+### Security
+
+- **gorilla/websocket** - bumped indirect dependency to **`v1.5.3`** (from **`v1.5.0`**) to address **GO-2026-6278** (cryptographically weak PRNG for WebSocket mask key), reported by `govulncheck` via the embedded Controller login HTTP client path (`internal/auth/controllerlogin/embedded.go`).
+
 ## [3.8.3-rc.1] - 2026-08-21
 
 ### Changed
@@ -203,7 +215,8 @@ See [README.md](README.md) for install examples and dual-mirror workflow.
 - Consolidate usage of iofog client and reorganize controller reconciliation
 - Removes all references to Connector
 
-[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.1...HEAD
+[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.2...HEAD
+[3.8.3-rc.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.1...v3.8.3-rc.2
 [3.8.3-rc.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.2...v3.8.3-rc.1
 [3.8.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.1...v3.8.2
 [3.8.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.0...v3.8.1

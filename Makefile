@@ -27,9 +27,9 @@ OPERATOR_CRD_GROUP ?= iofog.org
 OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
 
-# Default component image tags (RFC R10: ghcr.io/eclipse-iofog/*:3.8.3-rc.1)
-CONTROLLER_IMAGE_TAG ?= 3.8.3-rc.1
-ROUTER_IMAGE_TAG ?= 3.8.3-rc.1
+# Default component image tags
+CONTROLLER_IMAGE_TAG ?= 3.8.3-rc.2
+ROUTER_IMAGE_TAG ?= 3.8.3-rc.2
 NATS_IMAGE_TAG ?= 2.14.5-rc.1
 
 LDFLAGS += -X $(PREFIX).routerTag=$(ROUTER_IMAGE_TAG)
@@ -45,7 +45,7 @@ GOARGS=-gcflags="all=-N -l"
 endif
 
 # Image URL to use all building/pushing image targets
-VERSION_TAG ?= 3.8.3-rc.1
+VERSION_TAG ?= 3.8.3-rc.2
 IMG ?= $(IMAGE_REGISTRY)/operator:$(VERSION_TAG)
 BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
 BUNDLE_PACKAGE ?= iofog-operator

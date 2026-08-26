@@ -36,9 +36,9 @@ spec:
     cleanupInterval: 3600
     captureIpAddress: true
   images:
-    controller: ghcr.io/datasance/controller:v3.8.0
-    router: ghcr.io/datasance/router:v3.8.0
-    nats: ghcr.io/datasance/nats:2.14.3
+    controller: ghcr.io/datasance/controller:3.8.3-rc.2
+    router: ghcr.io/datasance/router:3.8.3-rc.2
+    nats: ghcr.io/datasance/nats:2.14.5-rc.1
   nats:
     enabled: true
     jetStream:
