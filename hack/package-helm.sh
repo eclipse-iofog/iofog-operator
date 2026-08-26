@@ -12,7 +12,7 @@ VERSION="${2:-}"
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
 OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP:-}"
 LINT_ONLY="${LINT_ONLY:-}"
-NATS_IMAGE_TAG="${NATS_IMAGE_TAG:-2.14.3}"
+NATS_IMAGE_TAG="${NATS_IMAGE_TAG:-2.14.5-rc.1}"
 
 if [[ -z "$FLAVOR" || -z "$VERSION" ]]; then
 	echo "usage: IMAGE_REGISTRY=... OPERATOR_CRD_GROUP=... $0 <datasance|iofog> <version>" >&2
