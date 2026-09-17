@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0-rc.1] - 2026-09-17
+
+### Changed
+
+- **Release train** - operator aligned with Controller **v3.9.0-rc.1**.
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.0-rc.1`**.
+- **Default component image tags** - operator, controller, and router **3.9.0-rc.1**; NATS **2.14.7-rc.1** (Makefile `LDFLAGS`, Helm `values.yaml` / `values.schema.json`, sample CRs, testdata, OLM bundle CSV).
+- **Release packaging** - Helm chart `version` / `appVersion`, `VERSION_TAG` defaults, and install docs updated to **3.9.0-rc.1**.
+- **Container base image** - refreshed UBI9 minimal digest in `Dockerfile`.
+
 ## [3.8.3-rc.2] - 2026-08-26
 
 ### Changed
@@ -215,7 +225,9 @@ See [README.md](README.md) for install examples and dual-mirror workflow.
 - Consolidate usage of iofog client and reorganize controller reconciliation
 - Removes all references to Connector
 
-[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.2...HEAD
+[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0-rc.1...HEAD
+[3.9.0-rc.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.2...v3.9.0-rc.1
+[3.8.3-rc.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.1...v3.8.3-rc.2
 [3.8.3-rc.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.1...v3.8.3-rc.2
 [3.8.3-rc.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.2...v3.8.3-rc.1
 [3.8.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.1...v3.8.2

@@ -3,7 +3,7 @@ module github.com/eclipse-iofog/iofog-operator/v3
 go 1.26.6
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.8.3-rc.1
+	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.9.0-rc.1
 	github.com/go-logr/logr v1.4.2
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.32.1
