@@ -18,7 +18,7 @@ rbac:
 
 operator:
   replicaCount: 1
-  image: ghcr.io/datasance/operator:3.8.0
+  image: ghcr.io/datasance/operator:3.9.0-rc.1
   imagePullPolicy: Always
   serviceAccount:
     create: true
@@ -84,9 +84,9 @@ controlplane:
 
     # --- images ---
     images:
-      controller: "ghcr.io/datasance/controller:3.8.3-rc.2"
-      router: "ghcr.io/datasance/router:3.8.3-rc.2"
-      nats: "ghcr.io/datasance/nats:2.14.5-rc.1"
+      controller: "ghcr.io/datasance/controller:3.9.0-rc.1"
+      router: "ghcr.io/datasance/router:3.9.0-rc.1"
+      nats: "ghcr.io/datasance/nats:2.14.7-rc.1"
       # pullSecret: ""
 
     # --- services ---

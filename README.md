@@ -66,7 +66,7 @@ helm repo add iofog-operator https://eclipse-iofog.github.io/iofog-operator
 helm repo update
 helm install iofog-operator iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.8.3-rc.2
+  --version 3.9.0-rc.1
 ```
 
 ### Manifest tarballs
@@ -74,7 +74,7 @@ helm install iofog-operator iofog-operator/iofog-operator \
 GitHub Releases attach flavor-specific tarballs: `manifests-iofog-<version>.tar.gz` and `manifests-datasance-<version>.tar.gz`.
 
 ```bash
-VERSION=3.8.3-rc.2
+VERSION=3.9.0-rc.1
 FLAVOR=iofog   # or datasance
 
 curl -fsSL -o manifests.tar.gz \
@@ -92,7 +92,7 @@ OLM bundles are published as container images (`operator-bundle:<version>`). Pac
 
 ```bash
 # Cluster must have OLM installed (Operator Lifecycle Manager)
-VERSION=3.8.3-rc.2
+VERSION=3.9.0-rc.1
 REGISTRY=ghcr.io/eclipse-iofog   # or ghcr.io/datasance
 
 operator-sdk run bundle "${REGISTRY}/operator-bundle:${VERSION}" \

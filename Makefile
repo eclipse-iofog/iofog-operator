@@ -28,9 +28,9 @@ OPERATOR_COMPONENT_LABEL_DOMAIN ?= iofog.org
 IMAGE_REGISTRY ?= ghcr.io/eclipse-iofog
 
 # Default component image tags
-CONTROLLER_IMAGE_TAG ?= 3.8.3-rc.2
-ROUTER_IMAGE_TAG ?= 3.8.3-rc.2
-NATS_IMAGE_TAG ?= 2.14.5-rc.1
+CONTROLLER_IMAGE_TAG ?= 3.9.0-rc.1
+ROUTER_IMAGE_TAG ?= 3.9.0-rc.1
+NATS_IMAGE_TAG ?= 2.14.7-rc.1
 
 LDFLAGS += -X $(PREFIX).routerTag=$(ROUTER_IMAGE_TAG)
 LDFLAGS += -X $(PREFIX).controllerTag=$(CONTROLLER_IMAGE_TAG)
@@ -45,7 +45,7 @@ GOARGS=-gcflags="all=-N -l"
 endif
 
 # Image URL to use all building/pushing image targets
-VERSION_TAG ?= 3.8.3-rc.2
+VERSION_TAG ?= 3.9.0-rc.1
 IMG ?= $(IMAGE_REGISTRY)/operator:$(VERSION_TAG)
 BUNDLE_IMG ?= $(IMAGE_REGISTRY)/operator-bundle:$(VERSION_TAG)
 BUNDLE_PACKAGE ?= iofog-operator
@@ -126,7 +126,7 @@ local-scenarios: ## Run E2E scenarios A, B, C in order (operator must be running
 
 .PHONY: local-deploy-operator
 local-deploy-operator: kustomize create-namespace ## Deploy published operator image (IMG) into TEST_NAMESPACE
-	@test -n "$(IMG)" || (echo "IMG is required, e.g. IMG=ghcr.io/datasance/operator:3.8.3-rc.1" && exit 1)
+	@test -n "$(IMG)" || (echo "IMG is required, e.g. IMG=ghcr.io/datasance/operator:3.9.0-rc.1" && exit 1)
 	bash $(LOCAL_SCRIPTS)/deploy-operator.sh
 
 .PHONY: local-e2e-setup
