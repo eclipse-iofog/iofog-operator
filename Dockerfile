@@ -28,7 +28,7 @@ COPY ./hack/ ./hack/
 RUN make build
 RUN cp ./bin/iofog-operator /bin
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:7b8e25a1b56ca4d00219198f3b5b51a3e1693a5c4f5369c5e190d7d6cb3f980e
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:8ebe2ad8fdf3cab3e5a53c1edc69194c98209cfadab24b884f4ad9ebcf7bbbfc
 WORKDIR /
 
 ARG OCI_SOURCE_REPO=https://github.com/eclipse-iofog/iofog-operator
