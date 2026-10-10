@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-10-10
+
+### Added
+
+- **ControlPlane docs** - CR reference, operator reconcile path, router and NATS, and cluster TLS guides under `docs/controlplane/`, linked from the README.
+
+### Changed
+
+- **Go toolchain** - Go **1.26.9** (from 1.26.6) in `go.mod`, the Dockerfile builder image, and CI workflows.
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.1`**.
+- **Default component image tags** - operator, controller, and router **3.9.1**; NATS **2.15.1** (Makefile `LDFLAGS`, Helm `values.yaml` / `values.schema.json`, sample CRs, testdata, OLM bundle CSV, `hack/package-helm.sh`).
+- **Release packaging** - Helm chart `version` / `appVersion`, `VERSION_TAG` defaults, and install docs updated to **3.9.1**.
+- **Container base images** - builder pin moved to `golang:1.26.9-alpine3.23`; UBI9 minimal digest refreshed in `Dockerfile`.
+
+### Security
+
+- **Go HTTP/2** - toolchain **Go 1.26.9** and indirect **`golang.org/x/net` v0.60.0** (from v0.56.0) clear the govulncheck findings against Go 1.26.6. Reachable traces run through `net/http` and `golang.org/x/net/http2` (`EmbeddedBootstrapLogin` → `http.Client.Do` → `Transport.NewClientConn`, certificate import, and `manager.New` → `ConfigureTransports`). This includes **GO-2026-6603** (CVE-2026-78659, HTTP/2 trailer-header memory exhaustion) and **GO-2026-6611** (CVE-2026-78669, excessive CPU from repeated `SETTINGS_INITIAL_WINDOW_SIZE`).
+
 
 ## [3.9.0] - 2026-09-26
 
@@ -237,7 +255,8 @@ See [README.md](README.md) for install examples and dual-mirror workflow.
 - Consolidate usage of iofog client and reorganize controller reconciliation
 - Removes all references to Connector
 
-[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0...HEAD
+[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.1...HEAD
+[3.9.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0...v3.9.1
 [3.9.0]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0-rc.1...v3.9.0
 [3.9.0-rc.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.2...v3.9.0-rc.1
 [3.8.3-rc.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.1...v3.8.3-rc.2

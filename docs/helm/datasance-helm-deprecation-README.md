@@ -16,7 +16,7 @@ helm repo add iofog-operator https://datasance.github.io/iofog-operator
 helm repo update
 helm install pot iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.9.0 \
+  --version 3.9.1 \
   --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'
 ```
 
