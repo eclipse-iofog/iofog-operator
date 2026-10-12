@@ -10,7 +10,7 @@ rbac:
   create: true
 operator:
   replicaCount: 1
-  image: ghcr.io/eclipse-iofog/operator:3.9.1-rc.1
+  image: ghcr.io/eclipse-iofog/operator:3.9.1
   imagePullPolicy: Always
   serviceAccount:
     create: true
@@ -59,8 +59,8 @@ controlplane:
       cleanupInterval: 86400
       captureIpAddress: true
     images:
-      controller: ghcr.io/eclipse-iofog/controller:3.9.1-rc.1
-      router: ghcr.io/eclipse-iofog/router:3.9.1-rc.1
+      controller: ghcr.io/eclipse-iofog/controller:3.9.1
+      router: ghcr.io/eclipse-iofog/router:3.9.1
       nats: ghcr.io/eclipse-iofog/nats:2.15.1
     services:
       controller:
