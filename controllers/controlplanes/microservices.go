@@ -27,6 +27,7 @@ const (
 	controlllerAuthCredentialsSecretName = "controller-auth-credentials" //nolint:gosec
 	controllerAuthModeSecretKey          = "auth-mode"
 	controllerAuthIssuerURLSecretKey     = "auth-issuer-url"
+	controllerAuthIssuerCASecretKey      = "auth-issuer-ca"
 	controllerAuthClientIDSecretKey      = "auth-client-id"
 	controllerAuthClientSecretSecretKey  = "auth-client-secret"
 	controllerAuthBootstrapUserSecretKey = "auth-bootstrap-username"
@@ -177,6 +178,9 @@ func authSecretStringData(auth *cpv3.Auth, resolvedBootstrapPassword string) map
 		if auth.IssuerUrl != "" {
 			data[controllerAuthIssuerURLSecretKey] = auth.IssuerUrl
 		}
+		if issuerCa := strings.TrimSpace(auth.IssuerCa); issuerCa != "" {
+			data[controllerAuthIssuerCASecretKey] = issuerCa
+		}
 		appendAuthClientSecretKeys(data, auth.Client)
 	}
 	return data
@@ -252,6 +256,12 @@ func appendControllerAuthEnv(env []corev1.EnvVar, auth *cpv3.Auth, resolvedBoots
 			env = append(env, corev1.EnvVar{
 				Name:      "OIDC_ISSUER_URL",
 				ValueFrom: authCredentialsSecretKeyRef(controllerAuthIssuerURLSecretKey),
+			})
+		}
+		if strings.TrimSpace(auth.IssuerCa) != "" {
+			env = append(env, corev1.EnvVar{
+				Name:      "OIDC_ISSUER_TLS_BASE64_CA",
+				ValueFrom: authCredentialsSecretKeyRef(controllerAuthIssuerCASecretKey),
 			})
 		}
 		env = appendAuthClientEnvFromSecret(env, auth.Client)
@@ -1202,10 +1212,14 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 		{Name: "leaf", Port: int32(nats.DefaultLeafPort), TargetPort: intstr.FromInt(nats.DefaultLeafPort)},
 		{Name: "mqtt", Port: int32(nats.DefaultMqttPort), TargetPort: intstr.FromInt(nats.DefaultMqttPort)},
 	}
-	// nats-server: client and monitor only (ClusterIP).
+	// nats-server: client and monitor only. Empty type stays ClusterIP (non-TLS, in-cluster).
 	serverPorts := []corev1.ServicePort{
 		{Name: "client", Port: int32(nats.DefaultServerPort), TargetPort: intstr.FromInt(nats.DefaultServerPort)},
 		{Name: "monitor", Port: int32(nats.DefaultHttpPort), TargetPort: intstr.FromInt(nats.DefaultHttpPort)},
+	}
+	serverType := cfg.serverServiceType
+	if serverType == "" {
+		serverType = string(corev1.ServiceTypeClusterIP)
 	}
 
 	storageQuantity := resource.MustParse(cfg.storageSize)
@@ -1231,7 +1245,7 @@ func newNatsMicroservice(cfg natsMicroserviceConfig) *microservice {
 		services: []service{
 			{name: nats.HeadlessServiceName, serviceType: "ClusterIP", headless: true, ports: headlessPorts},
 			{name: nats.ClientServiceName, serviceType: cfg.serviceType, serviceAnnotations: cfg.serviceAnnotations, trafficPolicy: getTrafficPolicy(cfg.serviceType, cfg.externalTrafficPolicy), ports: clientPorts},
-			{name: nats.ServerServiceName, serviceType: cfg.serverServiceType, serviceAnnotations: cfg.serverServiceAnnotations, trafficPolicy: getTrafficPolicy(cfg.serverServiceType, cfg.serverExternalTrafficPolicy), headless: false, ports: serverPorts},
+			{name: nats.ServerServiceName, serviceType: serverType, serviceAnnotations: cfg.serverServiceAnnotations, trafficPolicy: getTrafficPolicy(serverType, cfg.serverExternalTrafficPolicy), headless: false, ports: serverPorts},
 		},
 		volumes: []corev1.Volume{
 			{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: nats.ConfigMapName}}}},

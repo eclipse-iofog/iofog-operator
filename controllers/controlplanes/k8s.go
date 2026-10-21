@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -543,7 +544,7 @@ func (r *ControlPlaneReconciler) createRoleBinding(ctx context.Context, ms *micr
 	return nil
 }
 
-func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClient *iofogclient.Client) error {
+func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClient *iofogclient.Client, controllerTLS *tls.Config) error {
 	auth := r.cp.Spec.Auth
 
 	switch auth.Mode {
@@ -563,7 +564,7 @@ func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClie
 			return fmt.Errorf("auth.bootstrap password is required when mode=embedded")
 		}
 		r.log.Info("Logging in to Controller with bootstrap credentials")
-		return controllerlogin.EmbeddedBootstrapLogin(iofogClient, username, password)
+		return controllerlogin.EmbeddedBootstrapLogin(iofogClient, username, password, controllerTLS)
 	case cpv3.AuthModeExternal:
 		if auth.IssuerUrl == "" {
 			return fmt.Errorf("auth.issuerUrl is required when mode=external")
@@ -572,11 +573,14 @@ func (r *ControlPlaneReconciler) loginIofogClient(ctx context.Context, iofogClie
 			return fmt.Errorf("auth.client id and secret are required when mode=external")
 		}
 		r.log.Info("Generating Client Access Token")
+		allowHTTP := auth.InsecureAllowHttp != nil && *auth.InsecureAllowHttp
 		return controllerlogin.ExternalClientCredentialsLogin(
 			iofogClient,
 			auth.IssuerUrl,
 			auth.Client.ID,
 			auth.Client.Secret,
+			auth.IssuerCa,
+			allowHTTP,
 		)
 	default:
 		return fmt.Errorf("unsupported auth mode: %q", auth.Mode)

@@ -170,7 +170,7 @@ Edges and tools then learn the router endpoint from the Controller, not by readi
 | StatefulSet | `nats` | `serviceName: nats-headless`. Replicas = `spec.replicas.nats`, minimum **2** |
 | Service | `nats-headless` | `ClusterIP: None`. All NATS ports. Pod DNS `nats-0.nats-headless`, `nats-1.nats-headless`, … |
 | Service | `nats` | Type from `spec.services.nats` (reconcile default **LoadBalancer** if type is empty). Ports: cluster, leaf, mqtt |
-| Service | `nats-server` | Type from `spec.services.natsServer`. Ports: **client** and **monitor** only |
+| Service | `nats-server` | Type from `spec.services.natsServer`. Empty type is **ClusterIP**. Ports: **client** and **monitor** only |
 | ConfigMap | `iofog-nats-config` | Key `server.conf` |
 | ConfigMap | `iofog-nats-jwt-bundle` | Account JWT files |
 | PVC template | `js-data` | JetStream file store. Default size **10Gi** |

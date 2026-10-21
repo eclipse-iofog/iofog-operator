@@ -164,14 +164,16 @@ If the Deployment **did not exist** before this call, reconcile stops and requeu
 
 ### 4. In-cluster health and login
 
-The operator calls `GET {scheme}://controller.<namespace>.svc.cluster.local:51121/api/v3/status`. Scheme is `https` only when `controller.https` is true. Failure requeues for **3 seconds**. This call does not use the public URL; it uses cluster DNS so it works before a LoadBalancer or Ingress is programmed.
+The operator calls `GET {scheme}://controller.<namespace>.svc.cluster.local:51121/api/v3/status`. Scheme is `https` only when `controller.https` is true. Failure requeues for **3 seconds**. This call does not use the public URL as the dial address; it uses cluster DNS so it works before a LoadBalancer or Ingress is programmed.
+
+When `controller.https` is true, that call and every later Controller API call verify the certificate. `ServerName` is the host of the resolved `publicUrl` (a DNS name or a LoadBalancer IP). The certificate must include that name. `ca.crt` from `controller.secretName`, when it is a PEM certificate, is added to the system trust store and does not replace it. If HTTPS is on and the public host cannot be resolved, reconcile fails. When `controller.https` is unset, the URL stays `http://` and no TLS config is attached.
 
 Login (`loginIofogClient`):
 
 | `auth.mode` | How |
 |-------------|-----|
-| `embedded` | Bootstrap username and password via the Controller login API |
-| `external` | OAuth2 client-credentials using `auth.issuerUrl` and `auth.client.id` / `auth.client.secret` |
+| `embedded` | Bootstrap username and password via the Controller login API, using the same TLS config as the Controller client |
+| `external` | OAuth2 client-credentials using `auth.issuerUrl` and `auth.client.id` / `auth.client.secret`. The issuer certificate is verified. Optional `auth.issuerCa` (Base64 encoded PEM) is added to the system trust store and copied to the Controller as `OIDC_ISSUER_TLS_BASE64_CA`. An `http` issuer requires `auth.insecureAllowHttp`. The discovered `token_endpoint` must use the issuer host |
 
 An error whose text contains `invalid credentials` is ignored so a first-boot race can continue. Any other login error fails the reconcile.
 

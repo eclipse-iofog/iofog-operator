@@ -162,6 +162,19 @@ func TestCreateService_PatchesNatsClientServiceAnnotations(t *testing.T) {
 	require.Equal(t, map[string]string{"service.beta.kubernetes.io/aws-load-balancer-type": "nlb"}, updated.Annotations)
 }
 
+func TestNewNatsMicroservice_EmptyServerServiceTypeIsClusterIP(t *testing.T) {
+	ms := newNatsMicroservice(natsMicroserviceConfig{
+		replicas:           2,
+		storageSize:        nats.DefaultStorageSizePVC,
+		jetStreamKeySecret: nats.JetStreamKeySecretName("test-cp"),
+		serviceType:        "LoadBalancer",
+	})
+
+	require.Equal(t, nats.ServerServiceName, ms.services[2].name)
+	require.Equal(t, string(corev1.ServiceTypeClusterIP), ms.services[2].serviceType)
+	require.Empty(t, ms.services[2].trafficPolicy)
+}
+
 func TestCreateService_PatchesNatsServerServiceType(t *testing.T) {
 	existing := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

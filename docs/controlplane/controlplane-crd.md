@@ -102,6 +102,7 @@ Configures Controller authentication (v3.8+ embedded OIDC or external IdP). **No
 | `bootstrap.password` | string | Inline password (stored in operator Secret) |
 | `bootstrap.passwordSecretRef` | SecretKeySelector | Preferred for production; resolved at reconcile |
 | `issuerUrl` | string | **External mode**: OIDC issuer URL |
+| `issuerCa` | string | **External mode**: Base64 encoded PEM CA or bundle for a private issuer. Omitted uses the system trust store. Set on the Controller as `OIDC_ISSUER_TLS_BASE64_CA`. Ignored for embedded mode |
 | `client.id` / `client.secret` | string | OAuth2 client for Controller API |
 | `consoleClient` | string | Embedded: EdgeOps Console OIDC client id → `OIDC_CONSOLE_CLIENT_ID` |
 | `consoleClientEnabled` | bool | → `AUTH_CONSOLE_CLIENT_ENABLED` |
@@ -112,7 +113,7 @@ Configures Controller authentication (v3.8+ embedded OIDC or external IdP). **No
 
 **Operator behavior**
 
-- Creates/updates Secret `controller-auth-credentials` (opaque) with keys such as `auth-mode`, `auth-bootstrap-username`, `auth-bootstrap-password`, `auth-issuer-url`, `auth-client-id`, `auth-client-secret`.
+- Creates/updates Secret `controller-auth-credentials` (opaque) with keys such as `auth-mode`, `auth-bootstrap-username`, `auth-bootstrap-password`, `auth-issuer-url`, `auth-issuer-ca`, `auth-client-id`, `auth-client-secret`. `auth-issuer-ca` is only written in external mode when `issuerCa` is set, and becomes env `OIDC_ISSUER_TLS_BASE64_CA`.
 - DB/auth Secret changes can trigger a **controller pod restart**.
 - Embedded login for operator API calls uses bootstrap credentials; external mode uses client credentials (see operator auth package).
 
@@ -218,7 +219,7 @@ Each entry is a `Service` block: `type`, `address`, `annotations`, `externalTraf
 | `controller` | `services.controller` | **LoadBalancer** | `address` → `loadBalancerIP` when set |
 | `router` | `services.router` | **LoadBalancer** | Must have LB or `ingresses.router.address` |
 | `nats` | `services.nats` | **LoadBalancer** if omitted in reconcile | Client-facing ports (cluster, leaf, mqtt) |
-| `natsServer` | `services.natsServer` | **LoadBalancer** if omitted | Service `nats-server` (client + monitor only) |
+| `natsServer` | `services.natsServer` | **ClusterIP** if omitted | Service `nats-server` (client + monitor only, no TLS on 4222) |
 
 **External traffic policy** (`externalTrafficPolicy`):
 

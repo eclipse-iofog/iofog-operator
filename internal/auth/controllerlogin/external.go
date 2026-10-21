@@ -1,13 +1,13 @@
 package controllerlogin
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	iofogclient "github.com/eclipse-iofog/iofog-go-sdk/v3/pkg/client"
 )
@@ -22,8 +22,18 @@ type tokenResponse struct {
 
 // ExternalClientCredentialsLogin discovers the token endpoint from issuerUrl OIDC metadata
 // and obtains an access token via OAuth2 client_credentials grant.
-func ExternalClientCredentialsLogin(clt *iofogclient.Client, issuerURL, clientID, clientSecret string) error {
-	tokenEndpoint, err := discoverTokenEndpoint(issuerURL)
+// issuerCa is a Base64 encoded PEM CA bundle. Empty uses the system trust store.
+// allowHTTP permits an http issuer and token endpoint when auth.insecureAllowHttp is set.
+func ExternalClientCredentialsLogin(clt *iofogclient.Client, issuerURL, clientID, clientSecret, issuerCa string, allowHTTP bool) error {
+	if err := validateIssuerScheme(issuerURL, allowHTTP); err != nil {
+		return err
+	}
+	tlsConfig, err := issuerTLSConfig(issuerCa)
+	if err != nil {
+		return err
+	}
+
+	tokenEndpoint, err := discoverTokenEndpoint(issuerURL, allowHTTP, tlsConfig)
 	if err != nil {
 		return err
 	}
@@ -40,7 +50,7 @@ func ExternalClientCredentialsLogin(clt *iofogclient.Client, issuerURL, clientID
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	res, err := httpClient().Do(req)
+	res, err := httpClient(tlsConfig).Do(req)
 	if err != nil {
 		return err
 	}
@@ -70,7 +80,7 @@ func ExternalClientCredentialsLogin(clt *iofogclient.Client, issuerURL, clientID
 	return nil
 }
 
-func discoverTokenEndpoint(issuerURL string) (string, error) {
+func discoverTokenEndpoint(issuerURL string, allowHTTP bool, tlsConfig *tls.Config) (string, error) {
 	discoveryURL, err := openIDConfigurationURL(issuerURL)
 	if err != nil {
 		return "", err
@@ -81,7 +91,7 @@ func discoverTokenEndpoint(issuerURL string) (string, error) {
 		return "", err
 	}
 
-	res, err := httpClient().Do(req)
+	res, err := httpClient(tlsConfig).Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +112,67 @@ func discoverTokenEndpoint(issuerURL string) (string, error) {
 	if config.TokenEndpoint == "" {
 		return "", fmt.Errorf("OIDC discovery document missing token_endpoint")
 	}
+	if err := validateTokenEndpoint(issuerURL, config.TokenEndpoint, allowHTTP); err != nil {
+		return "", err
+	}
 	return config.TokenEndpoint, nil
+}
+
+func validateIssuerScheme(issuerURL string, allowHTTP bool) error {
+	parsed, err := url.Parse(strings.TrimSpace(issuerURL))
+	if err != nil {
+		return fmt.Errorf("parse issuer URL: %w", err)
+	}
+	return validateEndpointScheme(parsed.Scheme, allowHTTP, "issuer URL")
+}
+
+func validateTokenEndpoint(issuerURL, tokenEndpoint string, allowHTTP bool) error {
+	issuer, err := url.Parse(strings.TrimSpace(issuerURL))
+	if err != nil {
+		return fmt.Errorf("parse issuer URL: %w", err)
+	}
+	if issuer.Hostname() == "" {
+		return fmt.Errorf("issuer URL must include a host")
+	}
+	token, err := url.Parse(strings.TrimSpace(tokenEndpoint))
+	if err != nil {
+		return fmt.Errorf("parse token endpoint: %w", err)
+	}
+	if token.Hostname() == "" {
+		return fmt.Errorf("token endpoint must include a host")
+	}
+	if !strings.EqualFold(issuer.Hostname(), token.Hostname()) || endpointPort(issuer) != endpointPort(token) {
+		return fmt.Errorf("token endpoint host %s does not match issuer host %s", token.Host, issuer.Host)
+	}
+	return validateEndpointScheme(token.Scheme, allowHTTP, "token endpoint")
+}
+
+func validateEndpointScheme(scheme string, allowHTTP bool, what string) error {
+	switch strings.ToLower(scheme) {
+	case "https":
+		return nil
+	case "http":
+		if !allowHTTP {
+			return fmt.Errorf("%s uses http but auth.insecureAllowHttp is not set", what)
+		}
+		return nil
+	default:
+		return fmt.Errorf("%s scheme %q is not allowed", what, scheme)
+	}
+}
+
+func endpointPort(u *url.URL) string {
+	if p := u.Port(); p != "" {
+		return p
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "https":
+		return "443"
+	case "http":
+		return "80"
+	default:
+		return ""
+	}
 }
 
 func openIDConfigurationURL(issuerURL string) (string, error) {
@@ -117,11 +187,4 @@ func openIDConfigurationURL(issuerURL string) (string, error) {
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
 	return parsed.String(), nil
-}
-
-func httpClient() *http.Client {
-	return &http.Client{
-		Transport: insecureHTTPTransport(),
-		Timeout:   10 * time.Second,
-	}
 }

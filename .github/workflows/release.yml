@@ -8,7 +8,7 @@ on:
 permissions: read-all
 
 env:
-  GO_VERSION: '1.26.9'
+  GO_VERSION: '1.26.10'
   OPERATOR_SDK_VERSION: v1.37.0
 
 jobs:
@@ -249,6 +249,8 @@ jobs:
           cp "${CHART}" "${PAGES_DIR}/"
           tar -xzf "${CHART}" -O iofog-operator/values.yaml > "${PAGES_DIR}/values.yaml"
           cp "${PAGES_DIR}/values.yaml" "${PAGES_DIR}/values-${VERSION}.yaml"
+          tar -xzf "${CHART}" -O iofog-operator/marketplace-values.yaml > "${PAGES_DIR}/marketplace-values.yaml"
+          cp "${PAGES_DIR}/marketplace-values.yaml" "${PAGES_DIR}/marketplace-values-${VERSION}.yaml"
           chmod +x "${WORKSPACE}/hack/render-helm-docs.sh"
           HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL}" OCI_SOURCE_REPO="${OCI_SOURCE_REPO}" \
             IMAGE_REGISTRY="${IMAGE_REGISTRY}" OPERATOR_CRD_GROUP="${OPERATOR_CRD_GROUP}" \
@@ -317,6 +319,11 @@ jobs:
             -f tag_name="${{ needs.preflight.outputs.tag }}" \
             -f target_commitish="${GITHUB_SHA}" \
             --jq '.body' > release_notes.md
+          if [ "${FLAVOR}" = "iofog" ]; then
+            FLAVOR_RELEASE_NAME=iofog
+          else
+            FLAVOR_RELEASE_NAME=pot
+          fi
           {
             echo ""
             echo "## Container images"
@@ -336,8 +343,8 @@ jobs:
             echo '```bash'
             echo "helm repo add iofog-operator ${HELM_REPO_BASE_URL}"
             echo "helm repo update"
-            echo "helm install pot iofog-operator/iofog-operator --version ${{ needs.preflight.outputs.version }} \\"
-            echo "  --set controlplane.spec.auth.bootstrap.password='...'"
+            echo "helm install ${FLAVOR_RELEASE_NAME} iofog-operator/iofog-operator --version ${{ needs.preflight.outputs.version }} \\"
+            echo "  --set auth.bootstrap.password='...'"
             echo '```'
           } >> release_notes.md
 

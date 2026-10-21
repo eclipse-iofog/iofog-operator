@@ -132,7 +132,7 @@ kubectl patch secret controller-api-tls -n iofog --type='json' \
 - `CONTROLLER_PUBLIC_URL` → `https://<lb>:51121`
 - `CONSOLE_URL` → `https://<lb>` (port 443 implied in URL; console Service is port 80 → pod `consolePort`)
 
-Ensure the certificate **SANs** include the hostname or IP clients use.
+Ensure the certificate **SANs** include the hostname or IP clients use. That same host is what the operator verifies: it still dials `controller.<namespace>.svc.cluster.local` (or the LoadBalancer address for the reachability check), and sets TLS `ServerName` to the resolved `publicUrl` host. A DNS name and a LoadBalancer IP both work when the certificate contains that name. Optional `ca.crt` in `controller.secretName` is appended to the system trust store for this check. A public CA keeps working when `ca.crt` is absent or is only an intermediate. Do not rely on certificate verification being skipped.
 
 ### Pattern B: ClusterIP + Ingress TLS
 
