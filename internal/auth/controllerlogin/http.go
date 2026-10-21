@@ -39,5 +39,5 @@ func issuerTLSConfig(issuerCa string) (*tls.Config, error) {
 	if !pool.AppendCertsFromPEM(raw) {
 		return nil, fmt.Errorf("auth.issuerCa does not contain a PEM certificate")
 	}
-	return &tls.Config{RootCAs: pool}, nil
+	return &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: pool}, nil
 }
