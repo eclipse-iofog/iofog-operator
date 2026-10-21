@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -24,12 +25,14 @@ func TestControllerClientTLSConfig_ServerNameDNSAndIP(t *testing.T) {
 	cfg, err := controllerClientTLSConfig("https://controller.example.com", caPEM)
 	require.NoError(t, err)
 	require.Equal(t, "controller.example.com", cfg.ServerName)
+	require.Equal(t, uint16(tls.VersionTLS12), cfg.MinVersion)
 	require.Greater(t, len(cfg.RootCAs.Subjects()), systemSubjects)
 	require.False(t, cfg.InsecureSkipVerify)
 
 	cfg, err = controllerClientTLSConfig("https://203.0.113.10:51121", nil)
 	require.NoError(t, err)
 	require.Equal(t, "203.0.113.10", cfg.ServerName)
+	require.Equal(t, uint16(tls.VersionTLS12), cfg.MinVersion)
 	require.GreaterOrEqual(t, len(cfg.RootCAs.Subjects()), systemSubjects)
 	require.False(t, cfg.InsecureSkipVerify)
 }

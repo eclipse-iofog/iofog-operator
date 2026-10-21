@@ -34,7 +34,7 @@ func controllerClientTLSConfig(publicURL string, caPEM []byte) (*tls.Config, err
 			return nil, fmt.Errorf("controller TLS secret %s does not contain a PEM certificate", controllerTLSCAKey)
 		}
 	}
-	return &tls.Config{ServerName: host, RootCAs: pool}, nil
+	return &tls.Config{MinVersion: tls.VersionTLS12, ServerName: host, RootCAs: pool}, nil
 }
 
 func publicURLHost(publicURL string) (string, error) {

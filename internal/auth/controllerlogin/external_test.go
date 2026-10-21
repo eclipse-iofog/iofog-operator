@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
@@ -229,6 +230,11 @@ func TestIssuerTLSConfig_Invalid(t *testing.T) {
 	_, err = issuerTLSConfig(base64.StdEncoding.EncodeToString([]byte("not a certificate")))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "PEM certificate")
+
+	cfg, err := issuerTLSConfig(base64.StdEncoding.EncodeToString(testCAPEM(t, "issuer-ca")))
+	require.NoError(t, err)
+	require.Equal(t, uint16(tls.VersionTLS12), cfg.MinVersion)
+	require.False(t, cfg.InsecureSkipVerify)
 }
 
 func iofogClientForIssuerTest(t *testing.T, serverURL string) *iofogclient.Client {
