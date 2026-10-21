@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/ci.yml)
 [![Release](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/release.yml/badge.svg)](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/release.yml)
-[![Go](https://img.shields.io/badge/Go-1.26.9-blue.svg)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.26.10-blue.svg)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-EPL--2.0-blue.svg)](LICENSE)
 [![govulncheck](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/eclipse-iofog/iofog-operator/actions/workflows/govulncheck.yml)
 
@@ -40,7 +40,7 @@ See [CONTRIBUTING](CONTRIBUTING) for CI repository variables and contributor wor
 | Tool | Version |
 |------|---------|
 | Kubernetes | **1.22+** |
-| Go | **1.26.9** (see `go.mod`) |
+| Go | **1.26.10** (see `go.mod`) |
 | Helm | **3.x** (for Helm install) |
 
 ## Greenfield release (v3.8)
@@ -66,7 +66,8 @@ helm repo add iofog-operator https://eclipse-iofog.github.io/iofog-operator
 helm repo update
 helm install iofog-operator iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
-  --version 3.9.1
+  --version 3.9.2 \
+  --set auth.bootstrap.password='ReplaceMe1!x'
 ```
 
 ### Manifest tarballs
@@ -74,7 +75,7 @@ helm install iofog-operator iofog-operator/iofog-operator \
 GitHub Releases attach flavor-specific tarballs: `manifests-iofog-<version>.tar.gz` and `manifests-datasance-<version>.tar.gz`.
 
 ```bash
-VERSION=3.9.1
+VERSION=3.9.2
 FLAVOR=iofog   # or datasance
 
 curl -fsSL -o manifests.tar.gz \
@@ -96,7 +97,7 @@ OLM bundles are published as container images (`operator-bundle:<version>`). Pac
 
 ```bash
 # Cluster must have OLM installed (Operator Lifecycle Manager)
-VERSION=3.9.1
+VERSION=3.9.2
 REGISTRY=ghcr.io/eclipse-iofog   # or ghcr.io/datasance
 
 operator-sdk run bundle "${REGISTRY}/operator-bundle:${VERSION}" \

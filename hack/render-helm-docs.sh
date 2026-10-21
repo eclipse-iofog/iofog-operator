@@ -18,6 +18,7 @@ fi
 case "$FLAVOR" in
 datasance)
 	export PRODUCT_NAME="Datasance PoT"
+	export CONTROL_PLANE_NAME="pot"
 	export CRD_GROUP="${OPERATOR_CRD_GROUP:-datasance.com}"
 	export IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/datasance}"
 	export HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL:-https://datasance.github.io/iofog-operator}"
@@ -27,6 +28,7 @@ datasance)
 	;;
 iofog)
 	export PRODUCT_NAME="Eclipse ioFog"
+	export CONTROL_PLANE_NAME="iofog"
 	export CRD_GROUP="${OPERATOR_CRD_GROUP:-iofog.org}"
 	export IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/eclipse-iofog}"
 	export HELM_REPO_BASE_URL="${HELM_REPO_BASE_URL:-https://eclipse-iofog.github.io/iofog-operator}"
@@ -55,7 +57,7 @@ command -v envsubst >/dev/null || {
 }
 
 mkdir -p "$OUTPUT_DIR"
-envsubst '${PRODUCT_NAME} ${CRD_GROUP} ${IMAGE_REGISTRY} ${HELM_REPO_BASE_URL} ${OCI_SOURCE_REPO} ${VERSION} ${SIBLING_PRODUCT} ${SIBLING_HELM_URL} ${CHART_README_URL}' \
+envsubst '${PRODUCT_NAME} ${CONTROL_PLANE_NAME} ${CRD_GROUP} ${IMAGE_REGISTRY} ${HELM_REPO_BASE_URL} ${OCI_SOURCE_REPO} ${VERSION} ${SIBLING_PRODUCT} ${SIBLING_HELM_URL} ${CHART_README_URL}' \
 	<"$TEMPLATE" >"${OUTPUT_DIR}/index.html"
 touch "${OUTPUT_DIR}/.nojekyll"
 

@@ -71,6 +71,8 @@
   <ul class="downloads">
     <li><a href="values.yaml">values.yaml</a> — default values for the latest publish on this site (stamped for this mirror)</li>
     <li><a href="values-${VERSION}.yaml">values-${VERSION}.yaml</a> — defaults for chart version <code>${VERSION}</code></li>
+    <li><a href="marketplace-values.yaml">marketplace-values.yaml</a> — marketplace form for the latest publish</li>
+    <li><a href="marketplace-values-${VERSION}.yaml">marketplace-values-${VERSION}.yaml</a> — marketplace form for chart version <code>${VERSION}</code></li>
     <li><a href="iofog-operator-${VERSION}.tgz">iofog-operator-${VERSION}.tgz</a> — chart tarball</li>
     <li><a href="index.yaml">index.yaml</a> — Helm repository index</li>
   </ul>
@@ -81,36 +83,38 @@ helm pull iofog-operator/iofog-operator --version ${VERSION} --untar</pre>
   <h2>Quick install</h2>
   <pre>helm repo add iofog-operator ${HELM_REPO_BASE_URL}
 helm repo update
-helm install pot iofog-operator/iofog-operator \
+helm install ${CONTROL_PLANE_NAME} iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
   --version ${VERSION} \
-  --set controlplane.spec.auth.bootstrap.password='ReplaceMe1!'</pre>
+  --set auth.bootstrap.password='ReplaceMe1!x'</pre>
 
-  <p>Embedded bootstrap password: at least 12 characters, one uppercase letter, and one special character. Use <code>passwordSecretRef</code> or a values file instead of <code>--set</code> in production.</p>
+  <p>Embedded bootstrap password: at least 12 characters, one uppercase letter, and one special character. Use <code>auth.bootstrap.passwordSecretRef</code> or a values file instead of <code>--set</code> in production.</p>
+  <p>The ControlPlane resource is named <code>${CONTROL_PLANE_NAME}</code> unless <code>name</code> is set. The Helm release name does not change that name.</p>
 
   <h2>Install from a values file</h2>
   <pre>helm show values iofog-operator/iofog-operator --version ${VERSION} &gt; my-values.yaml
 # edit my-values.yaml
-helm install pot iofog-operator/iofog-operator \
+helm install ${CONTROL_PLANE_NAME} iofog-operator/iofog-operator \
   --namespace iofog-system --create-namespace \
   --version ${VERSION} \
   -f my-values.yaml</pre>
 
   <h2>LoadBalancer and externalTrafficPolicy</h2>
-  <p>Defaults use <strong>LoadBalancer</strong> for controller and router Services. When <code>externalTrafficPolicy</code> is omitted, the operator sets <strong>Local</strong> on LoadBalancer Services (and <strong>Cluster</strong> on NodePort).</p>
+  <p>Defaults use <strong>LoadBalancer</strong> for controller, router, and NATS. The NATS internal Service (<code>nats-server</code>) is <strong>ClusterIP</strong>. When <code>externalTrafficPolicy</code> is <code>auto</code>, the operator sets <strong>Local</strong> on LoadBalancer Services and <strong>Cluster</strong> on NodePort.</p>
   <div class="note">
     <p><strong>Local</strong> preserves client source IP and suits many cloud load balancers.</p>
     <p><strong>Cluster</strong> may be required when your cluster networking or LoadBalancer controller does not support <code>Local</code> well — for example Services that stay <code>&lt;pending&gt;</code> or never receive an external address. Set per service in values:</p>
   </div>
-  <pre>controlplane:
-  spec:
-    services:
-      controller:
-        type: LoadBalancer
-        externalTrafficPolicy: Cluster
-      router:
-        type: LoadBalancer
-        externalTrafficPolicy: Cluster</pre>
+  <pre>services:
+  controller:
+    type: LoadBalancer
+    externalTrafficPolicy: Cluster
+  router:
+    type: LoadBalancer
+    externalTrafficPolicy: Cluster
+  nats:
+    type: LoadBalancer
+    externalTrafficPolicy: Cluster</pre>
 
   <h2>Verify</h2>
   <pre>kubectl get pods -n iofog-system
@@ -118,13 +122,13 @@ kubectl get svc -n iofog-system
 kubectl get controlplanes.${CRD_GROUP} -n iofog-system</pre>
 
   <h2>External auth</h2>
-  <pre>helm upgrade pot iofog-operator/iofog-operator \
+  <pre>helm upgrade ${CONTROL_PLANE_NAME} iofog-operator/iofog-operator \
   --namespace iofog-system \
   --version ${VERSION} \
-  --set controlplane.spec.auth.mode=external \
-  --set controlplane.spec.auth.issuerUrl=https://auth.example.com/realms/myrealm \
-  --set controlplane.spec.auth.client.id=controller \
-  --set controlplane.spec.auth.client.secret='...'</pre>
+  --set auth.mode=external \
+  --set auth.issuerUrl=https://auth.example.com/realms/myrealm \
+  --set auth.client.id=controller \
+  --set auth.client.secret='...'</pre>
 
   <h2>Container images (this release)</h2>
   <ul>
@@ -141,7 +145,7 @@ kubectl get controlplanes.${CRD_GROUP} -n iofog-system</pre>
   <h2>Documentation</h2>
   <ul>
     <li><a href="${CHART_README_URL}">Chart README</a> — full values reference and examples</li>
-    <li><a href="${OCI_SOURCE_REPO}/blob/develop/charts/iofog-operator/values.schema.json">values.schema.json</a> — JSON Schema for values</li>
+    <li><a href="marketplace-values.yaml">marketplace-values.yaml</a> — marketplace form schema</li>
     <li><a href="${OCI_SOURCE_REPO}">Operator repository</a> — source, manifests, OLM</li>
     <li><a href="${OCI_SOURCE_REPO}/releases/tag/v${VERSION}">Release v${VERSION}</a> — release notes and artifacts</li>
   </ul>
