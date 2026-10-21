@@ -1,39 +1,412 @@
-{{- if .Values.controlplane.create }}
-apiVersion: {{ required "crdGroup is required" .Values.crdGroup }}/v3
+{{- $auth := .Values.auth | default dict -}}
+{{- $bootstrap := $auth.bootstrap | default dict -}}
+{{- $db := .Values.database | default dict -}}
+{{- $replicas := .Values.replicas | default dict -}}
+{{- $services := .Values.services | default dict -}}
+{{- $svcController := $services.controller | default dict -}}
+{{- $svcRouter := $services.router | default dict -}}
+{{- $svcNats := $services.nats | default dict -}}
+{{- $svcNatsServer := $services.natsServer | default dict -}}
+{{- $controller := .Values.controller | default dict -}}
+{{- $tls := $controller.tls | default dict -}}
+{{- $images := .Values.images | default dict -}}
+{{- $nats := .Values.nats | default dict -}}
+{{- $vault := .Values.vault | default dict -}}
+{{- $events := .Values.events | default dict -}}
+{{- $mode := $auth.mode | default "" -}}
+{{- $provider := $db.provider | default "" -}}
+{{- $ctype := $svcController.type | default "LoadBalancer" -}}
+{{- $rtype := $svcRouter.type | default "LoadBalancer" -}}
+{{- $ntype := $svcNats.type | default "LoadBalancer" -}}
+{{- $nstype := $svcNatsServer.type | default "ClusterIP" | toString -}}
+{{- if not $nstype -}}
+{{- $nstype = "ClusterIP" -}}
+{{- end -}}
+{{- $serviceTypes := list "LoadBalancer" "NodePort" "ClusterIP" -}}
+{{- $crep := $replicas.controller | default 1 | int -}}
+{{- $nrep := $replicas.nats | default 2 | int -}}
+{{- $level := $controller.logLevel | default "info" -}}
+{{- $hours := $events.cleanupIntervalHours | int -}}
+{{- $mem := $nats.memoryStoreSize | int -}}
+{{- $disk := $nats.storageSize | int -}}
+{{- $port := $db.port | default 0 | int -}}
+{{- $cing := $svcController.ingress | default dict -}}
+{{- $ring := $svcRouter.ingress | default dict -}}
+{{- $ning := $svcNats.ingress | default dict -}}
+{{- $ref := $bootstrap.passwordSecretRef | default dict -}}
+{{- $hasRef := and $ref.name $ref.key -}}
+{{- $secretName := "" -}}
+
+{{- if not (has $mode (list "embedded" "external")) -}}
+{{- fail (printf "auth.mode must be embedded or external, got %q" $mode) -}}
+{{- end -}}
+{{- if eq $mode "embedded" -}}
+{{- if not $bootstrap.username -}}
+{{- fail "auth.bootstrap.username is required when auth.mode is embedded" -}}
+{{- end -}}
+{{- if not $hasRef -}}
+{{- $password := $bootstrap.password | default "" | toString -}}
+{{- if or (lt (len $password) 12) (not (regexMatch "[A-Z]" $password)) (not (regexMatch "[^A-Za-z0-9]" $password)) -}}
+{{- fail "auth.bootstrap.password must be at least 12 characters and include one uppercase letter and one special character, or set auth.bootstrap.passwordSecretRef" -}}
+{{- end -}}
+{{- end -}}
+{{- else -}}
+{{- if not $auth.issuerUrl -}}
+{{- fail "auth.issuerUrl is required when auth.mode is external" -}}
+{{- end -}}
+{{- $client := $auth.client | default dict -}}
+{{- if or (not $client.id) (not $client.secret) -}}
+{{- fail "auth.client.id and auth.client.secret are required when auth.mode is external" -}}
+{{- end -}}
+{{- end -}}
+
+{{- if not (has $provider (list "sqlite" "postgres" "mysql")) -}}
+{{- fail (printf "database.provider must be sqlite, postgres, or mysql, got %q" $provider) -}}
+{{- end -}}
+{{- if and (eq $provider "sqlite") (ne $crep 1) -}}
+{{- fail "replicas.controller must be 1 when database.provider is sqlite" -}}
+{{- end -}}
+{{- if ne $provider "sqlite" -}}
+{{- if not $db.host -}}
+{{- fail "database.host is required when database.provider is postgres or mysql" -}}
+{{- end -}}
+{{- if not $db.user -}}
+{{- fail "database.user is required when database.provider is postgres or mysql" -}}
+{{- end -}}
+{{- if not $db.password -}}
+{{- fail "database.password is required when database.provider is postgres or mysql" -}}
+{{- end -}}
+{{- if not $db.databaseName -}}
+{{- fail "database.databaseName is required when database.provider is postgres or mysql" -}}
+{{- end -}}
+{{- if eq $port 0 -}}
+{{- if eq $provider "postgres" -}}
+{{- $port = 5432 -}}
+{{- else -}}
+{{- $port = 3306 -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if lt $nrep 2 -}}
+{{- fail "replicas.nats must be at least 2" -}}
+{{- end -}}
+{{- if or (not (has $ctype $serviceTypes)) (not (has $rtype $serviceTypes)) (not (has $ntype $serviceTypes)) (not (has $nstype $serviceTypes)) -}}
+{{- fail "service type must be LoadBalancer, NodePort, or ClusterIP" -}}
+{{- end -}}
+{{- if not (has $level (list "debug" "info" "warn" "error")) -}}
+{{- fail (printf "controller.logLevel must be debug, info, warn, or error, got %q" $level) -}}
+{{- end -}}
+{{- if lt $hours 2 -}}
+{{- fail "events.cleanupIntervalHours must be at least 2" -}}
+{{- end -}}
+{{- if or (lt $mem 1) (lt $disk 1) -}}
+{{- fail "nats.memoryStoreSize and nats.storageSize must be at least 1" -}}
+{{- end -}}
+
+{{- if $controller.https -}}
+{{- $source := $tls.source | default "" | toString -}}
+{{- if eq $source "create" -}}
+{{- if or (not $tls.crt) (not $tls.key) -}}
+{{- fail "controller.tls.crt and controller.tls.key are required when controller.tls.source is create" -}}
+{{- end -}}
+{{- $secretName = "controller-tls" -}}
+{{- else if eq $source "existing" -}}
+{{- if not $tls.secretName -}}
+{{- fail "controller.tls.secretName is required when controller.tls.source is existing" -}}
+{{- end -}}
+{{- $secretName = $tls.secretName -}}
+{{- else -}}
+{{- fail "controller.tls.source must be existing or create when controller.https is true" -}}
+{{- end -}}
+{{- end -}}
+
+{{- if eq $ctype "ClusterIP" -}}
+{{- if not $cing.host -}}
+{{- fail "services.controller.ingress.host is required when services.controller.type is ClusterIP" -}}
+{{- end -}}
+{{- if not $controller.https -}}
+{{- fail "controller.https must be true when services.controller.type is ClusterIP" -}}
+{{- end -}}
+{{- end -}}
+{{- if and (eq $ctype "NodePort") (not $controller.publicUrl) -}}
+{{- fail "controller.publicUrl is required when services.controller.type is NodePort" -}}
+{{- end -}}
+{{- if and (eq $ctype "LoadBalancer") $controller.https (not $controller.publicUrl) -}}
+{{- fail "controller.publicUrl is required when the controller Service is LoadBalancer and HTTPS is enabled" -}}
+{{- end -}}
+{{- if and (ne $rtype "LoadBalancer") (not $ring.address) -}}
+{{- fail "services.router.ingress.address is required when the router Service is not LoadBalancer" -}}
+{{- end -}}
+{{- if and (ne $ntype "LoadBalancer") (not $ning.address) -}}
+{{- fail "services.nats.ingress.address is required when the NATS Service is not LoadBalancer" -}}
+{{- end -}}
+
+{{- if $vault.enabled -}}
+{{- $vp := $vault.provider | default "" | toString -}}
+{{- if not (has $vp (list "hashicorp" "openbao" "aws" "azure" "google")) -}}
+{{- fail "vault.provider must be hashicorp, openbao, aws, azure, or google when vault.enabled is true" -}}
+{{- end -}}
+{{- if or (eq $vp "hashicorp") (eq $vp "openbao") -}}
+{{- $h := $vault.hashicorp | default dict -}}
+{{- if or (not $h.address) (not $h.mount) (not $h.token) -}}
+{{- fail "vault.hashicorp.address, mount, and token are required for HashiCorp Vault and OpenBao" -}}
+{{- end -}}
+{{- else if eq $vp "aws" -}}
+{{- $a := $vault.aws | default dict -}}
+{{- if or (not $a.region) (not $a.accessKeyId) (not $a.accessKey) -}}
+{{- fail "vault.aws.region, accessKeyId, and accessKey are required for AWS Secrets Manager" -}}
+{{- end -}}
+{{- else if eq $vp "azure" -}}
+{{- $z := $vault.azure | default dict -}}
+{{- if or (not $z.url) (not $z.tenantId) (not $z.clientId) (not $z.clientSecret) -}}
+{{- fail "vault.azure.url, tenantId, clientId, and clientSecret are required for Azure Key Vault" -}}
+{{- end -}}
+{{- else -}}
+{{- $g := $vault.google | default dict -}}
+{{- if or (not $g.projectId) (not $g.credentials) -}}
+{{- fail "vault.google.projectId and credentials are required for Google Secret Manager" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- if or (not $images.controller) (not $images.router) (not $images.nats) -}}
+{{- fail "images.controller, images.router, and images.nats are required" -}}
+{{- end -}}
+
+{{- $cpName := .Values.name | default (include "iofog-operator.controlPlaneName" .) | trunc 63 | trimSuffix "-" -}}
+{{- $trust := include "iofog-operator.trustProxyValue" ($controller.trustProxy | default "auto") | trim -}}
+{{- $ctrlPolicy := include "iofog-operator.trafficPolicy" $svcController.externalTrafficPolicy | trim -}}
+{{- $routerPolicy := include "iofog-operator.trafficPolicy" $svcRouter.externalTrafficPolicy | trim -}}
+{{- $natsPolicy := include "iofog-operator.trafficPolicy" $svcNats.externalTrafficPolicy | trim -}}
+{{- $ctrlAnn := include "iofog-operator.annotationMap" $svcController.annotations | trim -}}
+{{- $routerAnn := include "iofog-operator.annotationMap" $svcRouter.annotations | trim -}}
+{{- $natsAnn := include "iofog-operator.annotationMap" $svcNats.annotations | trim -}}
+{{- $natsServerAnn := include "iofog-operator.annotationMap" $svcNatsServer.annotations | trim -}}
+{{- $ingressAnn := include "iofog-operator.annotationMap" $cing.annotations | trim -}}
+{{- $rate := $auth.rateLimit | default dict -}}
+{{- $token := $auth.tokenTtl | default dict -}}
+{{- $oidc := $auth.oidcTtl | default dict -}}
+{{- $session := $auth.sessionStore | default dict -}}
+{{- $client := $auth.client | default dict -}}
+apiVersion: {{ include "iofog-operator.crdGroup" . }}/v3
 kind: ControlPlane
 metadata:
-  name: {{ default .Release.Name .Values.controlplane.name }}
-  namespace: {{ default .Release.Namespace .Values.controlplane.namespace }}
+  name: {{ $cpName }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "iofog-operator.labels" . | nindent 4 }}
-    {{- with .Values.controlplane.labels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
-  {{- with .Values.controlplane.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
-  {{- $auth := .Values.controlplane.spec.auth }}
-  {{- $mode := required "controlplane.spec.auth.mode is required" $auth.mode }}
-  {{- if eq $mode "embedded" }}
-  {{- $bootstrap := required "controlplane.spec.auth.bootstrap is required when mode=embedded" $auth.bootstrap }}
-  {{- $_ := required "controlplane.spec.auth.bootstrap.username is required when mode=embedded" $bootstrap.username }}
-  {{- if $bootstrap.passwordSecretRef }}
-  {{- $_ := required "controlplane.spec.auth.bootstrap.passwordSecretRef.name is required" $bootstrap.passwordSecretRef.name }}
-  {{- $_ := required "controlplane.spec.auth.bootstrap.passwordSecretRef.key is required" $bootstrap.passwordSecretRef.key }}
-  {{- else }}
-  {{- $_ := required "controlplane.spec.auth.bootstrap.password is required when mode=embedded (or set passwordSecretRef)" $bootstrap.password }}
+  auth:
+    mode: {{ $mode }}
+    insecureAllowHttp: {{ $auth.insecureAllowHttp | default false }}
+    {{- if eq $mode "embedded" }}
+    bootstrap:
+      username: {{ $bootstrap.username | quote }}
+      {{- if $hasRef }}
+      passwordSecretRef:
+        name: {{ $ref.name | quote }}
+        key: {{ $ref.key | quote }}
+      {{- else }}
+      password: {{ $bootstrap.password | quote }}
+      {{- end }}
+    {{- $rateOn := or $rate.enabled (gt ($rate.maxRequestsPerWindow | default 0 | int) 0) (gt ($rate.windowMs | default 0 | int) 0) -}}
+    {{- if $rateOn }}
+    rateLimit:
+      {{- if ne ($rate.enabled | toString) "<nil>" }}
+      enabled: {{ $rate.enabled | default false }}
+      {{- end }}
+      {{- if gt ($rate.maxRequestsPerWindow | default 0 | int) 0 }}
+      maxRequestsPerWindow: {{ $rate.maxRequestsPerWindow | int }}
+      {{- end }}
+      {{- if gt ($rate.windowMs | default 0 | int) 0 }}
+      windowMs: {{ $rate.windowMs | int }}
+      {{- end }}
+    {{- end }}
+    {{- if or (gt ($token.accessTokenTtlSeconds | default 0 | int) 0) (gt ($token.refreshTokenTtlSeconds | default 0 | int) 0) }}
+    tokenTtl:
+      {{- if gt ($token.accessTokenTtlSeconds | default 0 | int) 0 }}
+      accessTokenTtlSeconds: {{ $token.accessTokenTtlSeconds | int }}
+      {{- end }}
+      {{- if gt ($token.refreshTokenTtlSeconds | default 0 | int) 0 }}
+      refreshTokenTtlSeconds: {{ $token.refreshTokenTtlSeconds | int }}
+      {{- end }}
+    {{- end }}
+    {{- if or (gt ($oidc.interactionTtlSeconds | default 0 | int) 0) (gt ($oidc.grantTtlSeconds | default 0 | int) 0) (gt ($oidc.sessionTtlSeconds | default 0 | int) 0) (gt ($oidc.idTokenTtlSeconds | default 0 | int) 0) }}
+    oidcTtl:
+      {{- if gt ($oidc.interactionTtlSeconds | default 0 | int) 0 }}
+      interactionTtlSeconds: {{ $oidc.interactionTtlSeconds | int }}
+      {{- end }}
+      {{- if gt ($oidc.grantTtlSeconds | default 0 | int) 0 }}
+      grantTtlSeconds: {{ $oidc.grantTtlSeconds | int }}
+      {{- end }}
+      {{- if gt ($oidc.sessionTtlSeconds | default 0 | int) 0 }}
+      sessionTtlSeconds: {{ $oidc.sessionTtlSeconds | int }}
+      {{- end }}
+      {{- if gt ($oidc.idTokenTtlSeconds | default 0 | int) 0 }}
+      idTokenTtlSeconds: {{ $oidc.idTokenTtlSeconds | int }}
+      {{- end }}
+    {{- end }}
+    {{- $sessionOn := or $session.type (gt ($session.ttlMs | default 0 | int) 0) $session.secret -}}
+    {{- if $sessionOn }}
+    sessionStore:
+      {{- with $session.type }}
+      type: {{ . | quote }}
+      {{- end }}
+      {{- if gt ($session.ttlMs | default 0 | int) 0 }}
+      ttlMs: {{ $session.ttlMs | int }}
+      {{- end }}
+      {{- with $session.secret }}
+      secret: {{ . | quote }}
+      {{- end }}
+    {{- end }}
+    {{- else }}
+    issuerUrl: {{ $auth.issuerUrl | quote }}
+    {{- with $auth.issuerCa }}
+    issuerCa: {{ . | quote }}
+    {{- end }}
+    client:
+      id: {{ $client.id | quote }}
+      secret: {{ $client.secret | quote }}
+    {{- end }}
+  database:
+    provider: {{ $provider }}
+    host: {{ $db.host | default "" | quote }}
+    port: {{ $port }}
+    user: {{ $db.user | default "" | quote }}
+    password: {{ $db.password | default "" | quote }}
+    databaseName: {{ $db.databaseName | default "" | quote }}
+    ssl: {{ $db.ssl | default false }}
+    {{- if and $db.ssl $db.ca }}
+    ca: {{ $db.ca | quote }}
+    {{- end }}
+  replicas:
+    controller: {{ $crep }}
+    nats: {{ $nrep }}
+  images:
+    controller: {{ $images.controller | quote }}
+    router: {{ $images.router | quote }}
+    nats: {{ $images.nats | quote }}
+    {{- with $images.pullSecret }}
+    pullSecret: {{ . | quote }}
+    {{- end }}
+  services:
+    controller:
+      type: {{ $ctype }}
+      {{- if and $ctrlPolicy (ne $ctype "ClusterIP") }}
+      externalTrafficPolicy: {{ $ctrlPolicy }}
+      {{- end }}
+      {{- if $ctrlAnn }}
+      annotations:
+        {{- $ctrlAnn | nindent 8 }}
+      {{- end }}
+    router:
+      type: {{ $rtype }}
+      {{- if and $routerPolicy (ne $rtype "ClusterIP") }}
+      externalTrafficPolicy: {{ $routerPolicy }}
+      {{- end }}
+      {{- if $routerAnn }}
+      annotations:
+        {{- $routerAnn | nindent 8 }}
+      {{- end }}
+    nats:
+      type: {{ $ntype }}
+      {{- if and $natsPolicy (ne $ntype "ClusterIP") }}
+      externalTrafficPolicy: {{ $natsPolicy }}
+      {{- end }}
+      {{- if $natsAnn }}
+      annotations:
+        {{- $natsAnn | nindent 8 }}
+      {{- end }}
+    natsServer:
+      type: {{ $nstype }}
+      {{- if $natsServerAnn }}
+      annotations:
+        {{- $natsServerAnn | nindent 8 }}
+      {{- end }}
+  nats:
+    jetStream:
+      memoryStoreSize: {{ printf "%dGi" $mem | quote }}
+      storageSize: {{ printf "%dGi" $disk | quote }}
+      {{- with $nats.storageClassName }}
+      storageClassName: {{ . | quote }}
+      {{- end }}
+  controller:
+    logLevel: {{ $level | quote }}
+    https: {{ $controller.https | default false }}
+    {{- if $trust }}
+    trustProxy: {{ $trust }}
+    {{- end }}
+    {{- with $controller.publicUrl }}
+    publicUrl: {{ . | quote }}
+    {{- end }}
+    {{- with $controller.consoleUrl }}
+    consoleUrl: {{ . | quote }}
+    {{- end }}
+    {{- with $secretName }}
+    secretName: {{ . | quote }}
+    {{- end }}
+  events:
+    auditEnabled: {{ ternary $events.auditEnabled true (hasKey $events "auditEnabled") }}
+    retentionDays: {{ $events.retentionDays | default 14 | int }}
+    cleanupInterval: {{ mul $hours 3600 }}
+    captureIpAddress: {{ ternary $events.captureIpAddress true (hasKey $events "captureIpAddress") }}
+  {{- if or (eq $ctype "ClusterIP") (and (ne $rtype "LoadBalancer") $ring.address) (and (ne $ntype "LoadBalancer") $ning.address) }}
+  ingresses:
+    {{- if eq $ctype "ClusterIP" }}
+    controller:
+      host: {{ $cing.host | quote }}
+      secretName: {{ $secretName | quote }}
+      {{- with $cing.ingressClassName }}
+      ingressClassName: {{ . | quote }}
+      {{- end }}
+      {{- if $ingressAnn }}
+      annotations:
+        {{- $ingressAnn | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- if and (ne $rtype "LoadBalancer") $ring.address }}
+    router:
+      address: {{ $ring.address | quote }}
+      messagePort: {{ $ring.messagePort | default 5671 | int }}
+      interiorPort: {{ $ring.interiorPort | default 55671 | int }}
+      edgePort: {{ $ring.edgePort | default 45671 | int }}
+    {{- end }}
+    {{- if and (ne $ntype "LoadBalancer") $ning.address }}
+    nats:
+      address: {{ $ning.address | quote }}
+      serverPort: {{ $ning.serverPort | default 4222 | int }}
+      clusterPort: {{ $ning.clusterPort | default 6222 | int }}
+      leafPort: {{ $ning.leafPort | default 7422 | int }}
+      mqttPort: {{ $ning.mqttPort | default 8883 | int }}
+      httpPort: {{ $ning.httpPort | default 8222 | int }}
+    {{- end }}
   {{- end }}
-  {{- else if eq $mode "external" }}
-  {{- $_ := required "controlplane.spec.auth.issuerUrl is required when mode=external" $auth.issuerUrl }}
-  {{- $client := required "controlplane.spec.auth.client is required when mode=external" $auth.client }}
-  {{- $_ := required "controlplane.spec.auth.client.id is required when mode=external" $client.id }}
-  {{- $_ := required "controlplane.spec.auth.client.secret is required when mode=external" $client.secret }}
-  {{- else }}
-  {{- fail (printf "controlplane.spec.auth.mode must be embedded or external, got %q" $mode) }}
+  {{- if $vault.enabled }}
+  vault:
+    enabled: true
+    provider: {{ $vault.provider | quote }}
+    {{- with $vault.basePath }}
+    basePath: {{ . | quote }}
+    {{- end }}
+    {{- if or (eq ($vault.provider | toString) "hashicorp") (eq ($vault.provider | toString) "openbao") }}
+    hashicorp:
+      address: {{ $vault.hashicorp.address | quote }}
+      mount: {{ $vault.hashicorp.mount | quote }}
+      token: {{ $vault.hashicorp.token | quote }}
+    {{- else if eq ($vault.provider | toString) "aws" }}
+    aws:
+      region: {{ $vault.aws.region | quote }}
+      accessKeyId: {{ $vault.aws.accessKeyId | quote }}
+      accessKey: {{ $vault.aws.accessKey | quote }}
+    {{- else if eq ($vault.provider | toString) "azure" }}
+    azure:
+      url: {{ $vault.azure.url | quote }}
+      tenantId: {{ $vault.azure.tenantId | quote }}
+      clientId: {{ $vault.azure.clientId | quote }}
+      clientSecret: {{ $vault.azure.clientSecret | quote }}
+    {{- else }}
+    google:
+      projectId: {{ $vault.google.projectId | quote }}
+      credentials: {{ $vault.google.credentials | quote }}
+    {{- end }}
   {{- end }}
-  {{- with .Values.controlplane.spec }}
-  {{- toYaml . | nindent 2 }}
-  {{- end }}
-{{- end }}

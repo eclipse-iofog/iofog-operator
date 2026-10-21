@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "iofog-operator.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.operator.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
       {{- include "iofog-operator.selectorLabels" . | nindent 6 }}
@@ -13,22 +13,11 @@ spec:
     metadata:
       labels:
         {{- include "iofog-operator.selectorLabels" . | nindent 8 }}
-        {{- with .Values.operator.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-      {{- with .Values.operator.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
     spec:
       serviceAccountName: {{ include "iofog-operator.serviceAccountName" . }}
-      {{- with .Values.operator.imagePullSecrets }}
+      {{- with .Values.images.pullSecret }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.operator.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
+        - name: {{ . | quote }}
       {{- end }}
       containers:
         - name: iofog-operator
@@ -36,11 +25,8 @@ spec:
             - iofog-operator
           args:
             - --enable-leader-election
-            {{- with .Values.operator.extraArgs }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
-          image: "{{ .Values.operator.image }}"
-          imagePullPolicy: {{ .Values.operator.imagePullPolicy }}
+          image: {{ include "iofog-operator.operatorImage" . | quote }}
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -54,28 +40,4 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: {{ include "iofog-operator.fullname" . }}
-            {{- with .Values.operator.extraEnv }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
-          {{- with .Values.operator.securityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.operator.resources }}
-          resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
       terminationGracePeriodSeconds: 10
-      {{- with .Values.operator.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.operator.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.operator.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-
