@@ -39,7 +39,7 @@ func TestEmbeddedBootstrapLogin_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	clt := iofogclient.New(iofogclient.Options{BaseURL: baseURL, Timeout: 5})
-	require.NoError(t, EmbeddedBootstrapLogin(clt, "admin", "ReplaceMe1!"))
+	require.NoError(t, EmbeddedBootstrapLogin(clt, "admin", "ReplaceMe1!", nil))
 	require.Equal(t, wantToken, clt.GetAccessToken())
 }
 
@@ -61,7 +61,7 @@ func TestEmbeddedBootstrapLogin_InvalidCredentials(t *testing.T) {
 	require.NoError(t, err)
 
 	clt := iofogclient.New(iofogclient.Options{BaseURL: baseURL, Timeout: 5})
-	err = EmbeddedBootstrapLogin(clt, "admin", "wrong")
+	err = EmbeddedBootstrapLogin(clt, "admin", "wrong", nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid credentials")
 	require.NotContains(t, err.Error(), "wrong")

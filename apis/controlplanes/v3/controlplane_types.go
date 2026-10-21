@@ -156,6 +156,10 @@ type Auth struct {
 	// IssuerUrl is required when mode=external.
 	// +optional
 	IssuerUrl string `json:"issuerUrl,omitempty"`
+	// IssuerCa is the base64-encoded PEM CA, or a concatenated PEM bundle, for an external
+	// HTTPS issuer signed by a private CA. Empty uses the system trust store. Ignored when mode=embedded.
+	// +optional
+	IssuerCa string `json:"issuerCa,omitempty"`
 	// Client OAuth2 credentials for the Controller API.
 	// +optional
 	Client *AuthClient `json:"client,omitempty"`

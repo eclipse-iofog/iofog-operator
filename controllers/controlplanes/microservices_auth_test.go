@@ -101,6 +101,58 @@ func TestAuthSecretStringData_EmbeddedOmitsIssuerAndEmptyClient(t *testing.T) {
 	}, data)
 }
 
+func TestAuthSecretStringData_ExternalIssuerCa(t *testing.T) {
+	const issuerCa = "Y2VydA=="
+	data := authSecretStringData(&cpv3.Auth{
+		Mode:      cpv3.AuthModeExternal,
+		IssuerUrl: "https://idp.example.com/realms/myrealm",
+		IssuerCa:  issuerCa,
+		Client: &cpv3.AuthClient{
+			ID:     "controller",
+			Secret: "s3cr3t",
+		},
+	}, "")
+	require.Equal(t, issuerCa, data[controllerAuthIssuerCASecretKey])
+}
+
+func TestAuthSecretStringData_EmbeddedIgnoresIssuerCa(t *testing.T) {
+	data := authSecretStringData(&cpv3.Auth{
+		Mode:     cpv3.AuthModeEmbedded,
+		IssuerCa: "Y2VydA==",
+		Bootstrap: &cpv3.AuthBootstrap{
+			Username: "admin",
+			Password: "ReplaceMe1!",
+		},
+	}, "")
+	_, ok := data[controllerAuthIssuerCASecretKey]
+	require.False(t, ok)
+}
+
+func TestAppendControllerAuthEnv_IssuerCa(t *testing.T) {
+	env := appendControllerAuthEnv(nil, &cpv3.Auth{
+		Mode:      cpv3.AuthModeExternal,
+		IssuerUrl: "https://idp.example.com",
+		IssuerCa:  "Y2VydA==",
+		Client: &cpv3.AuthClient{
+			ID:     "controller",
+			Secret: "s3cr3t",
+		},
+	}, "")
+
+	var caEnv *corev1.EnvVar
+	for i := range env {
+		if env[i].Name == "OIDC_ISSUER_TLS_BASE64_CA" {
+			caEnv = &env[i]
+			break
+		}
+	}
+	require.NotNil(t, caEnv)
+	require.Equal(t, controllerAuthIssuerCASecretKey, caEnv.ValueFrom.SecretKeyRef.Key)
+	for i := range env {
+		require.NotEqual(t, "OIDC_ISSUER_TLS_PATH_CA", env[i].Name)
+	}
+}
+
 func TestAuthSecretStringData_ExternalOmitsBootstrap(t *testing.T) {
 	data := authSecretStringData(&cpv3.Auth{
 		Mode:      cpv3.AuthModeExternal,

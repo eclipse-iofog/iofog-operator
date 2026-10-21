@@ -57,7 +57,7 @@ func TestLoginIofogClient_EmbeddedSuccess(t *testing.T) {
 	})
 	clt := iofogClientForTest(t, server.URL)
 
-	require.NoError(t, r.loginIofogClient(context.Background(), clt))
+	require.NoError(t, r.loginIofogClient(context.Background(), clt, nil))
 	require.Equal(t, accessToken, clt.GetAccessToken())
 }
 
@@ -103,7 +103,7 @@ func TestLoginIofogClient_EmbeddedPasswordSecretRef(t *testing.T) {
 	}, secret)
 	clt := iofogClientForTest(t, server.URL)
 
-	require.NoError(t, r.loginIofogClient(context.Background(), clt))
+	require.NoError(t, r.loginIofogClient(context.Background(), clt, nil))
 	require.Equal(t, accessToken, clt.GetAccessToken())
 }
 
@@ -136,9 +136,11 @@ func TestLoginIofogClient_ExternalSuccess(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
+	allowHTTP := true
 	r := newLoginTestReconciler(t, cpv3.Auth{
-		Mode:      cpv3.AuthModeExternal,
-		IssuerUrl: server.URL + "/realms/test/",
+		Mode:              cpv3.AuthModeExternal,
+		InsecureAllowHttp: &allowHTTP,
+		IssuerUrl:         server.URL + "/realms/test/",
 		Client: &cpv3.AuthClient{
 			ID:     clientID,
 			Secret: clientSecret,
@@ -146,7 +148,7 @@ func TestLoginIofogClient_ExternalSuccess(t *testing.T) {
 	})
 	clt := iofogClientForTest(t, server.URL)
 
-	require.NoError(t, r.loginIofogClient(context.Background(), clt))
+	require.NoError(t, r.loginIofogClient(context.Background(), clt, nil))
 	require.Equal(t, accessToken, clt.GetAccessToken())
 }
 
@@ -223,7 +225,7 @@ func TestLoginIofogClient_AuthModeSelectionErrors(t *testing.T) {
 			r := newLoginTestReconciler(t, tt.auth, tt.objects...)
 			clt := iofogClientForTest(t, "http://unused.example.com")
 
-			err := r.loginIofogClient(context.Background(), clt)
+			err := r.loginIofogClient(context.Background(), clt, nil)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tt.wantSubstr)
 			require.NotContains(t, err.Error(), sensitivePassword)
@@ -259,7 +261,7 @@ func TestLoginIofogClient_InvalidCredentialsDoNotLeakSecrets(t *testing.T) {
 		})
 		clt := iofogClientForTest(t, server.URL)
 
-		err := r.loginIofogClient(context.Background(), clt)
+		err := r.loginIofogClient(context.Background(), clt, nil)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid credentials")
 		require.NotContains(t, err.Error(), password)
@@ -283,9 +285,11 @@ func TestLoginIofogClient_InvalidCredentialsDoNotLeakSecrets(t *testing.T) {
 		}))
 		t.Cleanup(server.Close)
 
+		allowHTTP := true
 		r := newLoginTestReconciler(t, cpv3.Auth{
-			Mode:      cpv3.AuthModeExternal,
-			IssuerUrl: server.URL + "/realms/test",
+			Mode:              cpv3.AuthModeExternal,
+			InsecureAllowHttp: &allowHTTP,
+			IssuerUrl:         server.URL + "/realms/test",
 			Client: &cpv3.AuthClient{
 				ID:     "operator-client",
 				Secret: clientSecret,
@@ -293,7 +297,7 @@ func TestLoginIofogClient_InvalidCredentialsDoNotLeakSecrets(t *testing.T) {
 		})
 		clt := iofogClientForTest(t, server.URL)
 
-		err := r.loginIofogClient(context.Background(), clt)
+		err := r.loginIofogClient(context.Background(), clt, nil)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid client credentials")
 		require.NotContains(t, err.Error(), clientSecret)

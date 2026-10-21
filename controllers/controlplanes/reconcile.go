@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 	"strings"
@@ -340,13 +341,17 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	}
 
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", ms.name, r.cp.ObjectMeta.Namespace)
-	iofogClient, fin := r.getIofogClient(scheme, host, ctrlPort)
+	controllerTLS, fin := r.controllerClientTLS(ctx)
+	if fin.IsFinal() {
+		return fin
+	}
+	iofogClient, fin := r.getIofogClient(scheme, host, ctrlPort, controllerTLS)
 
 	if fin.IsFinal() {
 		return fin
 	}
 	// Set up user
-	if err := r.loginIofogClient(ctx, iofogClient); err != nil {
+	if err := r.loginIofogClient(ctx, iofogClient, controllerTLS); err != nil {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not login to ControlPlane %s: %s", r.cp.Name, err.Error()))
 			return op.ReconcileWithError(err)
@@ -421,7 +426,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 			return r.requeueForPendingLoadBalancer(r.cp.Namespace, controllerName)
 		}
 		// Check LB connection works
-		if _, fin := r.getIofogClient(scheme, host, ctrlPort); fin.IsFinal() {
+		if _, fin := r.getIofogClient(scheme, host, ctrlPort, controllerTLS); fin.IsFinal() {
 			r.log.Info(fmt.Sprintf("LB Connection works for ControlPlane %s", r.cp.Name))
 
 			return fin
@@ -455,7 +460,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 	return op.Continue()
 }
 
-func (r *ControlPlaneReconciler) getIofogClient(scheme string, host string, port int) (*iofogclient.Client, op.Reconciliation) {
+func (r *ControlPlaneReconciler) getIofogClient(scheme string, host string, port int, tlsConfig *tls.Config) (*iofogclient.Client, op.Reconciliation) {
 	baseURL := fmt.Sprintf("%v://%s:%d/api/v3", scheme, host, port) //nolint:nosprintfhostport
 
 	parsedURL, err := url.Parse(baseURL)
@@ -464,8 +469,9 @@ func (r *ControlPlaneReconciler) getIofogClient(scheme string, host string, port
 	}
 
 	iofogClient := iofogclient.New(iofogclient.Options{
-		BaseURL: parsedURL,
-		Timeout: 10,
+		BaseURL:   parsedURL,
+		Timeout:   10,
+		TLSConfig: tlsConfig,
 	})
 
 	if _, err = iofogClient.GetStatus(); err != nil {
@@ -505,14 +511,19 @@ func (r *ControlPlaneReconciler) ImportCertificates(iofogClient *iofogclient.Cli
 
 // getControllerClientForNats returns an iofog client for the ControlPlane's controller (in-cluster DNS).
 // Used to call GET /api/v3/nats/bootstrap. Requeues if the controller is not reachable yet.
-func (r *ControlPlaneReconciler) getControllerClientForNats() (*iofogclient.Client, op.Reconciliation) {
+func (r *ControlPlaneReconciler) getControllerClientForNats(ctx context.Context) (*iofogclient.Client, *tls.Config, op.Reconciliation) {
 	scheme := "http"
-	if r.cp.Spec.Controller.Https != nil && *r.cp.Spec.Controller.Https {
+	if controllerHTTPSFromSpec(r.cp.Spec) {
 		scheme = "https"
+	}
+	tlsConfig, recon := r.controllerClientTLS(ctx)
+	if recon.IsFinal() {
+		return nil, nil, recon
 	}
 	host := fmt.Sprintf("controller.%s.svc.cluster.local", r.cp.Namespace)
 	const controllerAPIPort = 51121
-	return r.getIofogClient(scheme, host, controllerAPIPort)
+	client, recon := r.getIofogClient(scheme, host, controllerAPIPort, tlsConfig)
+	return client, tlsConfig, recon
 }
 
 // isNatsEnabled returns true when NATS is enabled (Spec.Nats nil or Enabled not false, and Replicas.Nats >= 2).
@@ -630,11 +641,11 @@ func (r *ControlPlaneReconciler) reconcileNats(ctx context.Context) op.Reconcili
 	}
 
 	// Bootstrap from Controller API (GET /api/v3/nats/bootstrap). Controller performs bootstrap; operator only saves secrets (creds come base64 in response).
-	iofogClient, recon := r.getControllerClientForNats()
+	iofogClient, controllerTLS, recon := r.getControllerClientForNats(ctx)
 	if recon.IsFinal() {
 		return recon
 	}
-	if err := r.loginIofogClient(ctx, iofogClient); err != nil {
+	if err := r.loginIofogClient(ctx, iofogClient, controllerTLS); err != nil {
 		if !strings.Contains(strings.ToLower(err.Error()), "invalid credentials") {
 			r.log.Info(fmt.Sprintf("Could not login for NATS bootstrap ControlPlane %s: %s", r.cp.Name, err.Error()))
 			return op.ReconcileWithError(err)
@@ -710,7 +721,9 @@ func (r *ControlPlaneReconciler) reconcileNats(ctx context.Context) op.Reconcili
 	if r.cp.Spec.Services.Nats.Type != "" {
 		natsSvcType = corev1.ServiceType(r.cp.Spec.Services.Nats.Type)
 	}
-	natsServerSvcType := corev1.ServiceTypeLoadBalancer
+	// nats-server is the in-cluster client and monitor Service (no TLS on 4222).
+	// An empty type stays ClusterIP. LoadBalancer would publish that port.
+	natsServerSvcType := corev1.ServiceTypeClusterIP
 	if r.cp.Spec.Services.NatsServer.Type != "" {
 		natsServerSvcType = corev1.ServiceType(r.cp.Spec.Services.NatsServer.Type)
 	}

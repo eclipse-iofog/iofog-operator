@@ -2,6 +2,7 @@ package controllerlogin
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,7 +25,8 @@ type loginResponse struct {
 }
 
 // EmbeddedBootstrapLogin authenticates against Controller embedded auth via POST /user/login.
-func EmbeddedBootstrapLogin(clt *iofogclient.Client, username, password string) error {
+// tlsConfig is the Controller peer config. Nil uses the default verifying client, which is correct for http:// URLs.
+func EmbeddedBootstrapLogin(clt *iofogclient.Client, username, password string, tlsConfig *tls.Config) error {
 	loginURL, err := userLoginURL(clt.GetBaseURL())
 	if err != nil {
 		return err
@@ -41,7 +43,7 @@ func EmbeddedBootstrapLogin(clt *iofogclient.Client, username, password string) 
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	res, err := httpClient().Do(req)
+	res, err := httpClient(tlsConfig).Do(req)
 	if err != nil {
 		return err
 	}
