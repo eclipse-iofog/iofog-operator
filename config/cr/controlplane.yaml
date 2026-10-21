@@ -27,6 +27,7 @@ spec:
       #   key: password
     # External-only (when mode=external):
     # issuerUrl: https://idp.example.com/realms/myrealm
+    # issuerCa: ""  # Base64 encoded PEM CA for a private issuer; omit for a public CA
     # client:
     #   id: controller-api
     #   secret: ""
@@ -57,7 +58,7 @@ spec:
     pullSecret:
     controller:
     router:
-    nats: ghcr.io/datasance/nats:2.15.1  # NATS server image (optional)
+    nats: ghcr.io/datasance/nats:2.15.1-1  # NATS server image (optional)
   services:
     controller:
       type:  # LoadBalancer / ClusterIP / NodePort; use Ingress when ClusterIP

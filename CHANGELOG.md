@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.2] - 2026-10-20
+
+### Changed
+
+- **Operator release** - Helm chart `version` / `appVersion`, operator image tag, `VERSION_TAG`, and install docs are **3.9.2**. Controller and router image tags stay **3.9.1**.
+- **Go 1.26.10** minimum (see `go.mod`). CI and the govulncheck workflow use the same toolchain. Clears [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809) (`crypto/x509` distrust of compromised intermediate certificates).
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.2`**.
+- **Helm values** — the chart values are the install form (`images`, `auth`, `database`, `services`, and the rest). Flavor stamping sets the CRD group, the default ControlPlane name (`pot` or `iofog`), and image tags. `values.schema.json` is removed. The marketplace form is `marketplace-values.yaml`.
+- **Helm annotations** — service and ingress annotations are null when empty, and accept a map or one `key: value` line per annotation. The marketplace form uses the line form. Advanced checkboxes stay on the marketplace form and are not Helm values.
+- **NATS `nats-server` Service** — an empty `services.natsServer.type` is ClusterIP. The previous empty-type default was LoadBalancer, which published the non-TLS client port.
+
+### Security
+
+- **Controller and issuer TLS** - the operator verifies certificates on Controller API calls and on external OIDC login. `controller.https` checks the certificate against the resolved `publicUrl` host (DNS name or LoadBalancer IP) while still dialing the in-cluster Service. `ca.crt` from `controller.secretName` is added to the system trust store when it contains a PEM certificate. External mode accepts optional `auth.issuerCa` (base64 PEM CA or bundle) for a private issuer CA, uses it for the operator login client, and sets `OIDC_ISSUER_TLS_BASE64_CA` on the Controller. Plain `http` issuer URLs still require `auth.insecureAllowHttp`.
+
 ## [3.9.1] - 2026-10-10
 
 ### Added
@@ -255,7 +270,8 @@ See [README.md](README.md) for install examples and dual-mirror workflow.
 - Consolidate usage of iofog client and reorganize controller reconciliation
 - Removes all references to Connector
 
-[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.1...HEAD
+[Unreleased]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.2...HEAD
+[3.9.2]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.1...v3.9.2
 [3.9.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0...v3.9.1
 [3.9.0]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.9.0-rc.1...v3.9.0
 [3.9.0-rc.1]: https://github.com/eclipse-iofog/iofog-operator/compare/v3.8.3-rc.2...v3.9.0-rc.1

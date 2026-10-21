@@ -44,13 +44,14 @@ spec:
     #   idTokenTtlSeconds:
     # mode: external
     # issuerUrl: ""
+    # issuerCa: ""  # Base64 encoded PEM CA for a private issuer; omit for a public CA
     # client:
     #   id: controller
     #   secret: ""
   images:
-    controller: ghcr.io/datasance/controller:3.9.1
-    router: ghcr.io/datasance/router:3.9.1
-    nats: ghcr.io/datasance/nats:2.15.1
+    controller: ghcr.io/datasance/controller:3.9.2
+    router: ghcr.io/datasance/router:3.9.2
+    nats: ghcr.io/datasance/nats:2.15.1-1
   nats:
     enabled: true
     jetStream:
