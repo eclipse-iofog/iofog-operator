@@ -6,7 +6,7 @@ images:
   operator: "ghcr.io/datasance/operator:3.9.2"
   controller: "ghcr.io/datasance/controller:3.9.2"
   router: "ghcr.io/datasance/router:3.9.2"
-  nats: "ghcr.io/datasance/nats:2.15.1"
+  nats: "ghcr.io/datasance/nats:2.15.1-1"
   # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
   pullSecret: ""
 
@@ -61,23 +61,25 @@ services:
   # annotation. Helm cannot replace a default map with that text, or the reverse.
   controller:
     type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
     ingress:
       host: ""
       ingressClassName: ""
       annotations: null
-    annotations: null
-    externalTrafficPolicy: "auto"
   router:
     type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
     ingress:
       address: ""
       messagePort: 5671
       interiorPort: 55671
       edgePort: 45671
-    annotations: null
-    externalTrafficPolicy: "auto"
   nats:
     type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
     ingress:
       address: ""
       serverPort: 4222
@@ -85,11 +87,10 @@ services:
       leafPort: 7422
       mqttPort: 8883
       httpPort: 8222
-    annotations: null
-    externalTrafficPolicy: "auto"
   natsServer:
     type: ClusterIP
     annotations: null
+    externalTrafficPolicy: "auto"
 
 controller:
   logLevel: info

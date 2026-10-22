@@ -9,12 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Operator release** - Helm chart `version` / `appVersion`, operator image tag, `VERSION_TAG`, and install docs are **3.9.2**. Controller and router image tags stay **3.9.1**.
+- **Operator release** - Helm chart `version` / `appVersion`, operator image tag, `VERSION_TAG`, and install docs are **3.9.2**. - **Default component image tags** - controller, and router **3.9.2**; NATS **2.15.1-1**
 - **Go 1.26.10** minimum (see `go.mod`). CI and the govulncheck workflow use the same toolchain. Clears [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809) (`crypto/x509` distrust of compromised intermediate certificates).
 - **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.2`**.
 - **Helm values** — the chart values are the install form (`images`, `auth`, `database`, `services`, and the rest). Flavor stamping sets the CRD group, the default ControlPlane name (`pot` or `iofog`), and image tags. `values.schema.json` is removed. The marketplace form is `marketplace-values.yaml`.
 - **Helm annotations** — service and ingress annotations are null when empty, and accept a map or one `key: value` line per annotation. The marketplace form uses the line form. Advanced checkboxes stay on the marketplace form and are not Helm values.
-- **NATS `nats-server` Service** — an empty `services.natsServer.type` is ClusterIP. The previous empty-type default was LoadBalancer, which published the non-TLS client port.
 
 ### Security
 

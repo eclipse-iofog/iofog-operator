@@ -178,6 +178,7 @@
 {{- $ctrlPolicy := include "iofog-operator.trafficPolicy" $svcController.externalTrafficPolicy | trim -}}
 {{- $routerPolicy := include "iofog-operator.trafficPolicy" $svcRouter.externalTrafficPolicy | trim -}}
 {{- $natsPolicy := include "iofog-operator.trafficPolicy" $svcNats.externalTrafficPolicy | trim -}}
+{{- $natsServerPolicy := include "iofog-operator.trafficPolicy" $svcNatsServer.externalTrafficPolicy | trim -}}
 {{- $ctrlAnn := include "iofog-operator.annotationMap" $svcController.annotations | trim -}}
 {{- $routerAnn := include "iofog-operator.annotationMap" $svcRouter.annotations | trim -}}
 {{- $natsAnn := include "iofog-operator.annotationMap" $svcNats.annotations | trim -}}
@@ -319,6 +320,9 @@ spec:
       {{- end }}
     natsServer:
       type: {{ $nstype }}
+      {{- if and $natsServerPolicy (ne $nstype "ClusterIP") }}
+      externalTrafficPolicy: {{ $natsServerPolicy }}
+      {{- end }}
       {{- if $natsServerAnn }}
       annotations:
         {{- $natsServerAnn | nindent 8 }}
