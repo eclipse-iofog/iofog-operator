@@ -100,7 +100,7 @@ External requires `issuerUrl`, `client.id`, and `client.secret`. `issuerCa` is a
 | `services.controller` | LoadBalancer | API and console. ClusterIP creates a Kubernetes Ingress and requires `controller.https` plus a certificate. The Secret name is written to `ingresses.controller.secretName`. NodePort requires `controller.publicUrl`. |
 | `services.router` | LoadBalancer | ClusterIP and NodePort require `services.router.ingress.address`. That address is registered as the default router. It is not an Ingress object. |
 | `services.nats` | LoadBalancer | TLS ports (cluster, leaf, MQTT). ClusterIP and NodePort require `services.nats.ingress.address` for hub registration. Not an Ingress object. |
-| `services.natsServer` | ClusterIP | In-cluster client `4222` and monitor `8222`, without TLS. An empty type is written as ClusterIP. |
+| `services.natsServer` | ClusterIP | In-cluster client `4222` and monitor `8222`, without TLS. An empty type is written as ClusterIP. LoadBalancer and NodePort accept `externalTrafficPolicy`. |
 
 Leave `annotations` null. Set a map, or a string with one `key: value` per line. The marketplace textarea submits that string. Helm cannot replace a default map with a string, so the empty value stays null. Blank lines are skipped. A duplicate key fails the render. In a map, quote values that YAML would read as booleans or numbers, such as `"on"` or `"443"`. `externalTrafficPolicy` is `auto`, `Local`, or `Cluster`. `auto` omits the field. The operator then uses Local for LoadBalancer and Cluster for NodePort, and sets nothing for ClusterIP.
 
