@@ -12,9 +12,9 @@
 name: ""
 
 images:
-  operator: "ghcr.io/eclipse-iofog/operator:3.9.2-rc.1"
-  controller: "ghcr.io/eclipse-iofog/controller:3.9.2-rc.1"
-  router: "ghcr.io/eclipse-iofog/router:3.9.2-rc.1"
+  operator: "ghcr.io/eclipse-iofog/operator:3.9.2-rc.2"
+  controller: "ghcr.io/eclipse-iofog/controller:3.9.2-rc.2"
+  router: "ghcr.io/eclipse-iofog/router:3.9.2-rc.2"
   nats: "ghcr.io/eclipse-iofog/nats:2.15.1-1"
   # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
   pullSecret: ""
@@ -68,23 +68,25 @@ replicas:
 services:
   controller:
     type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
     ingress:
       host: ""
       ingressClassName: ""
       annotations: ""
-    annotations: ""
-    externalTrafficPolicy: "auto"
   router:
     type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
     ingress:
       address: ""
       messagePort: 5671
       interiorPort: 55671
       edgePort: 45671
-    annotations: ""
-    externalTrafficPolicy: "auto"
   nats:
     type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
     ingress:
       address: ""
       serverPort: 4222
@@ -92,11 +94,10 @@ services:
       leafPort: 7422
       mqttPort: 8883
       httpPort: 8222
-    annotations: ""
-    externalTrafficPolicy: "auto"
   natsServer:
     type: ClusterIP
     annotations: ""
+    externalTrafficPolicy: "auto"
 
 controller:
   logLevel: info
@@ -160,15 +161,15 @@ x-form-schemas:
           operator:
             type: string
             title: Operator
-            default: "ghcr.io/eclipse-iofog/operator:3.9.2-rc.1"
+            default: "ghcr.io/eclipse-iofog/operator:3.9.2-rc.2"
           controller:
             type: string
             title: Controller
-            default: "ghcr.io/eclipse-iofog/controller:3.9.2-rc.1"
+            default: "ghcr.io/eclipse-iofog/controller:3.9.2-rc.2"
           router:
             type: string
             title: Router
-            default: "ghcr.io/eclipse-iofog/router:3.9.2-rc.1"
+            default: "ghcr.io/eclipse-iofog/router:3.9.2-rc.2"
           nats:
             type: string
             title: NATS
@@ -783,25 +784,88 @@ x-form-schemas:
                 title: Type
                 enum: ["ClusterIP", "NodePort", "LoadBalancer"]
                 default: ClusterIP
-              advanced:
-                type: boolean
-                title: Advanced
-                description: "Annotations on the nats-server Service."
-                default: false
+            required: ["type"]
             dependencies:
-              advanced:
+              type:
                 oneOf:
                   - properties:
+                      type:
+                        enum: ["ClusterIP"]
                       advanced:
-                        enum: [false]
+                        type: boolean
+                        title: Advanced
+                        description: "Annotations on the nats-server Service. External traffic policy is not used for ClusterIP."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
                   - properties:
+                      type:
+                        enum: ["LoadBalancer"]
                       advanced:
-                        enum: [true]
-                      annotations:
-                        type: string
-                        title: Annotations
-                        description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
-                        default: ""
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["NodePort"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Cluster."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
         required: ["controller", "router", "nats", "natsServer"]
       controller:
         type: object
@@ -1229,7 +1293,7 @@ x-form-schemas:
     services:
       ui:order: ["controller", "router", "nats", "natsServer", "*"]
       controller:
-        ui:order: ["type", "ingress", "advanced", "annotations", "externalTrafficPolicy", "*"]
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
         type:
           ui:widget: select
           ui:enumNames:
@@ -1249,7 +1313,7 @@ x-form-schemas:
         annotations:
           ui:widget: textarea
       router:
-        ui:order: ["type", "ingress", "advanced", "annotations", "externalTrafficPolicy", "*"]
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
         type:
           ui:widget: select
           ui:enumNames:
@@ -1273,7 +1337,7 @@ x-form-schemas:
         annotations:
           ui:widget: textarea
       nats:
-        ui:order: ["type", "ingress", "advanced", "annotations", "externalTrafficPolicy", "*"]
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
         type:
           ui:widget: select
           ui:enumNames:
@@ -1301,13 +1365,19 @@ x-form-schemas:
         annotations:
           ui:widget: textarea
       natsServer:
-        ui:order: ["type", "advanced", "annotations", "*"]
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "*"]
         type:
           ui:widget: select
           ui:enumNames:
             - "ClusterIP — inside the cluster"
             - "NodePort"
             - "LoadBalancer — publishes the non-TLS port"
+        externalTrafficPolicy:
+          ui:widget: select
+          ui:enumNames:
+            - "Automatic"
+            - "Local — keep the client source address"
+            - "Cluster — accept traffic on any node"
         annotations:
           ui:widget: textarea
     controller:
