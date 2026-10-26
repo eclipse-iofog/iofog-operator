@@ -1,0 +1,1443 @@
+# Marketplace form for the ioFog operator.
+#
+# The preset below matches values.yaml, except annotations. Helm values leave
+# annotations null so an install can set either a map or text. This preset uses
+# an empty string because the form field is a textarea with one key: value
+# line per annotation.
+# x-form-schemas is the marketplace UI (jsonSchema + uiSchema). Do not pass
+# this file to helm install -f. The release job publishes it next to values.yaml.
+#
+# ControlPlane resource name. Empty uses the flavor default stamped into
+# the chart: pot for Datasance, iofog for Eclipse ioFog.
+name: ""
+
+images:
+  operator: "ghcr.io/eclipse-iofog/operator:3.9.2"
+  controller: "ghcr.io/eclipse-iofog/controller:3.9.2"
+  router: "ghcr.io/eclipse-iofog/router:3.9.2"
+  nats: "ghcr.io/eclipse-iofog/nats:2.15.1-1"
+  # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
+  pullSecret: ""
+
+auth:
+  mode: embedded
+  insecureAllowHttp: false
+  bootstrap:
+    username: admin
+    password: ""
+    # GitOps alternative to password. Not shown on the marketplace form.
+    # passwordSecretRef:
+    #   name: controller-bootstrap
+    #   key: password
+  rateLimit:
+    enabled: false
+    maxRequestsPerWindow: 0
+    windowMs: 0
+  tokenTtl:
+    accessTokenTtlSeconds: 0
+    refreshTokenTtlSeconds: 0
+  oidcTtl:
+    interactionTtlSeconds: 0
+    grantTtlSeconds: 0
+    sessionTtlSeconds: 0
+    idTokenTtlSeconds: 0
+  sessionStore:
+    type: ""
+    ttlMs: 0
+    secret: ""
+  issuerUrl: ""
+  issuerCa: ""
+  client:
+    id: ""
+    secret: ""
+
+database:
+  provider: sqlite
+  host: ""
+  port: 0
+  databaseName: ""
+  user: ""
+  password: ""
+  ssl: false
+  ca: ""
+
+replicas:
+  controller: 1
+  nats: 2
+
+services:
+  controller:
+    type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
+    ingress:
+      host: ""
+      ingressClassName: ""
+      annotations: ""
+  router:
+    type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
+    ingress:
+      address: ""
+      messagePort: 5671
+      interiorPort: 55671
+      edgePort: 45671
+  nats:
+    type: LoadBalancer
+    annotations: ""
+    externalTrafficPolicy: "auto"
+    ingress:
+      address: ""
+      serverPort: 4222
+      clusterPort: 6222
+      leafPort: 7422
+      mqttPort: 8883
+      httpPort: 8222
+  natsServer:
+    type: ClusterIP
+    annotations: ""
+    externalTrafficPolicy: "auto"
+
+controller:
+  logLevel: info
+  trustProxy: "auto"
+  https: false
+  publicUrl: ""
+  consoleUrl: ""
+  tls:
+    source: ""
+    secretName: ""
+    crt: ""
+    key: ""
+    ca: ""
+
+nats:
+  memoryStoreSize: 1
+  storageSize: 10
+  storageClassName: ""
+
+vault:
+  enabled: false
+  basePath: ""
+  provider: ""
+  hashicorp:
+    address: ""
+    mount: ""
+    token: ""
+  aws:
+    region: ""
+    accessKeyId: ""
+    accessKey: ""
+  azure:
+    url: ""
+    tenantId: ""
+    clientId: ""
+    clientSecret: ""
+  google:
+    projectId: ""
+    credentials: ""
+
+events:
+  auditEnabled: true
+  retentionDays: 14
+  cleanupIntervalHours: 24
+  captureIpAddress: true
+
+# ============================================================
+# Form schema (marketplace UI)
+# ============================================================
+x-form-schemas:
+  jsonSchema:
+    type: object
+    title: ioFog Operator
+    description: "Installs the ioFog operator and a ControlPlane. Image tags match this chart build."
+    properties:
+      images:
+        type: object
+        title: Images
+        description: "Containers for this release. The operator image is not part of the ControlPlane."
+        properties:
+          operator:
+            type: string
+            title: Operator
+            default: "ghcr.io/eclipse-iofog/operator:3.9.2"
+          controller:
+            type: string
+            title: Controller
+            default: "ghcr.io/eclipse-iofog/controller:3.9.2"
+          router:
+            type: string
+            title: Router
+            default: "ghcr.io/eclipse-iofog/router:3.9.2"
+          nats:
+            type: string
+            title: NATS
+            default: "ghcr.io/eclipse-iofog/nats:2.15.1-1"
+          pullSecret:
+            type: string
+            title: Image Pull Secret
+            description: "Optional Secret name. Applied to the operator and to Controller, Router, and NATS."
+            default: ""
+        required: ["operator", "controller", "router", "nats"]
+      auth:
+        type: object
+        title: Auth
+        description: "How users sign in. Embedded runs a local identity provider. External uses an OIDC issuer you already operate."
+        properties:
+          mode:
+            type: string
+            title: Mode
+            enum: ["embedded", "external"]
+            default: embedded
+          insecureAllowHttp:
+            type: boolean
+            title: Allow HTTP
+            description: "Allow an HTTP OIDC issuer. Development only."
+            default: false
+        required: ["mode"]
+        dependencies:
+          mode:
+            oneOf:
+              - properties:
+                  mode:
+                    enum: ["embedded"]
+                  bootstrap:
+                    type: object
+                    title: Bootstrap
+                    description: "First administrator."
+                    properties:
+                      username:
+                        type: string
+                        title: Username
+                        default: admin
+                        minLength: 1
+                      password:
+                        type: string
+                        title: Password
+                        description: "At least 12 characters, one uppercase letter, and one special character."
+                        pattern: '^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{12,}$'
+                    required: ["username", "password"]
+                  advanced:
+                    type: boolean
+                    title: Advanced
+                    description: "Rate limit, token lifetimes, and session store. Empty values keep the controller default."
+                    default: false
+                required: ["bootstrap"]
+                dependencies:
+                  advanced:
+                    oneOf:
+                      - properties:
+                          advanced:
+                            enum: [false]
+                      - properties:
+                          advanced:
+                            enum: [true]
+                          rateLimit:
+                            type: object
+                            title: Rate Limit
+                            properties:
+                              enabled:
+                                type: boolean
+                                title: Enabled
+                                default: false
+                              maxRequestsPerWindow:
+                                type: integer
+                                title: Max Requests Per Window
+                                description: "0 keeps the controller default."
+                                default: 0
+                                minimum: 0
+                              windowMs:
+                                type: integer
+                                title: Window (ms)
+                                description: "0 keeps the controller default."
+                                default: 0
+                                minimum: 0
+                          tokenTtl:
+                            type: object
+                            title: Token TTL
+                            properties:
+                              accessTokenTtlSeconds:
+                                type: integer
+                                title: Access Token (seconds)
+                                description: "0 keeps the controller default."
+                                default: 0
+                                minimum: 0
+                              refreshTokenTtlSeconds:
+                                type: integer
+                                title: Refresh Token (seconds)
+                                description: "0 keeps the controller default."
+                                default: 0
+                                minimum: 0
+                          oidcTtl:
+                            type: object
+                            title: OIDC TTL
+                            properties:
+                              interactionTtlSeconds:
+                                type: integer
+                                title: Interaction (seconds)
+                                default: 0
+                                minimum: 0
+                              grantTtlSeconds:
+                                type: integer
+                                title: Grant (seconds)
+                                default: 0
+                                minimum: 0
+                              sessionTtlSeconds:
+                                type: integer
+                                title: Session (seconds)
+                                default: 0
+                                minimum: 0
+                              idTokenTtlSeconds:
+                                type: integer
+                                title: ID Token (seconds)
+                                default: 0
+                                minimum: 0
+                          sessionStore:
+                            type: object
+                            title: Session Store
+                            properties:
+                              type:
+                                type: string
+                                title: Type
+                                enum: ["", "memory", "database"]
+                                default: ""
+                              ttlMs:
+                                type: integer
+                                title: TTL (ms)
+                                description: "0 keeps the controller default."
+                                default: 0
+                                minimum: 0
+                              secret:
+                                type: string
+                                title: Secret
+                                description: "Session signing secret. Leave empty to omit."
+                                default: ""
+              - properties:
+                  mode:
+                    enum: ["external"]
+                  issuerUrl:
+                    type: string
+                    title: Issuer URL
+                    description: "OIDC issuer URL."
+                    pattern: '^https?://\S+$'
+                  client:
+                    type: object
+                    title: Client
+                    properties:
+                      id:
+                        type: string
+                        title: Client ID
+                        minLength: 1
+                      secret:
+                        type: string
+                        title: Client Secret
+                        minLength: 1
+                    required: ["id", "secret"]
+                  issuerCa:
+                    type: string
+                    title: Issuer CA
+                    description: "Base64-encoded PEM CA or bundle for a private issuer. Leave empty for a public CA."
+                    default: ""
+                required: ["issuerUrl", "client"]
+      database:
+        type: object
+        title: Database
+        description: "SQLite keeps the database in the pod. PostgreSQL and MySQL keep it outside the pod lifetime."
+        properties:
+          provider:
+            type: string
+            title: Provider
+            enum: ["sqlite", "postgres", "mysql"]
+            default: sqlite
+        required: ["provider"]
+        dependencies:
+          provider:
+            oneOf:
+              - properties:
+                  provider:
+                    enum: ["sqlite"]
+              - properties:
+                  provider:
+                    enum: ["postgres"]
+                  host:
+                    type: string
+                    title: Host
+                    minLength: 1
+                  port:
+                    type: integer
+                    title: Port
+                    default: 5432
+                    minimum: 1
+                  databaseName:
+                    type: string
+                    title: Database Name
+                    minLength: 1
+                  user:
+                    type: string
+                    title: Username
+                    minLength: 1
+                  password:
+                    type: string
+                    title: Password
+                    minLength: 1
+                  ssl:
+                    type: boolean
+                    title: SSL
+                    default: false
+                required: ["host", "port", "databaseName", "user", "password"]
+                dependencies:
+                  ssl:
+                    oneOf:
+                      - properties:
+                          ssl:
+                            enum: [false]
+                      - properties:
+                          ssl:
+                            enum: [true]
+                          ca:
+                            type: string
+                            title: CA
+                            description: "Base64-encoded PEM CA for a private database CA. Leave empty to use the system trust store."
+                            default: ""
+              - properties:
+                  provider:
+                    enum: ["mysql"]
+                  host:
+                    type: string
+                    title: Host
+                    minLength: 1
+                  port:
+                    type: integer
+                    title: Port
+                    default: 3306
+                    minimum: 1
+                  databaseName:
+                    type: string
+                    title: Database Name
+                    minLength: 1
+                  user:
+                    type: string
+                    title: Username
+                    minLength: 1
+                  password:
+                    type: string
+                    title: Password
+                    minLength: 1
+                  ssl:
+                    type: boolean
+                    title: SSL
+                    default: false
+                required: ["host", "port", "databaseName", "user", "password"]
+                dependencies:
+                  ssl:
+                    oneOf:
+                      - properties:
+                          ssl:
+                            enum: [false]
+                      - properties:
+                          ssl:
+                            enum: [true]
+                          ca:
+                            type: string
+                            title: CA
+                            description: "Base64-encoded PEM CA for a private database CA. Leave empty to use the system trust store."
+                            default: ""
+      replicas:
+        type: object
+        title: Replicas
+        properties:
+          controller:
+            type: integer
+            title: Controller
+            description: "Use 1 with SQLite. Raise this only with PostgreSQL or MySQL."
+            default: 1
+            minimum: 1
+          nats:
+            type: integer
+            title: NATS
+            description: "Minimum 2."
+            default: 2
+            minimum: 2
+        required: ["controller", "nats"]
+      services:
+        type: object
+        title: Services
+        description: "Controller, Router, and NATS default to LoadBalancer. NATS internal stays ClusterIP."
+        properties:
+          controller:
+            type: object
+            title: Controller
+            properties:
+              type:
+                type: string
+                title: Type
+                enum: ["LoadBalancer", "NodePort", "ClusterIP"]
+                default: LoadBalancer
+            required: ["type"]
+            dependencies:
+              type:
+                oneOf:
+                  - properties:
+                      type:
+                        enum: ["LoadBalancer"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local for LoadBalancer and Cluster for NodePort."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["NodePort"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local for LoadBalancer and Cluster for NodePort."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["ClusterIP"]
+                      ingress:
+                        type: object
+                        title: Ingress
+                        description: "The operator creates a Kubernetes Ingress for the controller only when the Service is ClusterIP. In the Controller section turn HTTPS on. Choose Use an existing Secret and set Secret name to the certificate, such as pot-tls for cert-manager, or choose Create a Secret and paste the PEM. The chart writes that name on the Ingress. Install fails without HTTPS and a certificate."
+                        properties:
+                          host:
+                            type: string
+                            title: Host
+                            minLength: 1
+                          ingressClassName:
+                            type: string
+                            title: Ingress Class
+                            default: ""
+                          annotations:
+                            type: string
+                            title: Annotations
+                            description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                            default: ""
+                        required: ["host"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations. External traffic policy is not used for ClusterIP."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+          router:
+            type: object
+            title: Router
+            properties:
+              type:
+                type: string
+                title: Type
+                enum: ["LoadBalancer", "NodePort", "ClusterIP"]
+                default: LoadBalancer
+            required: ["type"]
+            dependencies:
+              type:
+                oneOf:
+                  - properties:
+                      type:
+                        enum: ["LoadBalancer"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local for LoadBalancer and Cluster for NodePort."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["NodePort", "ClusterIP"]
+                      ingress:
+                        type: object
+                        title: External Address
+                        description: "Not a Kubernetes Ingress. The operator registers this address as the default router. Required for ClusterIP and NodePort."
+                        properties:
+                          address:
+                            type: string
+                            title: Address
+                            minLength: 1
+                          messagePort:
+                            type: integer
+                            title: Message Port
+                            default: 5671
+                            minimum: 1
+                          interiorPort:
+                            type: integer
+                            title: Interior Port
+                            default: 55671
+                            minimum: 1
+                          edgePort:
+                            type: integer
+                            title: Edge Port
+                            default: 45671
+                            minimum: 1
+                        required: ["address"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Cluster for NodePort. Ignored for ClusterIP."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+          nats:
+            type: object
+            title: NATS
+            description: "TLS listeners: cluster 6222, leaf 7422, MQTT 8883."
+            properties:
+              type:
+                type: string
+                title: Type
+                enum: ["LoadBalancer", "NodePort", "ClusterIP"]
+                default: LoadBalancer
+            required: ["type"]
+            dependencies:
+              type:
+                oneOf:
+                  - properties:
+                      type:
+                        enum: ["LoadBalancer"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local for LoadBalancer and Cluster for NodePort."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["NodePort", "ClusterIP"]
+                      ingress:
+                        type: object
+                        title: External Address
+                        description: "Not a Kubernetes Ingress. The operator registers this address as the default NATS hub. Required for ClusterIP and NodePort."
+                        properties:
+                          address:
+                            type: string
+                            title: Address
+                            minLength: 1
+                          serverPort:
+                            type: integer
+                            title: Server Port
+                            default: 4222
+                            minimum: 1
+                          clusterPort:
+                            type: integer
+                            title: Cluster Port
+                            default: 6222
+                            minimum: 1
+                          leafPort:
+                            type: integer
+                            title: Leaf Port
+                            default: 7422
+                            minimum: 1
+                          mqttPort:
+                            type: integer
+                            title: MQTT Port
+                            default: 8883
+                            minimum: 1
+                          httpPort:
+                            type: integer
+                            title: HTTP Port
+                            default: 8222
+                            minimum: 1
+                        required: ["address"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Cluster for NodePort. Ignored for ClusterIP."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+          natsServer:
+            type: object
+            title: NATS Internal
+            description: "In-cluster client port 4222 and monitor port 8222. These ports are not TLS. Default ClusterIP. An empty type is ClusterIP."
+            properties:
+              type:
+                type: string
+                title: Type
+                enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+                default: ClusterIP
+            required: ["type"]
+            dependencies:
+              type:
+                oneOf:
+                  - properties:
+                      type:
+                        enum: ["ClusterIP"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Annotations on the nats-server Service. External traffic policy is not used for ClusterIP."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                  - properties:
+                      type:
+                        enum: ["LoadBalancer"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Local."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+                  - properties:
+                      type:
+                        enum: ["NodePort"]
+                      advanced:
+                        type: boolean
+                        title: Advanced
+                        description: "Service annotations and external traffic policy."
+                        default: false
+                    dependencies:
+                      advanced:
+                        oneOf:
+                          - properties:
+                              advanced:
+                                enum: [false]
+                          - properties:
+                              advanced:
+                                enum: [true]
+                              annotations:
+                                type: string
+                                title: Annotations
+                                description: "One annotation per line, written as key: value. Example: cert-manager.io/cluster-issuer: letsencrypt"
+                                default: ""
+                              externalTrafficPolicy:
+                                type: string
+                                title: External Traffic Policy
+                                description: "Automatic keeps Cluster."
+                                enum: ["auto", "Local", "Cluster"]
+                                default: auto
+        required: ["controller", "router", "nats", "natsServer"]
+      controller:
+        type: object
+        title: Controller
+        properties:
+          logLevel:
+            type: string
+            title: Log Level
+            enum: ["debug", "info", "warn", "error"]
+            default: info
+          trustProxy:
+            type: string
+            title: Trust Proxy
+            description: "Automatic omits the field. An ingress then turns trust proxy on."
+            enum: ["auto", "on", "off"]
+            default: auto
+          https:
+            type: boolean
+            title: HTTPS
+            default: false
+          advanced:
+            type: boolean
+            title: Advanced
+            description: "Console URL, and Public URL when the operator already derives it."
+            default: false
+        dependencies:
+          https:
+            oneOf:
+              - properties:
+                  https:
+                    enum: [false]
+              - properties:
+                  https:
+                    enum: [true]
+                  tls:
+                    type: object
+                    title: Certificate
+                    properties:
+                      source:
+                        type: string
+                        title: Certificate Source
+                        enum: ["existing", "create"]
+                    required: ["source"]
+                    dependencies:
+                      source:
+                        oneOf:
+                          - properties:
+                              source:
+                                enum: ["existing"]
+                              secretName:
+                                type: string
+                                title: Secret Name
+                                description: "Name of the kubernetes.io/tls Secret. For cert-manager this is the Secret the issuer will create, such as pot-tls. The chart writes this name on the controller and, for ClusterIP, on the Ingress."
+                                minLength: 1
+                            required: ["secretName"]
+                          - properties:
+                              source:
+                                enum: ["create"]
+                              crt:
+                                type: string
+                                title: Certificate
+                                description: "PEM certificate. The chart stores it in Secret controller-tls."
+                                minLength: 1
+                              key:
+                                type: string
+                                title: Private Key
+                                description: "PEM private key."
+                                minLength: 1
+                              ca:
+                                type: string
+                                title: CA
+                                description: "Optional PEM CA. The operator uses it when calling the controller."
+                                default: ""
+                            required: ["crt", "key"]
+          advanced:
+            oneOf:
+              - properties:
+                  advanced:
+                    enum: [false]
+              - properties:
+                  advanced:
+                    enum: [true]
+                  publicUrl:
+                    type: string
+                    title: Public URL
+                    description: "Leave empty when the operator derives the URL from the ingress host or the load balancer address."
+                    default: ""
+                  consoleUrl:
+                    type: string
+                    title: Console URL
+                    description: "Leave empty to use the public URL."
+                    default: ""
+      nats:
+        type: object
+        title: NATS Storage
+        description: "Whole gibibytes. 1 is stored as 1Gi."
+        properties:
+          memoryStoreSize:
+            type: integer
+            title: Memory (Gi)
+            default: 1
+            minimum: 1
+          storageSize:
+            type: integer
+            title: Disk (Gi)
+            default: 10
+            minimum: 1
+          advanced:
+            type: boolean
+            title: Advanced
+            description: "Storage class. Empty uses the cluster default. A name that does not exist leaves the volume Pending."
+            default: false
+        required: ["memoryStoreSize", "storageSize"]
+        dependencies:
+          advanced:
+            oneOf:
+              - properties:
+                  advanced:
+                    enum: [false]
+              - properties:
+                  advanced:
+                    enum: [true]
+                  storageClassName:
+                    type: string
+                    title: Storage Class
+                    description: "Empty uses the cluster default StorageClass."
+                    default: ""
+      vault:
+        type: object
+        title: Vault
+        properties:
+          enabled:
+            type: boolean
+            title: Enabled
+            default: false
+        dependencies:
+          enabled:
+            oneOf:
+              - properties:
+                  enabled:
+                    enum: [false]
+              - properties:
+                  enabled:
+                    enum: [true]
+                  basePath:
+                    type: string
+                    title: Base Path
+                    description: "Example: iofog/$namespace/secrets"
+                    default: ""
+                  provider:
+                    type: string
+                    title: Provider
+                    enum: ["hashicorp", "openbao", "aws", "azure", "google"]
+                required: ["provider"]
+                dependencies:
+                  provider:
+                    oneOf:
+                      - properties:
+                          provider:
+                            enum: ["hashicorp", "openbao"]
+                          hashicorp:
+                            type: object
+                            title: Server
+                            description: "Used for HashiCorp Vault and OpenBao."
+                            properties:
+                              address:
+                                type: string
+                                title: Address
+                                minLength: 1
+                              mount:
+                                type: string
+                                title: Mount
+                                minLength: 1
+                              token:
+                                type: string
+                                title: Token
+                                minLength: 1
+                            required: ["address", "mount", "token"]
+                        required: ["hashicorp"]
+                      - properties:
+                          provider:
+                            enum: ["aws"]
+                          aws:
+                            type: object
+                            title: AWS
+                            properties:
+                              region:
+                                type: string
+                                title: Region
+                                minLength: 1
+                              accessKeyId:
+                                type: string
+                                title: Access Key ID
+                                minLength: 1
+                              accessKey:
+                                type: string
+                                title: Access Key
+                                minLength: 1
+                            required: ["region", "accessKeyId", "accessKey"]
+                        required: ["aws"]
+                      - properties:
+                          provider:
+                            enum: ["azure"]
+                          azure:
+                            type: object
+                            title: Azure
+                            properties:
+                              url:
+                                type: string
+                                title: URL
+                                minLength: 1
+                              tenantId:
+                                type: string
+                                title: Tenant ID
+                                minLength: 1
+                              clientId:
+                                type: string
+                                title: Client ID
+                                minLength: 1
+                              clientSecret:
+                                type: string
+                                title: Client Secret
+                                minLength: 1
+                            required: ["url", "tenantId", "clientId", "clientSecret"]
+                        required: ["azure"]
+                      - properties:
+                          provider:
+                            enum: ["google"]
+                          google:
+                            type: object
+                            title: Google
+                            properties:
+                              projectId:
+                                type: string
+                                title: Project ID
+                                minLength: 1
+                              credentials:
+                                type: string
+                                title: Credentials
+                                description: "Service account JSON."
+                                minLength: 1
+                            required: ["projectId", "credentials"]
+                        required: ["google"]
+      events:
+        type: object
+        title: Events
+        properties:
+          auditEnabled:
+            type: boolean
+            title: Audit
+            default: true
+          retentionDays:
+            type: integer
+            title: Retention (days)
+            default: 14
+            minimum: 1
+          cleanupIntervalHours:
+            type: integer
+            title: Cleanup Interval (hours)
+            description: "How often old events are deleted. Minimum 2 hours. Stored on the ControlPlane as seconds."
+            default: 24
+            minimum: 2
+          captureIpAddress:
+            type: boolean
+            title: Capture IP Address
+            default: true
+        required: ["auditEnabled", "retentionDays", "cleanupIntervalHours", "captureIpAddress"]
+    allOf:
+      - if:
+          properties:
+            services:
+              type: object
+              required: ["controller"]
+              properties:
+                controller:
+                  type: object
+                  required: ["type"]
+                  properties:
+                    type:
+                      const: NodePort
+          required: ["services"]
+        then:
+          properties:
+            controller:
+              type: object
+              required: ["publicUrl"]
+              properties:
+                publicUrl:
+                  type: string
+                  title: Public URL
+                  description: "URL clients use to reach the controller. Required for NodePort because the operator does not discover a node address."
+                  minLength: 1
+      - if:
+          required: ["services", "controller"]
+          properties:
+            services:
+              type: object
+              required: ["controller"]
+              properties:
+                controller:
+                  type: object
+                  required: ["type"]
+                  properties:
+                    type:
+                      const: LoadBalancer
+            controller:
+              type: object
+              required: ["https"]
+              properties:
+                https:
+                  const: true
+        then:
+          properties:
+            controller:
+              type: object
+              required: ["publicUrl"]
+              properties:
+                publicUrl:
+                  type: string
+                  title: Public URL
+                  description: "DNS name on the certificate. The operator would otherwise publish the load balancer IP."
+                  minLength: 1
+  uiSchema:
+    ui:order:
+      - images
+      - auth
+      - database
+      - replicas
+      - services
+      - controller
+      - nats
+      - vault
+      - events
+      - "*"
+    images:
+      ui:order: ["operator", "controller", "router", "nats", "pullSecret", "*"]
+    auth:
+      ui:order:
+        - mode
+        - insecureAllowHttp
+        - bootstrap
+        - issuerUrl
+        - client
+        - issuerCa
+        - advanced
+        - rateLimit
+        - tokenTtl
+        - oidcTtl
+        - sessionStore
+        - "*"
+      mode:
+        ui:widget: select
+        ui:enumNames:
+          - "Embedded — the control plane is its own identity provider"
+          - "External — an OIDC provider you already run"
+      bootstrap:
+        ui:order: ["username", "password", "*"]
+        password:
+          ui:widget: password
+      client:
+        ui:order: ["id", "secret", "*"]
+        secret:
+          ui:widget: password
+      issuerCa:
+        ui:widget: textarea
+      rateLimit:
+        ui:order: ["enabled", "maxRequestsPerWindow", "windowMs", "*"]
+        maxRequestsPerWindow:
+          ui:widget: updown
+        windowMs:
+          ui:widget: updown
+      tokenTtl:
+        ui:order: ["accessTokenTtlSeconds", "refreshTokenTtlSeconds", "*"]
+        accessTokenTtlSeconds:
+          ui:widget: updown
+        refreshTokenTtlSeconds:
+          ui:widget: updown
+      oidcTtl:
+        ui:order:
+          - interactionTtlSeconds
+          - grantTtlSeconds
+          - sessionTtlSeconds
+          - idTokenTtlSeconds
+          - "*"
+        interactionTtlSeconds:
+          ui:widget: updown
+        grantTtlSeconds:
+          ui:widget: updown
+        sessionTtlSeconds:
+          ui:widget: updown
+        idTokenTtlSeconds:
+          ui:widget: updown
+      sessionStore:
+        ui:order: ["type", "ttlMs", "secret", "*"]
+        type:
+          ui:widget: select
+          ui:enumNames:
+            - "Not set — controller default"
+            - "Memory"
+            - "Database"
+        ttlMs:
+          ui:widget: updown
+        secret:
+          ui:widget: password
+    database:
+      ui:order: ["provider", "host", "port", "databaseName", "user", "password", "ssl", "ca", "*"]
+      provider:
+        ui:widget: select
+        ui:enumNames:
+          - "SQLite — database inside the controller pod"
+          - "PostgreSQL"
+          - "MySQL"
+      port:
+        ui:widget: updown
+      password:
+        ui:widget: password
+      ca:
+        ui:widget: textarea
+    replicas:
+      ui:order: ["controller", "nats", "*"]
+      controller:
+        ui:widget: updown
+      nats:
+        ui:widget: updown
+    services:
+      ui:order: ["controller", "router", "nats", "natsServer", "*"]
+      controller:
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
+        type:
+          ui:widget: select
+          ui:enumNames:
+            - "LoadBalancer — address is discovered"
+            - "NodePort — set Public URL in Controller"
+            - "ClusterIP — ingress host below"
+        externalTrafficPolicy:
+          ui:widget: select
+          ui:enumNames:
+            - "Automatic"
+            - "Local — keep the client source address"
+            - "Cluster — accept traffic on any node"
+        ingress:
+          ui:order: ["host", "ingressClassName", "annotations", "*"]
+          annotations:
+            ui:widget: textarea
+        annotations:
+          ui:widget: textarea
+      router:
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
+        type:
+          ui:widget: select
+          ui:enumNames:
+            - "LoadBalancer — address is discovered"
+            - "NodePort — external address required"
+            - "ClusterIP — external address required"
+        externalTrafficPolicy:
+          ui:widget: select
+          ui:enumNames:
+            - "Automatic"
+            - "Local — keep the client source address"
+            - "Cluster — accept traffic on any node"
+        ingress:
+          ui:order: ["address", "messagePort", "interiorPort", "edgePort", "*"]
+          messagePort:
+            ui:widget: updown
+          interiorPort:
+            ui:widget: updown
+          edgePort:
+            ui:widget: updown
+        annotations:
+          ui:widget: textarea
+      nats:
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "ingress", "*"]
+        type:
+          ui:widget: select
+          ui:enumNames:
+            - "LoadBalancer — address is discovered"
+            - "NodePort — external address required"
+            - "ClusterIP — external address required"
+        externalTrafficPolicy:
+          ui:widget: select
+          ui:enumNames:
+            - "Automatic"
+            - "Local — keep the client source address"
+            - "Cluster — accept traffic on any node"
+        ingress:
+          ui:order: ["address", "serverPort", "clusterPort", "leafPort", "mqttPort", "httpPort", "*"]
+          serverPort:
+            ui:widget: updown
+          clusterPort:
+            ui:widget: updown
+          leafPort:
+            ui:widget: updown
+          mqttPort:
+            ui:widget: updown
+          httpPort:
+            ui:widget: updown
+        annotations:
+          ui:widget: textarea
+      natsServer:
+        ui:order: ["type", "advanced", "annotations", "externalTrafficPolicy", "*"]
+        type:
+          ui:widget: select
+          ui:enumNames:
+            - "ClusterIP — inside the cluster"
+            - "NodePort"
+            - "LoadBalancer — publishes the non-TLS port"
+        externalTrafficPolicy:
+          ui:widget: select
+          ui:enumNames:
+            - "Automatic"
+            - "Local — keep the client source address"
+            - "Cluster — accept traffic on any node"
+        annotations:
+          ui:widget: textarea
+    controller:
+      ui:order: ["logLevel", "trustProxy", "https", "publicUrl", "tls", "advanced", "consoleUrl", "*"]
+      logLevel:
+        ui:widget: select
+      trustProxy:
+        ui:widget: select
+        ui:enumNames:
+          - "Automatic"
+          - "On"
+          - "Off"
+      tls:
+        ui:order: ["source", "secretName", "crt", "key", "ca", "*"]
+        source:
+          ui:widget: select
+          ui:enumNames:
+            - "Use an existing Secret"
+            - "Create a Secret"
+        crt:
+          ui:widget: textarea
+        key:
+          ui:widget: textarea
+        ca:
+          ui:widget: textarea
+    nats:
+      ui:order: ["memoryStoreSize", "storageSize", "advanced", "storageClassName", "*"]
+      memoryStoreSize:
+        ui:widget: updown
+      storageSize:
+        ui:widget: updown
+    vault:
+      ui:order: ["enabled", "basePath", "provider", "hashicorp", "aws", "azure", "google", "*"]
+      provider:
+        ui:widget: select
+        ui:enumNames:
+          - "HashiCorp Vault"
+          - "OpenBao"
+          - "AWS Secrets Manager"
+          - "Azure Key Vault"
+          - "Google Secret Manager"
+      hashicorp:
+        ui:order: ["address", "mount", "token", "*"]
+        token:
+          ui:widget: password
+      aws:
+        ui:order: ["region", "accessKeyId", "accessKey", "*"]
+        accessKey:
+          ui:widget: password
+      azure:
+        ui:order: ["url", "tenantId", "clientId", "clientSecret", "*"]
+        clientSecret:
+          ui:widget: password
+      google:
+        ui:order: ["projectId", "credentials", "*"]
+        credentials:
+          ui:widget: textarea
+    events:
+      ui:order: ["auditEnabled", "retentionDays", "cleanupIntervalHours", "captureIpAddress", "*"]
+      retentionDays:
+        ui:widget: updown
+      cleanupIntervalHours:
+        ui:widget: updown
