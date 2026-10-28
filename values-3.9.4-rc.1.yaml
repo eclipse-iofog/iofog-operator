@@ -1,0 +1,138 @@
+# ControlPlane resource name. Empty uses the flavor default stamped into
+# the chart: pot for Datasance, iofog for Eclipse ioFog.
+name: ""
+
+images:
+  operator: "ghcr.io/eclipse-iofog/operator:3.9.4-rc.1"
+  controller: "ghcr.io/eclipse-iofog/controller:3.9.4-rc.1"
+  router: "ghcr.io/eclipse-iofog/router:3.9.4-rc.1"
+  nats: "ghcr.io/eclipse-iofog/nats:2.15.2"
+  # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
+  pullSecret: ""
+
+auth:
+  mode: embedded
+  insecureAllowHttp: false
+  bootstrap:
+    username: admin
+    password: ""
+    # GitOps alternative to password. Not shown on the marketplace form.
+    # passwordSecretRef:
+    #   name: controller-bootstrap
+    #   key: password
+  rateLimit:
+    enabled: false
+    maxRequestsPerWindow: 0
+    windowMs: 0
+  tokenTtl:
+    accessTokenTtlSeconds: 0
+    refreshTokenTtlSeconds: 0
+  oidcTtl:
+    interactionTtlSeconds: 0
+    grantTtlSeconds: 0
+    sessionTtlSeconds: 0
+    idTokenTtlSeconds: 0
+  sessionStore:
+    type: ""
+    ttlMs: 0
+    secret: ""
+  issuerUrl: ""
+  issuerCa: ""
+  client:
+    id: ""
+    secret: ""
+
+database:
+  provider: sqlite
+  host: ""
+  port: 0
+  databaseName: ""
+  user: ""
+  password: ""
+  ssl: false
+  ca: ""
+
+replicas:
+  controller: 1
+  nats: 2
+
+services:
+  # annotations is null when empty. Set a map, or one "key: value" line per
+  # annotation. Helm cannot replace a default map with that text, or the reverse.
+  controller:
+    type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
+    ingress:
+      host: ""
+      ingressClassName: ""
+      annotations: null
+  router:
+    type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
+    ingress:
+      address: ""
+      messagePort: 5671
+      interiorPort: 55671
+      edgePort: 45671
+  nats:
+    type: LoadBalancer
+    annotations: null
+    externalTrafficPolicy: "auto"
+    ingress:
+      address: ""
+      serverPort: 4222
+      clusterPort: 6222
+      leafPort: 7422
+      mqttPort: 8883
+      httpPort: 8222
+  natsServer:
+    type: ClusterIP
+    annotations: null
+    externalTrafficPolicy: "auto"
+
+controller:
+  logLevel: info
+  trustProxy: "auto"
+  https: false
+  publicUrl: ""
+  consoleUrl: ""
+  tls:
+    source: ""
+    secretName: ""
+    crt: ""
+    key: ""
+    ca: ""
+
+nats:
+  memoryStoreSize: 1
+  storageSize: 10
+  storageClassName: ""
+
+vault:
+  enabled: false
+  basePath: ""
+  provider: ""
+  hashicorp:
+    address: ""
+    mount: ""
+    token: ""
+  aws:
+    region: ""
+    accessKeyId: ""
+    accessKey: ""
+  azure:
+    url: ""
+    tenantId: ""
+    clientId: ""
+    clientSecret: ""
+  google:
+    projectId: ""
+    credentials: ""
+
+events:
+  auditEnabled: true
+  retentionDays: 14
+  cleanupIntervalHours: 24
+  captureIpAddress: true
