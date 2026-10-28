@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.4] - 2026-10-29
+
+### Changed
+
+- **Operator release** - Helm chart `version` / `appVersion`, operator image tag, `VERSION_TAG`, and install docs are **3.9.4**.
+- **Default component image tags** - controller and router **3.9.4**; NATS **2.15.2** (Makefile `LDFLAGS`, Helm `values.yaml` / `marketplace-values.yaml`, sample CRs, testdata, OLM bundle CSV, `hack/package-helm.sh`).
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.4`**.
+- **Container base images** - refreshed the golang Alpine builder and UBI9 minimal digests in `Dockerfile`. Go stays **1.26.10**.
+
 ## [3.9.3] - 2026-10-26
 
 ### Changed
