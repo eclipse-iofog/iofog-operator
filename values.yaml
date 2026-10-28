@@ -3,9 +3,9 @@
 name: ""
 
 images:
-  operator: "ghcr.io/eclipse-iofog/operator:3.9.3-rc.1"
-  controller: "ghcr.io/eclipse-iofog/controller:3.9.3-rc.1"
-  router: "ghcr.io/eclipse-iofog/router:3.9.3-rc.1"
+  operator: "ghcr.io/eclipse-iofog/operator:3.9.3"
+  controller: "ghcr.io/eclipse-iofog/controller:3.9.3"
+  router: "ghcr.io/eclipse-iofog/router:3.9.3"
   nats: "ghcr.io/eclipse-iofog/nats:2.15.2"
   # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
   pullSecret: ""
