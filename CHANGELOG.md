@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.9.4] - 2026-10-29
+## [3.9.4] - 2026-11-02
 
 ### Changed
 
@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Default component image tags** - controller and router **3.9.4**; NATS **2.15.2** (Makefile `LDFLAGS`, Helm `values.yaml` / `marketplace-values.yaml`, sample CRs, testdata, OLM bundle CSV, `hack/package-helm.sh`).
 - **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.4`**.
 - **Container base images** - refreshed the golang Alpine builder and UBI9 minimal digests in `Dockerfile`. Go stays **1.26.10**.
+
+### Security
+
+- **`golang.org/x/net`** - indirect dependency bumped to **v0.62.0** (from v0.60.0), which also moves **`golang.org/x/sync` v0.24.0**, **`golang.org/x/sys` v0.49.0**, **`golang.org/x/term` v0.47.0**, and **`golang.org/x/text` v0.43.0**. Clears the govulncheck module findings **[GO-2026-6866](https://pkg.go.dev/vuln/GO-2026-6866)** (CVE-2026-97045, HTML raw-text namespace handling in `html.Render`) and **[GO-2026-6860](https://pkg.go.dev/vuln/GO-2026-6860)** (CVE-2026-78661, quadratic text-node coalescing in `html.Parse`). govulncheck reports no call from this module into those symbols.
 
 ## [3.9.3] - 2026-10-26
 
