@@ -1,4 +1,4 @@
-FROM golang:1.26.10-alpine3.23@sha256:34414731924cf2263160f0021f5cf6e1807382d85248f7cb419d4187b96d5e43 AS builder
+FROM golang:1.26.11-alpine3.23@sha256:23f198931d4bd83b4f5a613bd75656257ae8bf832dcbc2db80e1050b5219ca2a AS builder
 
 WORKDIR /operator
 
@@ -28,7 +28,7 @@ COPY ./hack/ ./hack/
 RUN make build
 RUN cp ./bin/iofog-operator /bin
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:6f3a78179e0b30b930a186e7f68a4af52e51bb82406c9653be10bddd624e40f5
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8@sha256:f26ef64172ea61f5ac5ba4be8c5c738bf8760b22b3e5148ce7b40f7308ab32db
 WORKDIR /
 
 ARG OCI_SOURCE_REPO=https://github.com/eclipse-iofog/iofog-operator

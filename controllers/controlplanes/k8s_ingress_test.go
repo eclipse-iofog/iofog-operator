@@ -69,6 +69,53 @@ func TestCreateIngress_PatchesLegacyConsoleBackend(t *testing.T) {
 	require.Equal(t, controllerConsolePortName, updated.Spec.Rules[0].HTTP.Paths[0].Backend.Service.Port.Name)
 }
 
+func TestCreateIngress_AddsOidcPathWhenAuthBecomesEmbedded(t *testing.T) {
+	existing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+		authMode:   cpv3.AuthModeExternal,
+	})
+	existing.ResourceVersion = "1"
+
+	r := newIngressTestReconciler(t, existing)
+	cfg := &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+		authMode:   cpv3.AuthModeEmbedded,
+	}
+
+	require.NoError(t, r.createIngress(context.Background(), cfg))
+
+	updated := &networkingv1.Ingress{}
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: controllerIngressName}, updated))
+	paths := updated.Spec.Rules[0].HTTP.Paths
+	require.Len(t, paths, 3)
+	require.Equal(t, "/oidc", paths[2].Path)
+	require.Equal(t, "controller-api", paths[2].Backend.Service.Port.Name)
+}
+
+func TestCreateIngress_RemovesOidcPathWhenAuthBecomesExternal(t *testing.T) {
+	existing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+		authMode:   cpv3.AuthModeEmbedded,
+	})
+	existing.ResourceVersion = "1"
+
+	r := newIngressTestReconciler(t, existing)
+	cfg := &controllerIngressConfig{
+		host:       "ctrl.example.com",
+		secretName: "ctrl-tls",
+		authMode:   cpv3.AuthModeExternal,
+	}
+
+	require.NoError(t, r.createIngress(context.Background(), cfg))
+
+	updated := &networkingv1.Ingress{}
+	require.NoError(t, r.Client.Get(context.Background(), types.NamespacedName{Namespace: "cp-ns", Name: controllerIngressName}, updated))
+	require.Len(t, updated.Spec.Rules[0].HTTP.Paths, 2)
+}
+
 func TestCreateIngress_SkipsUpdateWhenUnchanged(t *testing.T) {
 	class := "nginx"
 	annotations := map[string]string{"keep": "me"}

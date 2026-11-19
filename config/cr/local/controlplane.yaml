@@ -49,9 +49,9 @@ spec:
     #   id: controller
     #   secret: ""
   images:
-    controller: ghcr.io/datasance/controller:3.9.4
-    router: ghcr.io/datasance/router:3.9.4
-    nats: ghcr.io/datasance/nats:2.15.2
+    controller: ghcr.io/datasance/controller:3.9.5
+    router: ghcr.io/datasance/router:3.9.5
+    nats: ghcr.io/datasance/nats:2.15.3
   nats:
     enabled: true
     jetStream:

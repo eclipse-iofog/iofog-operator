@@ -149,6 +149,7 @@ The operator creates Ingress **`controller`** with:
 |------|----------------------|
 | `/` | `console` (Service port 80 → pod console) |
 | `/api/v3` | `controller-api` (51121) |
+| `/oidc` | `controller-api` (51121), only when `auth.mode` is `embedded` |
 
 ```yaml
 spec:

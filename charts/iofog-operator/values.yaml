@@ -3,10 +3,10 @@
 name: ""
 
 images:
-  operator: "ghcr.io/datasance/operator:3.9.4"
-  controller: "ghcr.io/datasance/controller:3.9.4"
-  router: "ghcr.io/datasance/router:3.9.4"
-  nats: "ghcr.io/datasance/nats:2.15.2"
+  operator: "ghcr.io/datasance/operator:3.9.5"
+  controller: "ghcr.io/datasance/controller:3.9.5"
+  router: "ghcr.io/datasance/router:3.9.5"
+  nats: "ghcr.io/datasance/nats:2.15.3"
   # pullSecret is applied to the operator pod and to Controller, Router, and NATS.
   pullSecret: ""
 
