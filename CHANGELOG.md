@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.5] - 2026-11-19
+
+### Changed
+
+- **Operator release** - Helm chart `version` / `appVersion`, operator image tag, `VERSION_TAG`, and install docs are **3.9.5**.
+- **Default component image tags** - controller and router **3.9.5**; NATS **2.15.3** (Makefile `LDFLAGS`, Helm `values.yaml` / `marketplace-values.yaml`, sample CRs, testdata, OLM bundle CSV, `hack/package-helm.sh`).
+- **Go 1.26.11** minimum (see `go.mod`). CI, the govulncheck workflow, and the release workflow use the same toolchain. The Dockerfile builder is `golang:1.26.11-alpine3.23`, and the UBI9 minimal digest is refreshed.
+- **iofog-go-sdk** - bumped to **`github.com/eclipse-iofog/iofog-go-sdk/v3@v3.9.5`**.
+
+### Fixed
+
+- **Controller Ingress** - when `auth.mode` is `embedded`, prefix `/oidc` is routed to the Controller API port (`controller-api`, 51121), alongside `/api/v3`. External mode does not add that path.
+
 ## [3.9.4] - 2026-11-02
 
 ### Changed

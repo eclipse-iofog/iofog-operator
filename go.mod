@@ -1,9 +1,9 @@
 module github.com/eclipse-iofog/iofog-operator/v3
 
-go 1.26.10
+go 1.26.11
 
 require (
-	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.9.4
+	github.com/eclipse-iofog/iofog-go-sdk/v3 v3.9.5
 	github.com/go-logr/logr v1.4.2
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.32.1

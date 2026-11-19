@@ -3,8 +3,10 @@ package controllers
 import (
 	"testing"
 
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -56,6 +58,31 @@ func TestNewControllerIngress_ExposesConsoleAndAPIBackends(t *testing.T) {
 
 	require.Equal(t, "/api/v3", paths[1].Path)
 	require.Equal(t, "controller-api", paths[1].Backend.Service.Port.Name)
+}
+
+func TestNewControllerIngress_RoutesOidcToAPIWhenEmbedded(t *testing.T) {
+	ing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
+		host:     "controller.local",
+		authMode: cpv3.AuthModeEmbedded,
+	})
+	paths := ing.Spec.Rules[0].HTTP.Paths
+	require.Len(t, paths, 3)
+
+	require.Equal(t, "/oidc", paths[2].Path)
+	require.Equal(t, networkingv1.PathTypePrefix, *paths[2].PathType)
+	require.Equal(t, "controller-api", paths[2].Backend.Service.Port.Name)
+}
+
+func TestNewControllerIngress_OmitsOidcWhenExternal(t *testing.T) {
+	ing := newControllerIngress("cp-ns", "test-cp", &controllerIngressConfig{
+		host:     "controller.local",
+		authMode: cpv3.AuthModeExternal,
+	})
+	paths := ing.Spec.Rules[0].HTTP.Paths
+	require.Len(t, paths, 2)
+	for _, path := range paths {
+		require.NotEqual(t, "/oidc", path.Path)
+	}
 }
 
 func TestIngressRulesEqual_DetectsLegacyConsoleBackend(t *testing.T) {

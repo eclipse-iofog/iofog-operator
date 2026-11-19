@@ -154,7 +154,7 @@ Then:
 - **`controller-db-credentials`**, **`controller-auth-credentials`**, and **`controller-vault-credentials`** (if vault is configured) are created, or **updated** when they already exist. An update sets a restart flag used at the end of this reconcile.
 - Any other Secrets attached to the controller microservice are created only if missing (`createSecrets` does not overwrite).
 - Service `controller` is created or updated (ports, type, annotations, loadBalancer IP).
-- If the Service type is **ClusterIP**, Ingress `controller` is created or patched (host, class, TLS secret, annotations, paths `/` → console and `/api/v3` → API). TLS behavior is in [Securing the cluster](./securing-cluster.md#pattern-b-clusterip--ingress-tls).
+- If the Service type is **ClusterIP**, Ingress `controller` is created or patched (host, class, TLS secret, annotations, paths `/` → console and `/api/v3` → API). When `auth.mode` is `embedded`, `/oidc` is also routed to the API. TLS behavior is in [Securing the cluster](./securing-cluster.md#pattern-b-clusterip--ingress-tls).
 
 ### 3. Deployment
 

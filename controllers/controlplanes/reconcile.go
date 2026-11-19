@@ -235,6 +235,7 @@ func (r *ControlPlaneReconciler) reconcileIofogController(ctx context.Context) o
 		ingressClassName: r.cp.Spec.Ingresses.Controller.IngressClassName,
 		host:             r.cp.Spec.Ingresses.Controller.Host,
 		secretName:       r.cp.Spec.Ingresses.Controller.SecretName,
+		authMode:         r.cp.Spec.Auth.Mode,
 	}
 
 	// get scheme for controller endpoint

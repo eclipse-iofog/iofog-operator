@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	cpv3 "github.com/eclipse-iofog/iofog-operator/v3/apis/controlplanes/v3"
 	"github.com/eclipse-iofog/iofog-operator/v3/controllers/controlplanes/router"
 	"github.com/eclipse-iofog/iofog-operator/v3/internal/util"
 	appsv1 "k8s.io/api/apps/v1"
@@ -97,6 +98,7 @@ type controllerIngressConfig struct {
 	ingressClassName string
 	host             string
 	secretName       string
+	authMode         cpv3.AuthMode
 }
 
 func newControllerIngress(namespace, instanceName string, cfg *controllerIngressConfig) *networkingv1.Ingress {
@@ -106,6 +108,26 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 	var ingressClassName *string
 	if cfg.ingressClassName != "" {
 		ingressClassName = &cfg.ingressClassName
+	}
+
+	paths := []networkingv1.HTTPIngressPath{
+		{
+			Path:     "/",
+			PathType: &pathType,
+			Backend: networkingv1.IngressBackend{
+				Service: &networkingv1.IngressServiceBackend{
+					Name: "controller",
+					Port: networkingv1.ServiceBackendPort{
+						Name: controllerConsolePortName,
+					},
+				},
+			},
+		},
+		controllerAPIIngressPath("/api/v3", &pathType),
+	}
+	// Embedded OIDC is served by the Controller API at {publicUrl}/oidc.
+	if cfg.authMode == cpv3.AuthModeEmbedded {
+		paths = append(paths, controllerAPIIngressPath("/oidc", &pathType))
 	}
 
 	return &networkingv1.Ingress{
@@ -128,34 +150,24 @@ func newControllerIngress(namespace, instanceName string, cfg *controllerIngress
 					Host: cfg.host,
 					IngressRuleValue: networkingv1.IngressRuleValue{ // Correct field name
 						HTTP: &networkingv1.HTTPIngressRuleValue{
-							Paths: []networkingv1.HTTPIngressPath{
-								{
-									Path:     "/",
-									PathType: &pathType,
-									Backend: networkingv1.IngressBackend{
-										Service: &networkingv1.IngressServiceBackend{
-											Name: "controller",
-											Port: networkingv1.ServiceBackendPort{
-												Name: controllerConsolePortName,
-											},
-										},
-									},
-								},
-								{
-									Path:     "/api/v3",
-									PathType: &pathType,
-									Backend: networkingv1.IngressBackend{
-										Service: &networkingv1.IngressServiceBackend{
-											Name: "controller",
-											Port: networkingv1.ServiceBackendPort{
-												Name: "controller-api",
-											},
-										},
-									},
-								},
-							},
+							Paths: paths,
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func controllerAPIIngressPath(path string, pathType *networkingv1.PathType) networkingv1.HTTPIngressPath {
+	return networkingv1.HTTPIngressPath{
+		Path:     path,
+		PathType: pathType,
+		Backend: networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: "controller",
+				Port: networkingv1.ServiceBackendPort{
+					Name: "controller-api",
 				},
 			},
 		},
